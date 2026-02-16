@@ -5,8 +5,10 @@
     var accordionId = "accordionSectors";
     int count = 0;
     var selectedProject = ViewBag.SelectedProject as string;
+    var selectedSubProject = ViewBag.SelectedSubProject as string;
     var btNoSearch = ViewBag.BTNoSearch as string;
     var projects = ViewBag.Projects as List<string> ?? new List<string>();
+    var subProjects = ViewBag.SubProjects as List<string> ?? new List<string>();
     
     // Get values from ViewBag populated by controller
     string operatorName = ViewBag.OperatorName as string ?? "";
@@ -58,11 +60,23 @@
                 <option value="">-- Select Project --</option>
                 @foreach (var project in projects)
                 {
-                    <option value="@project" selected="@(project == selectedProject ? "selected" : null)">@project</option>
-
+                    <option value="@project" selected="@(project == selectedProject)">@project</option>
                 }
             </select>
         </div>
+        @if (!string.IsNullOrEmpty(selectedProject))
+        {
+            <div class="col-md-4">
+                <label class="form-label fw-bold">SubProject</label>
+                <select name="selectedSubProject" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- All SubProjects --</option>
+                    @foreach (var sp in subProjects)
+                    {
+                        <option value="@sp" selected="@(sp == selectedSubProject)">@sp</option>
+                    }
+                </select>
+            </div>
+        }
         @if (!string.IsNullOrEmpty(selectedProject))
         {
             <div class="col-md-4">
@@ -102,6 +116,7 @@
                                 <th>BT Number</th>
                                 <th>Customer Name</th>
                                 <th>Project</th>
+                                <th>SubProject</th>
                                 <th>Category</th>
                                 <th>Block</th>
                                 <th>Size</th>
@@ -112,7 +127,7 @@
                         <tbody>
                             @foreach (var customer in group.Customers)
                             {
-                                <tr ondblclick="window.location.href='@Url.Action("ViewCustomer", "SGCustomers", new { id = customer.Uid })'" style="cursor: pointer;">
+                                <tr ondblclick="window.open('@Url.Action("Details", "CustomersMaintenance", new { id = customer.Uid })', '_blank')" style="cursor: pointer;" title="Double-click to open customer record (read-only)">
                                     <td>
                                         <input type="checkbox" name="selectedCustomers"
                                                value="@customer.Uid"
@@ -121,6 +136,7 @@
                                     <td>@customer.BTNo</td>
                                     <td>@customer.CustomerName</td>
                                     <td>@customer.Project</td>
+                                    <td>@customer.SubProject</td>
                                     <td>@customer.Category</td>
                                     <td>@customer.Block</td>
                                     <td>@customer.Size</td>

@@ -1,0 +1,57 @@
+@model BMSBT.Models.ManualRate
+@{
+    ViewData["Title"] = "Delete Manual Rate";
+    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h4>Delete Manual Rate</h4>
+        </div>
+        <div class="card-body">
+            <h5 class="text-danger">Are you sure you want to delete this manual rate?</h5>
+            <hr />
+
+            <dl class="row">
+                <dt class="col-sm-3">SNo</dt>
+                <dd class="col-sm-9">@Model.SNo</dd>
+
+                <dt class="col-sm-3">Customer No</dt>
+                <dd class="col-sm-9">@Model.CustomerNo</dd>
+
+                <dt class="col-sm-3">Phase</dt>
+                <dd class="col-sm-9">@Model.Phase</dd>
+
+                <dt class="col-sm-3">Size</dt>
+                <dd class="col-sm-9">@(Model.Size ?? "—")</dd>
+
+                <dt class="col-sm-3">Category</dt>
+                <dd class="col-sm-9">@Model.Category</dd>
+
+                <dt class="col-sm-3">Unit Type</dt>
+                <dd class="col-sm-9">@Model.UnitType</dd>
+
+                <dt class="col-sm-3">Misc</dt>
+                <dd class="col-sm-9">@Model.Misc</dd>
+
+                <dt class="col-sm-3">Tax</dt>
+                <dd class="col-sm-9">@Model.Tax</dd>
+
+                <dt class="col-sm-3">Maint Charges</dt>
+                <dd class="col-sm-9">@Model.MaintCharges</dd>
+
+                <dt class="col-sm-3">Total</dt>
+                <dd class="col-sm-9">@Model.Total</dd>
+            </dl>
+
+            <form asp-action="Delete" method="post">
+                <input type="hidden" asp-for="SNo" />
+                <div class="form-group">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

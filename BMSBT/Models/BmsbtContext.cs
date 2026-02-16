@@ -49,6 +49,9 @@ public partial class BmsbtContext : DbContext
 
     public virtual DbSet<TaxInformation> TaxInformations { get; set; }
 
+    public virtual DbSet<Rate> Rates { get; set; }
+    public virtual DbSet<ManualRate> ManualRates { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
     public DbSet<Fine> Fine { get; set; }
     public DbSet<AdditionalCharge> AdditionalCharges { get; set; }
@@ -74,7 +77,13 @@ public partial class BmsbtContext : DbContext
                 .IsUnicode(false);
         });
 
-
+        modelBuilder.Entity<CustomersMaintenance>(entity =>
+        {
+            entity.ToTable("CustomersMaintenance");
+            entity.Property(e => e.ConnectionStatus)
+                .HasMaxLength(50)
+                .HasColumnName("ConnectionStatus");
+        });
 
         // Configure BillingReportData as keyless entity
         modelBuilder.Entity<BillingReportData>().HasNoKey();
@@ -419,6 +428,41 @@ public partial class BmsbtContext : DbContext
             entity.Property(e => e.TarrifType)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<Rate>(entity =>
+        {
+            entity.HasKey(e => e.SNo).HasName("PK_Rates");
+            entity.ToTable("Rates");
+            entity.Property(e => e.SNo).HasColumnName("SNo").ValueGeneratedOnAdd();
+            entity.Property(e => e.Phase).HasMaxLength(100);
+            entity.Property(e => e.Size).HasMaxLength(50);
+            entity.Property(e => e.Category).HasMaxLength(100);
+            entity.Property(e => e.UnitType).HasMaxLength(50);
+            entity.Property(e => e.Misc).HasDefaultValue(0);
+            entity.Property(e => e.Tax).HasDefaultValue(0);
+            entity.Property(e => e.MaintCharges).HasDefaultValue(0);
+            entity.Property(e => e.Total).HasDefaultValue(0);
+        });
+
+        modelBuilder.Entity<ManualRate>(entity =>
+        {
+            entity.HasKey(e => e.SNo).HasName("PK_ManualRates");
+
+            entity.ToTable("ManualRates");
+
+            entity.Property(e => e.SNo).HasColumnName("SNo");
+            entity.Property(e => e.CustomerNo).HasMaxLength(50);
+            entity.Property(e => e.Phase).HasMaxLength(100);
+            entity.Property(e => e.Size).HasMaxLength(50);
+            entity.Property(e => e.Category).HasMaxLength(100);
+            entity.Property(e => e.UnitType).HasMaxLength(50);
+            entity.Property(e => e.Misc).HasDefaultValue(0);
+            entity.Property(e => e.Tax).HasDefaultValue(0);
+            entity.Property(e => e.MaintCharges).HasDefaultValue(0);
+            entity.Property(e => e.Total)
+                .HasComputedColumnSql("([Misc]+[Tax]+[MaintCharges])", stored: true)
+                .ValueGeneratedOnAddOrUpdate();
         });
 
         modelBuilder.Entity<TaxInformation>(entity =>

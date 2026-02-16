@@ -95,60 +95,94 @@ public class MaintenanceBillInsertController : ControllerBase
 
             foreach (var customer in customers)
             {
-                string btNoForLookup = customer.BTNoMaintenance ?? customer.BTNo;
+                // BTNo from CustomersMaintenance: prefer BTNoMaintenance, fallback to BTNo (trimmed); saved on new bill record
+                string? btNoForLookup = !string.IsNullOrWhiteSpace(customer.BTNoMaintenance)
+                    ? customer.BTNoMaintenance.Trim()
+                    : customer.BTNo?.Trim();
                 string statusValue = "";
                 bool shouldGenerate = false;
 
-                // 1. Calculate Last Month
-                var (lastMonth, lastYear) = GetPreviousMonthYear(billingMonth, billingYear);
-                
-                // 2. Check if Last Month Bill exists
-                var lastMonthBillExists = _dbContext.MaintenanceBills.Any(b => 
-                    b.Btno == btNoForLookup && 
-                    b.BillingMonth == lastMonth && 
-                    b.BillingYear == lastYear);
+                // --- LotusScript: duplicate check (key = RefrenceNoBarCode + Billing_Year + Billing_Month) ---
+                bool duplicateExists = !string.IsNullOrEmpty(btNoForLookup)
+                    ? _dbContext.MaintenanceBills.Any(b =>
+                          b.Btno == btNoForLookup &&
+                          b.BillingMonth == billingMonth &&
+                          b.BillingYear == billingYear)
+                    : _dbContext.MaintenanceBills.Any(b =>
+                          b.CustomerNo == customer.CustomerNo &&
+                          b.BillingMonth == billingMonth &&
+                          b.BillingYear == billingYear);
 
-                if (lastMonthBillExists)
+                if (duplicateExists)
                 {
-                    // Normal flow: Last month exists, generate current month
+                    statusValue = $"Bill Already Generated-{billingYear}-{billingMonth}";
+                    customer.BillGenerationStatus = statusValue;
+                    updates.Add(new { uid = customer.Uid, status = statusValue });
+                    continue;
+                }
+
+                // --- LotusScript: disconnected customer check ---
+                if (string.Equals(customer.ConnectionStatus?.Trim(), "Disconnected", StringComparison.OrdinalIgnoreCase))
+                {
+                    statusValue = "Disconnected Customer";
+                    customer.BillGenerationStatus = statusValue;
+                    updates.Add(new { uid = customer.Uid, status = statusValue });
+                    continue;
+                }
+
+                // --- LotusScript: previous bill logic (Billing_Month from operator = current month) ---
+                // Previous month: January -> Dec prev year; February -> Jan same year; etc.
+                var (previousMonth, previousYear) = GetPreviousMonthYear(billingMonth, billingYear);
+
+                bool previousMonthBillExists = !string.IsNullOrEmpty(btNoForLookup)
+                    ? _dbContext.MaintenanceBills.Any(b =>
+                          b.Btno == btNoForLookup &&
+                          b.BillingMonth == previousMonth &&
+                          b.BillingYear == previousYear)
+                    : _dbContext.MaintenanceBills.Any(b =>
+                          b.CustomerNo == customer.CustomerNo &&
+                          b.BillingMonth == previousMonth &&
+                          b.BillingYear == previousYear);
+
+                if (previousMonthBillExists)
+                {
+                    // Previous month bill found -> generate current month
                     shouldGenerate = true;
                 }
                 else
                 {
-                    // 3. Last Month NOT found, check previous 3 months (before the last month)
-                    var olderMonths = GetPreviousMonths(lastMonth, lastYear, 3);
-                    bool anyOlderBillExists = false;
+                    // Previous month bill NOT found -> check if customer has ANY bill (any month/year)
+                    bool anyBillExists = !string.IsNullOrEmpty(btNoForLookup)
+                        ? _dbContext.MaintenanceBills.Any(b => b.Btno == btNoForLookup)
+                        : _dbContext.MaintenanceBills.Any(b => b.CustomerNo == customer.CustomerNo);
 
-                    foreach (var m in olderMonths)
+                    if (!anyBillExists)
                     {
-                        if (_dbContext.MaintenanceBills.Any(b => 
-                            b.Btno == btNoForLookup && 
-                            b.BillingMonth == m.month && 
-                            b.BillingYear == m.year))
-                        {
-                            anyOlderBillExists = true;
-                            break;
-                        }
-                    }
-
-                    if (!anyOlderBillExists)
-                    {
-                        // Case: ZERO bills found in the last 4 months (Last month + 3 months before it)
-                        // Result: Generate current month bill
+                        // No bills at all (e.g. no bill in last 12 months / new customer) -> generate
                         shouldGenerate = true;
                     }
                     else
                     {
-                        // Case: Last month missing BUT older bills exist
-                        // Result: Skip generation, update status
-                        statusValue = "Last Bill Not Exist";
+                        // Last month bill missing but other bill(s) exist -> do not generate, set status
+                        statusValue = "previous bill not exist";
                         customer.BillGenerationStatus = statusValue;
-                        shouldGenerate = false;
+                        updates.Add(new { uid = customer.Uid, status = statusValue });
+                        continue;
                     }
                 }
 
                 if (shouldGenerate)
                 {
+                    // Check if Rate is defined (SubProject = Rates.Phase) before creating bill
+                    var rate = LookupRateByPhase(customer.SubProject);
+                    if (rate == null)
+                    {
+                        statusValue = "Rates Undefined";
+                        customer.BillGenerationStatus = statusValue;
+                        updates.Add(new { uid = customer.Uid, status = statusValue });
+                        continue;
+                    }
+
                     var dto = new MaintenanceBillCreateDto
                     {
                         CustomerNo = customer.CustomerNo ?? string.Empty,
@@ -157,10 +191,12 @@ public class MaintenanceBillInsertController : ControllerBase
                         PlotStatus = customer.PlotType,
                         MeterNo = customer.MeterNo,
 
-                        // Tariff matching attributes (required for tariff lookup)
+                        // Rate matching: SubProject = Rates.Phase for MaintCharges
                         Project = customer.Project,
+                        SubProject = customer.SubProject,
                         PlotType = customer.PlotType,
                         Size = customer.Size,
+                        Category = customer.Category,
 
                         // Billing period and dates
                         BillingMonth = billingMonth,
@@ -194,34 +230,21 @@ public class MaintenanceBillInsertController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Helper to get a list of previous months and years.
-    /// </summary>
-    private List<(string month, string year)> GetPreviousMonths(string startMonth, string startYear, int count)
+    private Rate? LookupRateByPhase(string? subProject)
     {
-        var result = new List<(string month, string year)>();
-        var months = new[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
-        
-        int monthIdx = Array.IndexOf(months, startMonth);
-        if (monthIdx == -1 || !int.TryParse(startYear, out int year)) return result;
+        var phase = subProject?.Trim() ?? "";
+        if (string.IsNullOrEmpty(phase))
+            return null;
 
-        for (int i = 1; i <= count; i++)
-        {
-            int targetIdx = monthIdx - i;
-            int targetYear = year;
-            
-            while (targetIdx < 0)
-            {
-                targetIdx += 12;
-                targetYear -= 1;
-            }
-            
-            result.Add((months[targetIdx], targetYear.ToString()));
-        }
-        
-        return result;
+        return _dbContext.Rates
+            .AsEnumerable()
+            .FirstOrDefault(r =>
+                string.Equals(r.Phase?.Trim(), phase, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Previous month from operator billing month/year. January -> Dec prev year; February -> Jan same year; etc. (LotusScript logic)
+    /// </summary>
     private (string month, string year) GetPreviousMonthYear(string currentMonth, string currentYear)
     {
         var months = new[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };

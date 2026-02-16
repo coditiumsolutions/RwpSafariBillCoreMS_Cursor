@@ -1,0 +1,269 @@
+@model BMSBT.Models.PaginationViewModel<BMSBT.ViewModels.MaintenanceBillViewModel>
+@using System.Globalization
+@{
+    ViewData["Title"] = "All Bill";
+    Layout = "~/Views/Shared/_LayoutMaintBills.cshtml";
+    var projects = ViewBag.Projects as List<string> ?? new List<string>();
+    var selectedProject = ViewBag.SelectedProject as string ?? "";
+    var selectedMonth = ViewBag.SelectedMonth as string ?? "";
+    var selectedYear = ViewBag.SelectedYear as string ?? "";
+    var custNoOrName = ViewBag.CustNoOrName as string ?? "";
+    var monthNames = CultureInfo.CurrentCulture.DateTimeFormat.MonthNames.Take(12).Where(n => !string.IsNullOrEmpty(n)).ToList();
+    var paginationStartPage = 1;
+    var paginationEndPage = 1;
+    if (Model != null && Model.TotalPages > 1)
+    {
+        const int maxPageLinks = 5;
+        int current = Model.PageNumber;
+        int total = Model.TotalPages;
+        int endPage = Math.Min(total, current + (maxPageLinks / 2));
+        int startPage = Math.Max(1, endPage - maxPageLinks + 1);
+        if (endPage - startPage + 1 < maxPageLinks)
+        {
+            endPage = Math.Min(total, startPage + maxPageLinks - 1);
+        }
+        paginationStartPage = startPage;
+        paginationEndPage = endPage;
+    }
+}
+
+<style>
+    .filter-section {
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+    .form-label { font-weight: 500; }
+    .grid-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+    }
+    .grid-table th,
+    .grid-table td {
+        border: 1px solid #dee2e6;
+        padding: 10px 12px;
+        text-align: left;
+    }
+    .grid-table th {
+        background-color: #4a90c2;
+        color: white;
+        font-weight: 600;
+    }
+    .grid-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
+    .grid-table tbody tr:hover { background-color: #e9ecef; }
+    .grid-table tbody tr.bill-row { cursor: pointer; }
+    @@media print {
+        .no-print { display: none !important; }
+    }
+    .no-data { color: #6c757d; font-style: italic; padding: 20px; }
+    .pagination-wrap {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+        padding: 10px 14px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+    }
+    .pagination-wrap .pagination {
+        margin: 0;
+        flex-wrap: wrap;
+    }
+    .pagination-wrap .page-item .page-link {
+        padding: 6px 10px;
+        min-width: 36px;
+        text-align: center;
+    }
+    .pagination-wrap .go-to-page {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .pagination-wrap .go-to-page input[type="number"] {
+        width: 56px;
+        padding: 4px 6px;
+        text-align: center;
+    }
+    .pagination-wrap .go-to-page label { margin-right: 4px; }
+</style>
+
+<div class="container-fluid mt-3">
+    <form asp-controller="MaintenanceNew" asp-action="AllBills" method="get" class="filter-section">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Project</label>
+                <select name="project" id="project" class="form-control" required>
+                    <option value="">-- Select Project --</option>
+                    @foreach (var p in projects)
+                    {
+                        if (p == selectedProject)
+                        {
+                            <option value="@p" selected>@p</option>
+                        }
+                        else
+                        {
+                            <option value="@p">@p</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Billing Month</label>
+                <select name="month" id="month" class="form-control" required>
+                    <option value="">-- Month --</option>
+                    @foreach (var name in monthNames)
+                    {
+                        if (name == selectedMonth)
+                        {
+                            <option value="@name" selected>@name</option>
+                        }
+                        else
+                        {
+                            <option value="@name">@name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Billing Year</label>
+                <select name="year" id="year" class="form-control" required>
+                    <option value="">-- Year --</option>
+                    @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 10; y--)
+                    {
+                        if (y.ToString() == selectedYear)
+                        {
+                            <option value="@y" selected>@y</option>
+                        }
+                        else
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">CustNo/Name</label>
+                <input type="text" name="custNoOrName" class="form-control" placeholder="Customer No or Name (optional)" value="@custNoOrName" />
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">Search Bills</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-bordered grid-table">
+            <thead>
+                <tr>
+                    <th>Customer No</th>
+                    <th>Customer Name</th>
+                    <th>Billing Month</th>
+                    <th>Billing Year</th>
+                    <th>Amount (Due Date)</th>
+                    <th>Payment Status</th>
+                    <th class="no-print">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model?.Items != null && Model.Items.Any())
+                {
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr class="bill-row" data-uid="@item.Uid" data-print-url="@Url.Action("Print", "MaintenanceNew", new { id = item.Uid, project = selectedProject })" ondblclick="window.open(this.getAttribute('data-print-url'), '_blank');">
+                            <td>@item.CustomerNo</td>
+                            <td>@item.CustomerName</td>
+                            <td>@item.BillingMonth</td>
+                            <td>@item.BillingYear</td>
+                            <td>@item.BillAmountInDueDate</td>
+                            <td>@item.PaymentStatus</td>
+                            <td class="no-print">
+                                <a asp-action="Print" asp-controller="MaintenanceNew" asp-route-id="@item.Uid" asp-route-project="@selectedProject" target="_blank" class="btn btn-sm btn-outline-primary">Print</a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="no-data">
+                            @(string.IsNullOrEmpty(selectedProject) || string.IsNullOrEmpty(selectedMonth) || string.IsNullOrEmpty(selectedYear)
+                                ? "Select Project, Billing Month and Billing Year, then click Search Bills."
+                                : "No records found for the selected criteria.")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model != null && !string.IsNullOrEmpty(selectedProject) && !string.IsNullOrEmpty(selectedMonth) && !string.IsNullOrEmpty(selectedYear))
+    {
+        <p class="mt-2 mb-1"><strong>Total Records:</strong> @Model.TotalRecords</p>
+    }
+
+    @if (Model != null && Model.TotalPages > 1)
+    {
+        <div class="pagination-wrap">
+            <span class="text-muted small">
+                Showing @((Model.PageNumber - 1) * Model.PageSize + 1)–@(Math.Min(Model.PageNumber * Model.PageSize, Model.TotalRecords)) of @Model.TotalRecords
+            </span>
+            <nav aria-label="Page navigation">
+                <ul class="pagination mb-0">
+                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link"
+                           asp-action="AllBills"
+                           asp-route-project="@selectedProject"
+                           asp-route-month="@selectedMonth"
+                           asp-route-year="@selectedYear"
+                           asp-route-custNoOrName="@custNoOrName"
+                           asp-route-page="@(Model.PageNumber - 1)"
+                           aria-label="Previous">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    @for (int i = paginationStartPage; i <= paginationEndPage; i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link"
+                               asp-action="AllBills"
+                               asp-route-project="@selectedProject"
+                               asp-route-month="@selectedMonth"
+                               asp-route-year="@selectedYear"
+                               asp-route-custNoOrName="@custNoOrName"
+                               asp-route-page="@i">
+                                @i
+                            </a>
+                        </li>
+                    }
+                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                        <a class="page-link"
+                           asp-action="AllBills"
+                           asp-route-project="@selectedProject"
+                           asp-route-month="@selectedMonth"
+                           asp-route-year="@selectedYear"
+                           asp-route-custNoOrName="@custNoOrName"
+                           asp-route-page="@(Model.PageNumber + 1)"
+                           aria-label="Next">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <form method="get" asp-action="AllBills" asp-controller="MaintenanceNew" class="go-to-page d-inline">
+                <input type="hidden" name="project" value="@selectedProject" />
+                <input type="hidden" name="month" value="@selectedMonth" />
+                <input type="hidden" name="year" value="@selectedYear" />
+                <input type="hidden" name="custNoOrName" value="@custNoOrName" />
+                <label class="mb-0 small text-muted">Go to</label>
+                <input type="number" name="page" min="1" max="@Model.TotalPages" value="@Model.PageNumber" class="form-control form-control-sm" style="width:56px; display:inline-block; padding:4px 6px;" />
+                <button type="submit" class="btn btn-sm btn-secondary">Go</button>
+            </form>
+        </div>
+    }
+
+    <p class="text-muted small mt-2">Double-click a row to open the printable bill in a new tab.</p>
+</div>

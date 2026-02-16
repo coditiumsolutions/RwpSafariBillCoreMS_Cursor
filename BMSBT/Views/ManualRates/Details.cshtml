@@ -1,0 +1,55 @@
+@model BMSBT.Models.ManualRate
+@{
+    ViewData["Title"] = "Manual Rate Details";
+    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h4>Manual Rate Details</h4>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Customer No</dt>
+                <dd class="col-sm-9">@Model.CustomerNo</dd>
+
+                <dt class="col-sm-3">Phase</dt>
+                <dd class="col-sm-9">@Model.Phase</dd>
+
+                <dt class="col-sm-3">Size</dt>
+                <dd class="col-sm-9">@(Model.Size ?? "—")</dd>
+
+                <dt class="col-sm-3">Category</dt>
+                <dd class="col-sm-9">@Model.Category</dd>
+
+                <dt class="col-sm-3">Unit Type</dt>
+                <dd class="col-sm-9">@Model.UnitType</dd>
+
+                <dt class="col-sm-3">Misc</dt>
+                <dd class="col-sm-9">@Model.Misc</dd>
+
+                <dt class="col-sm-3">Tax</dt>
+                <dd class="col-sm-9">@Model.Tax</dd>
+
+                <dt class="col-sm-3">Maint Charges</dt>
+                <dd class="col-sm-9">@Model.MaintCharges</dd>
+            </dl>
+
+            <div class="form-group">
+                <a asp-action="Edit" asp-route-id="@Model.SNo" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <form asp-action="Delete" asp-route-id="@Model.SNo" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this record?');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </form>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

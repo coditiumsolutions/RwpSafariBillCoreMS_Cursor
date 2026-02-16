@@ -28,14 +28,24 @@
     .details-grid {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr 1fr;
-        gap: 15px 20px;
         margin-top: 20px;
+        border: 1px solid #dee2e6;
     }
 
-        .details-grid .label {
-            font-weight: bold;
-            color: #333;
-        }
+    .details-grid .cell {
+        border: 1px solid #dee2e6;
+        padding: 10px 12px;
+    }
+
+    .details-grid .label {
+        font-weight: bold;
+        color: #333;
+        background-color: #f8f9fa;
+    }
+
+    .details-grid .cell.summary-row {
+        font-weight: 600;
+    }
 
     .invoice-footer {
         margin-top: 30px;
@@ -66,42 +76,37 @@
     </div>
 
     <div class="details-grid">
-        <!-- Basic Information -->
-        <div class="label">Invoice No</div><div>@Model.InvoiceNo</div>
-        <div class="label">Customer No</div><div>@Model.CustomerNo</div>
-        <div class="label">Customer Name</div><div>@Model.CustomerName</div>
-        <div class="label">BT No</div><div>@Model.Btno</div>
-        <div class="label">Plot Status</div><div>@Model.PlotStatus</div>
-        <div class="label">Meter No</div><div>@Model.MeterNo</div>
-        
-        <!-- Billing Information -->
-        <div class="label">Billing Month</div><div>@Model.BillingMonth</div>
-        <div class="label">Billing Year</div><div>@Model.BillingYear</div>
-        <div class="label">Billing Date</div><div>@Model.BillingDate?.ToString("dd-MM-yyyy")</div>
-        <div class="label">Issue Date</div><div>@Model.IssueDate?.ToString("dd-MM-yyyy")</div>
-        <div class="label">Due Date</div><div>@Model.DueDate?.ToString("dd-MM-yyyy")</div>
-        <div class="label">Valid Date</div><div>@Model.ValidDate?.ToString("dd-MM-yyyy")</div>
-        
-        <!-- Payment Information -->
-        <div class="label">Payment Status</div><div>@Model.PaymentStatus</div>
-        <div class="label">Payment Date</div><div>@Model.PaymentDate?.ToString("dd-MM-yyyy")</div>
-        <div class="label">Payment Method</div><div>@Model.PaymentMethod</div>
-        <div class="label">Bank Detail</div><div>@Model.BankDetail</div>
-        
-        <!-- Charges -->
-        <div class="label">Maintenance Charges</div><div>@Model.MaintCharges?.ToString("N2")</div>
-        <div class="label">Arrears</div><div>@Model.Arrears?.ToString("N2")</div>
-        <div class="label">Tax Amount</div><div>@Model.TaxAmount?.ToString("N2")</div>
-        <div class="label">Bill Amount (Due Date)</div><div>@Model.BillAmountInDueDate?.ToString("N2")</div>
-        <div class="label">Bill Surcharge</div><div>@Model.BillSurcharge?.ToString("N2")</div>
-        <div class="label">Bill Amount (After Due)</div><div>@Model.BillAmountAfterDueDate?.ToString("N2")</div>
-        <div class="label">Fine</div><div>@Model.Fine?.ToString("N2")</div>
-        <div class="label">Other Charges</div><div>@Model.OtherCharges?.ToString("N2")</div>
-        <div class="label">Water Charges</div><div>@Model.WaterCharges?.ToString("N2")</div>
-        
-        <!-- Other Information -->
-        <div class="label">Last Updated</div><div>@Model.LastUpdated?.ToString("dd-MM-yyyy HH:mm:ss")</div>
-        <div class="label">History</div><div style="grid-column: span 3;">@Model.History</div>
+        <div class="cell label">Invoice No</div><div class="cell">@Model.InvoiceNo</div>
+        <div class="cell label">Customer No</div><div class="cell">@Model.CustomerNo</div>
+        <div class="cell label">Customer Name</div><div class="cell">@Model.CustomerName</div>
+        <div class="cell label">BT No</div><div class="cell">@Model.Btno</div>
+        <div class="cell label">Plot Status</div><div class="cell">@Model.PlotStatus</div>
+        <div class="cell label">Meter No</div><div class="cell">@Model.MeterNo</div>
+        <div class="cell label">Billing Month</div><div class="cell">@Model.BillingMonth</div>
+        <div class="cell label">Billing Year</div><div class="cell">@Model.BillingYear</div>
+        <div class="cell label">Billing Date</div><div class="cell">@Model.BillingDate?.ToString("dd-MM-yyyy")</div>
+        <div class="cell label">Issue Date</div><div class="cell">@Model.IssueDate?.ToString("dd-MM-yyyy")</div>
+        <div class="cell label">Due Date</div><div class="cell">@Model.DueDate?.ToString("dd-MM-yyyy")</div>
+        <div class="cell label">Valid Date</div><div class="cell">@Model.ValidDate?.ToString("dd-MM-yyyy")</div>
+        <div class="cell label">Payment Status</div><div class="cell">@Model.PaymentStatus</div>
+        <div class="cell label">Payment Date</div><div class="cell">@Model.PaymentDate?.ToString("dd-MM-yyyy")</div>
+        <div class="cell label">Payment Method</div><div class="cell">@Model.PaymentMethod</div>
+        <div class="cell label">Bank Detail</div><div class="cell">@Model.BankDetail</div>
+        <div class="cell label">Maintenance Charges</div><div class="cell">@Model.MaintCharges?.ToString("N2")</div>
+        <div class="cell label">Arrears</div><div class="cell">@Model.Arrears?.ToString("N2")</div>
+        <div class="cell label">Tax Amount</div><div class="cell">@Model.TaxAmount?.ToString("N2")</div>
+        <div class="cell label">Bill Amount (Due Date)</div><div class="cell">@Model.BillAmountInDueDate?.ToString("N2")</div>
+        <div class="cell label">Bill Surcharge</div><div class="cell">@Model.BillSurcharge?.ToString("N2")</div>
+        <div class="cell label">Bill Amount (After Due)</div><div class="cell">@Model.BillAmountAfterDueDate?.ToString("N2")</div>
+        <div class="cell label">Fine</div><div class="cell">@Model.Fine?.ToString("N2")</div>
+        <div class="cell label">Other Charges</div><div class="cell">@Model.OtherCharges?.ToString("N2")</div>
+        <div class="cell label">Water Charges</div><div class="cell">@Model.WaterCharges?.ToString("N2")</div>
+        <div class="cell label">Last Updated</div><div class="cell">@Model.LastUpdated?.ToString("dd-MM-yyyy HH:mm:ss")</div>
+        <div class="cell label">History</div><div class="cell" style="grid-column: span 3;">@Model.History</div>
+        <div class="cell label summary-row">G. Total Rs</div><div class="cell summary-row">@(Model.BillAmountInDueDate?.ToString("N2") ?? "0.00")</div>
+        <div class="cell label summary-row">Amount Payable within due Date Rs</div><div class="cell summary-row">@(Model.BillAmountInDueDate?.ToString("N2") ?? "0.00")</div>
+        <div class="cell label summary-row">Surcharge Rs</div><div class="cell summary-row">@(Model.BillSurcharge?.ToString("N2") ?? "0.00")</div>
+        <div class="cell label summary-row">Amount Payable after due date Rs</div><div class="cell summary-row">@(Model.BillAmountAfterDueDate?.ToString("N2") ?? "0.00")</div>
     </div>
 
     <div class="invoice-footer">

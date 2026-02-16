@@ -1,0 +1,117 @@
+@model BMSBT.Models.ManualRate
+@{
+    ViewData["Title"] = "Create Manual Rate";
+    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header" style="background-color:#101f63;color:white;">
+            <h4>Create New Manual Rate</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="CustomerNo" class="control-label">Customer No</label>
+                            <input asp-for="CustomerNo" class="form-control" maxlength="50" />
+                            <span asp-validation-for="CustomerNo" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="Phase" class="control-label"></label>
+                            <input asp-for="Phase" class="form-control" maxlength="100" />
+                            <span asp-validation-for="Phase" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="Size" class="control-label"></label>
+                            <input asp-for="Size" class="form-control" maxlength="50" />
+                            <span asp-validation-for="Size" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="Category" class="control-label"></label>
+                            <input asp-for="Category" class="form-control" maxlength="100" />
+                            <span asp-validation-for="Category" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="UnitType" class="control-label">Unit Type</label>
+                            <input asp-for="UnitType" class="form-control" maxlength="50" />
+                            <span asp-validation-for="UnitType" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="Misc" class="control-label"></label>
+                            <input asp-for="Misc" class="form-control" type="number" min="0" />
+                            <span asp-validation-for="Misc" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="Tax" class="control-label"></label>
+                            <input asp-for="Tax" class="form-control" type="number" min="0" />
+                            <span asp-validation-for="Tax" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label asp-for="MaintCharges" class="control-label">Maint Charges</label>
+                            <input asp-for="MaintCharges" class="form-control" type="number" min="0" />
+                            <span asp-validation-for="MaintCharges" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="control-label">Total</label>
+                            <input type="text" class="form-control" readonly="readonly" id="totalDisplay" value="0" />
+                            <small class="text-muted">Calculated (Misc + Tax + Maint Charges)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <button type="submit" class="btn btn-success">Create</button>
+                    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var misc = document.querySelector('input[name="Misc"]');
+            var tax = document.querySelector('input[name="Tax"]');
+            var maint = document.querySelector('input[name="MaintCharges"]');
+            var totalDisplay = document.getElementById('totalDisplay');
+            function updateTotal() {
+                var m = parseInt(misc.value) || 0;
+                var t = parseInt(tax.value) || 0;
+                var c = parseInt(maint.value) || 0;
+                totalDisplay.value = m + t + c;
+            }
+            if (misc) misc.addEventListener('input', updateTotal);
+            if (tax) tax.addEventListener('input', updateTotal);
+            if (maint) maint.addEventListener('input', updateTotal);
+            updateTotal();
+        })();
+    </script>
+}

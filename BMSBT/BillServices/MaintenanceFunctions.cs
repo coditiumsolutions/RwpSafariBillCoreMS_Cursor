@@ -31,20 +31,41 @@ namespace BMSBT.BillServices
             if (customer == null)
                 return $"Customer with ID {customerId} not found.";
 
-            // Check if the bill has already been generated
+            // --- LotusScript: duplicate check (key = RefrenceNoBarCode + Billing_Year + Billing_Month) ---
             if (IsBillAlreadyGenerated(customer, currentBillingMonth, currentBillingYear))
             {
-                UpdateGeneratedMonthYear(customer, $"Bill already generated for {previousMonth} {previousYear}");
+                customer.BillGenerationStatus = $"Bill Already Generated-{currentBillingYear}-{currentBillingMonth}";
+                _dbContext.Update(customer);
+                _dbContext.SaveChanges();
                 return $"Bill already generated for customer {customer.CustomerName}.";
             }
 
-            // Retrieve tariff details for the current billing period
-            var tariff = GetTarrifDetails(customer, currentBillingMonth, currentBillingYear);
-            if (tariff == null)
+            // --- LotusScript: disconnected customer check ---
+            if (string.Equals(customer.ConnectionStatus?.Trim(), "Disconnected", StringComparison.OrdinalIgnoreCase))
             {
-                UpdateGeneratedMonthYear(customer, $"Tariff not found for {customer.Project} {customer.PlotType} {customer.Size}");
-                return $"Tariff not found for customer {customer.CustomerName}.";
+                customer.BillGenerationStatus = "Disconnected Customer";
+                _dbContext.Update(customer);
+                _dbContext.SaveChanges();
+                return $"Disconnected customer: {customer.CustomerName}. Bill not generated.";
             }
+
+            // Pick Rate by SubProject from CustomersMaintenance matching Rates.Phase.
+            // Use:
+            // - Rates.MaintCharges  -> MaintenanceBills.MaintCharges
+            // - Rates.Tax           -> MaintenanceBills.TaxAmount
+            // - Rates.Misc          -> MaintenanceBills.MiscCharges (and include in total bill)
+            var rate = GetRateByPhase(customer.SubProject);
+            if (rate == null)
+            {
+                customer.BillGenerationStatus = "Rates Undefined";
+                _dbContext.Update(customer);
+                _dbContext.SaveChanges();
+                return $"Rates undefined for SubProject/Phase={customer.SubProject}. Bill not generated for {customer.CustomerName}.";
+            }
+
+            decimal maintCharges = rate.MaintCharges;
+            decimal taxAmount = rate.Tax;
+            decimal miscCharges = rate.Misc;
 
             // Check previous bill and determine arrears
             decimal? arrearsAmount = 0;
@@ -55,9 +76,13 @@ namespace BMSBT.BillServices
             {
                 if (!IsNewCustomer(customer))
                 {
-                    UpdateGeneratedMonthYear(customer, $"Previous bill not found. Previous Month: {previousMonth}");
-                    return $"Previous bill not found for customer {customer.BTNo}.";
+                    // Last month bill not found but customer has other bill(s) -> do not generate (LotusScript: previous bill not exist)
+                    customer.BillGenerationStatus = "previous bill not exist";
+                    _dbContext.Update(customer);
+                    _dbContext.SaveChanges();
+                    return $"Previous bill not found for customer {customer.BTNo}. Bill not generated.";
                 }
+                // No bills at all (no bill in last 12 months / new customer) -> continue to generate with arrears 0
             }
             else
             {
@@ -69,10 +94,10 @@ namespace BMSBT.BillServices
             }
 
 
-            // Generate a new bill with arrears
+            // Generate a new bill with arrears (MaintCharges + MiscCharges from Rates table)
             var newBill = CreateNewBill(customer, currentBillingMonth, currentBillingYear,
-                                        Convert.ToDecimal(tariff.Charges), Convert.ToDecimal(tariff.Tax),
-                                        IssueDate, DueDate, arrearsAmount); // Pass arrears
+                                        maintCharges, taxAmount, miscCharges,
+                                        IssueDate, DueDate, arrearsAmount);
 
             // Assign an invoice number and update the status
             AssignInvoiceNo(newBill);
@@ -138,7 +163,20 @@ namespace BMSBT.BillServices
 
 
 
-        private MaintenanceTarrif GetTarrifDetails(CustomersMaintenance customer, string month, string year)
+        /// <summary>Look up Rates by Phase = CustomersMaintenance.SubProject. Returns null if no matching active rate. MaintCharges from this rate is used for MaintenanceBills.MaintCharges.</summary>
+        private Rate? GetRateByPhase(string? subProject)
+        {
+            var phase = subProject?.Trim() ?? "";
+            if (string.IsNullOrEmpty(phase))
+                return null;
+
+            return _dbContext.Rates
+                .AsEnumerable()
+                .FirstOrDefault(r =>
+                    string.Equals(r.Phase?.Trim(), phase, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private MaintenanceTarrif? GetTarrifDetails(CustomersMaintenance customer, string month, string year)
             {
                 // Fetch the customer details based on the BTNo
                 var customerDetail = _dbContext.CustomersMaintenance.FirstOrDefault(c => c.BTNo == customer.BTNo);
@@ -152,11 +190,19 @@ namespace BMSBT.BillServices
             }
 
 
+        /// <summary>Effective BTNo from CustomersMaintenance: BTNoMaintenance if set, else BTNo. Used when adding or matching MaintenanceBills.</summary>
+        private static string? GetEffectiveBTNo(CustomersMaintenance customer)
+        {
+            return !string.IsNullOrWhiteSpace(customer.BTNoMaintenance) ? customer.BTNoMaintenance.Trim() : customer.BTNo?.Trim();
+        }
+
         private MaintenanceBill? GetPreviousBill(CustomersMaintenance customer, string month, string year)
         {
+            var btNo = GetEffectiveBTNo(customer);
+            if (string.IsNullOrEmpty(btNo)) return null;
             return _dbContext.MaintenanceBills
                 .FirstOrDefault(b =>
-                    b.Btno == customer.BTNo &&
+                    b.Btno == btNo &&
                     b.BillingMonth == month &&
                     b.BillingYear == year);
         }
@@ -164,10 +210,9 @@ namespace BMSBT.BillServices
 
         public bool IsNewCustomer(CustomersMaintenance customer)
             {
-                // Check if any maintenance bill exists for the given Btno
-                bool billExists = _dbContext.MaintenanceBills.Any(b => b.Btno == customer.BTNo);
-
-                // Return false if a bill exists, otherwise true
+                var btNo = GetEffectiveBTNo(customer);
+                if (string.IsNullOrEmpty(btNo)) return true;
+                bool billExists = _dbContext.MaintenanceBills.Any(b => b.Btno == btNo);
                 return !billExists;
             }
 
@@ -178,8 +223,10 @@ namespace BMSBT.BillServices
 
         private bool IsBillAlreadyGenerated(CustomersMaintenance customer, string month, string year)
         {
+            var btNo = GetEffectiveBTNo(customer);
+            if (string.IsNullOrEmpty(btNo)) return false;
             return _dbContext.MaintenanceBills.Any(b =>
-                b.Btno == customer.BTNo && b.BillingMonth == month && b.BillingYear == year);
+                b.Btno == btNo && b.BillingMonth == month && b.BillingYear == year);
         }
 
 
@@ -194,6 +241,7 @@ namespace BMSBT.BillServices
     string year,
     decimal amount,
     decimal tax,
+    decimal misc,
     DateOnly? IssueDate,
     DateOnly? DueDate,
     decimal? ArrearAmount)
@@ -202,38 +250,44 @@ namespace BMSBT.BillServices
             decimal amountDec = amount;
             decimal taxDec = tax;
             decimal actualArrearDec = ArrearAmount ?? 0m;
+            decimal miscDec = misc;
 
-            // Look up Maintenance fines for this BTNo/FineMonth/FineYear
+            // Look up Maintenance fines for this BTNo/FineMonth/FineYear (use effective BTNo from CustomersMaintenance)
+            var btNo = GetEffectiveBTNo(customer);
             int parsedYear;
             int.TryParse(year, out parsedYear);
 
-            // Sum FineToCharge from Fine table (this is "Fine" for the bill)
-            var fineTotalDec = _dbContext.Fine
-                .Where(f =>
-                    f.BTNo == customer.BTNo &&
-                    f.FineMonth == month &&
-                    f.FineYear == parsedYear &&
-                    f.FineService == "Maintenance")
-                .Select(f => (decimal?)f.FineToCharge)
-                .Sum() ?? 0m;
+            var fineTotalDec = 0m;
+            decimal waterCharges = 0m;
+            decimal otherCharges = 0m;
+            if (!string.IsNullOrEmpty(btNo))
+            {
+                fineTotalDec = _dbContext.Fine
+                    .Where(f =>
+                        f.BTNo == btNo &&
+                        f.FineMonth == month &&
+                        f.FineYear == parsedYear &&
+                        f.FineService == "Maintenance")
+                    .Select(f => (decimal?)f.FineToCharge)
+                    .Sum() ?? 0m;
 
-            // --- New: Fetch Additional Charges (Water & Other) from AdditionalCharges table ---
-            decimal waterCharges = _dbContext.AdditionalCharges
-                .Where(a => a.BTNo == customer.BTNo && 
-                           a.ServiceType == "Maintenance" && 
-                           a.ChargesName == "Water Charges")
-                .Select(a => a.ChargesAmount)
-                .FirstOrDefault() ?? 0m;
+                waterCharges = _dbContext.AdditionalCharges
+                    .Where(a => a.BTNo == btNo &&
+                               a.ServiceType == "Maintenance" &&
+                               a.ChargesName == "Water Charges")
+                    .Select(a => a.ChargesAmount)
+                    .FirstOrDefault() ?? 0m;
 
-            decimal otherCharges = _dbContext.AdditionalCharges
-                .Where(a => a.BTNo == customer.BTNo && 
-                           a.ServiceType == "Maintenance" && 
-                           a.ChargesName == "Other Charges")
-                .Select(a => a.ChargesAmount)
-                .FirstOrDefault() ?? 0m;
+                otherCharges = _dbContext.AdditionalCharges
+                    .Where(a => a.BTNo == btNo &&
+                               a.ServiceType == "Maintenance" &&
+                               a.ChargesName == "Other Charges")
+                    .Select(a => a.ChargesAmount)
+                    .FirstOrDefault() ?? 0m;
+            }
 
-            // 1) Bill due on‑time: BillAmountInDueDate = MaintCharges + TaxAmount + Arrears + Fine + WaterCharges + OtherCharges
-            decimal billInDueDate = Math.Round(amountDec + taxDec + actualArrearDec + fineTotalDec + waterCharges + otherCharges, 0);
+            // 1) Bill due on‑time: BillAmountInDueDate = MaintCharges + TaxAmount + Arrears + Fine + WaterCharges + OtherCharges + MiscCharges
+            decimal billInDueDate = Math.Round(amountDec + taxDec + actualArrearDec + fineTotalDec + waterCharges + otherCharges + miscDec, 0);
 
             // 2) 10% surcharge on (Charges + Tax)
             decimal baseChargesAndTax = amountDec + taxDec;
@@ -246,25 +300,27 @@ namespace BMSBT.BillServices
             decimal taxAmount = Math.Round(taxDec, 0);
             decimal arrearsAmt = Math.Round(actualArrearDec, 0);
 
+            var btNoFromCustomer = GetEffectiveBTNo(customer);
+
             var newBill = new MaintenanceBill
             {
                 CustomerNo = customer.CustomerNo,
                 CustomerName = customer.CustomerName,
-                Btno = customer.BTNo,
+                Btno = btNoFromCustomer,
                 BillingMonth = month,
                 BillingYear = year,
 
-                // Assign the rounded values
-                BillAmountInDueDate = billInDueDate,
-                BillSurcharge = surcharge,
-                BillAmountAfterDueDate = billAfterDue,
-                TaxAmount = taxAmount,
-                Arrears = arrearsAmt,
-                MaintCharges = amount,
-                // Store Fine (sum of FineToCharge) into Fine column
-                Fine = fineTotalDec,
-                WaterCharges = waterCharges,
-                OtherCharges = otherCharges,
+                // Assign as int (DB columns are int)
+                BillAmountInDueDate = (int)billInDueDate,
+                BillSurcharge = (int)surcharge,
+                BillAmountAfterDueDate = (int)billAfterDue,
+                TaxAmount = (int)taxAmount,
+                Arrears = (int)arrearsAmt,
+                MaintCharges = (int)amount,
+                Fine = (int)fineTotalDec,
+                WaterCharges = (int)waterCharges,
+                OtherCharges = (int)otherCharges,
+                MiscCharges = (int)miscDec,
                 IssueDate = IssueDate,
                 DueDate = DueDate,
 

@@ -30,12 +30,16 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
         var now = DateTime.Now;
         var today = DateOnly.FromDateTime(now);
 
-        // Lookup tariff based on Project, PlotType, Size
-        var tariff = LookupTariff(dto.Project, dto.PlotType, dto.Size);
-        
-        // Use tariff values if found, otherwise use 0 as default
-        decimal maintCharges = tariff != null ? (decimal)tariff.Charges : 0m;
-        decimal taxAmount = tariff != null ? ParseTaxValue(tariff.Tax) : 0m;
+        // Match: CustomersMaintenance.SubProject = Rates.Phase; Fetch: Rates.MaintCharges, Rates.Tax, Rates.Misc
+        var rate = LookupRateByPhase(dto.SubProject);
+        if (rate == null)
+        {
+            throw new InvalidOperationException("Rates Undefined");
+        }
+
+        decimal maintCharges = rate.MaintCharges;
+        decimal taxAmount = rate.Tax;
+        decimal miscCharges = rate.Misc;
 
         // Carry forward arrears logic
         decimal arrears = 0;
@@ -75,8 +79,8 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
                 .FirstOrDefaultAsync(cancellationToken) ?? 0m;
         }
 
-        // Calculate billing amounts based on tariff values, arrears, fine, and additional charges
-        var billingCalculations = CalculateBillingAmounts(maintCharges, taxAmount, arrears, fineToChargeSum, waterCharges, otherCharges);
+        // Calculate billing amounts based on tariff values, arrears, fine, and additional charges (including MiscCharges from Rates)
+        var billingCalculations = CalculateBillingAmounts(maintCharges, taxAmount, arrears, fineToChargeSum, waterCharges, otherCharges + miscCharges);
 
         var bill = new MaintenanceBill
         {
@@ -91,18 +95,18 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
             BillingMonth = dto.BillingMonth,
             BillingYear = dto.BillingYear,
 
-            // Tariff-based values (dynamically calculated from MaintenanceTarrif table)
-            MaintCharges = maintCharges,
-            TaxAmount = taxAmount,
+            // Tariff-based values (DB columns are int)
+            MaintCharges = (int)maintCharges,
+            TaxAmount = (int)taxAmount,
 
-            // Billing calculations (dynamically calculated based on MaintCharges + TaxAmount)
-            BillAmountInDueDate = billingCalculations.BillAmountInDueDate,
-            BillSurcharge = billingCalculations.BillSurcharge,
-            BillAmountAfterDueDate = billingCalculations.BillAmountAfterDueDate,
-            Arrears = arrears,
-            Fine = fineToChargeSum,
-            OtherCharges = otherCharges,
-            WaterCharges = waterCharges,
+            BillAmountInDueDate = (int)billingCalculations.BillAmountInDueDate,
+            BillSurcharge = (int)billingCalculations.BillSurcharge,
+            BillAmountAfterDueDate = (int)billingCalculations.BillAmountAfterDueDate,
+            Arrears = (int)arrears,
+            Fine = (int)fineToChargeSum,
+            OtherCharges = (int)otherCharges,
+            WaterCharges = (int)waterCharges,
+            MiscCharges = (int)miscCharges,
 
             // Dates
             // Prefer values provided by caller (e.g., from OperatorsSetup), else fallback to today
@@ -130,23 +134,18 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
     }
 
     /// <summary>
-    /// Looks up MaintenanceTarrif record matching Project, PlotType, and Size.
-    /// Returns null if no match found.
+    /// Matches: CustomersMaintenance.SubProject = Rates.Phase. Fetches Rates.MaintCharges and Rates.Tax.
     /// </summary>
-    private MaintenanceTarrif? LookupTariff(string? project, string? plotType, string? size)
+    private Rate? LookupRateByPhase(string? subProject)
     {
-        if (string.IsNullOrWhiteSpace(project) || 
-            string.IsNullOrWhiteSpace(plotType) || 
-            string.IsNullOrWhiteSpace(size))
-        {
-            return null; // Cannot lookup without all three attributes
-        }
+        var phase = subProject?.Trim() ?? "";
+        if (string.IsNullOrEmpty(phase))
+            return null;
 
-        return _dbContext.MaintenanceTarrifs
-            .FirstOrDefault(t => 
-                t.Project == project.Trim() &&
-                t.PlotType == plotType.Trim() &&
-                t.Size == size.Trim());
+        return _dbContext.Rates
+            .AsEnumerable()
+            .FirstOrDefault(r =>
+                string.Equals(r.Phase?.Trim(), phase, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>

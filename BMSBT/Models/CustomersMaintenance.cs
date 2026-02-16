@@ -98,6 +98,10 @@ namespace BMSBT.Models
 
         [StringLength(50)]
         public string? MeterNo { get; set; }
+
+        /// <summary>Connection status; "Disconnected" skips bill generation (LotusScript logic).</summary>
+        [StringLength(50)]
+        public string? ConnectionStatus { get; set; }
     }
 
 

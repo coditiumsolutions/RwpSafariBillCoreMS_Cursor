@@ -1,0 +1,188 @@
+@model BMSBT.Models.MaintenanceBill
+@{
+    Layout = null;
+    var project = ViewBag.Project as string ?? "";
+    var total = Model.BillAmountInDueDate ?? 0;
+    var lpSurcharge = Model.BillSurcharge ?? 0;
+    var payAfterDue = Model.BillAmountAfterDueDate ?? (total + lpSurcharge);
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Maintenance Bill</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        .bill-container {
+            width: 800px;
+            margin: auto;
+            border: 1px solid #000;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        .bill-info {
+            margin-top: 20px;
+        }
+
+        .bill-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .bill-info-table td {
+            padding: 6px 10px;
+            border: none;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .bill-info-table td.caption {
+            font-weight: bold;
+            width: 22%;
+        }
+
+        .bill-info-table td.value {
+            width: 28%;
+        }
+
+        .charges-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .charges-table td {
+            border: 1px solid black;
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        .charges-table td.caption {
+            font-weight: bold;
+            width: 22%;
+        }
+
+        .charges-table td.value {
+            width: 28%;
+        }
+
+        .amounts-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .amounts-table th, .amounts-table td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .total-row {
+            font-weight: bold;
+        }
+
+        @@media print {
+            .no-print {
+                display: none !important;
+            }
+            body { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bill-container">
+
+    <div class="header">
+        <h2>Safari Maintenance Services</h2>
+        <h4>Maintenance Bill</h4>
+    </div>
+
+    <div class="bill-info">
+        <table class="bill-info-table">
+            <tr>
+                <td class="caption">Customer No:</td>
+                <td class="value">@(Model.CustomerNo ?? "—")</td>
+                <td class="caption">Customer Name:</td>
+                <td class="value">@(Model.CustomerName ?? "—")</td>
+            </tr>
+            <tr>
+                <td class="caption">Phase / Project:</td>
+                <td class="value">@(string.IsNullOrEmpty(project) ? "—" : project)</td>
+                <td class="caption">Month:</td>
+                <td class="value">@(Model.BillingMonth ?? "—")</td>
+            </tr>
+            <tr>
+                <td class="caption">Year:</td>
+                <td class="value">@(Model.BillingYear ?? "—")</td>
+                <td class="caption">Invoice No:</td>
+                <td class="value">@(Model.InvoiceNo ?? "—")</td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="charges-table">
+        <tbody>
+            <tr>
+                <td class="caption">Maint Charges</td>
+                <td class="value">@((Model.MaintCharges ?? 0).ToString("N0"))</td>
+                <td class="caption">Sales Tax</td>
+                <td class="value">@((Model.TaxAmount ?? 0).ToString("N0"))</td>
+            </tr>
+            <tr>
+                <td class="caption">Other Charges</td>
+                <td class="value">@((Model.OtherCharges ?? 0).ToString("N0"))</td>
+                <td class="caption">Water Charges</td>
+                <td class="value">@((Model.WaterCharges ?? 0).ToString("N0"))</td>
+            </tr>
+            <tr>
+                <td class="caption">Adv. Payment</td>
+                <td class="value">0</td>
+                <td class="caption">Trolley Trip</td>
+                <td class="value">0</td>
+            </tr>
+            <tr>
+                <td class="caption">Food Safety</td>
+                <td class="value">0</td>
+                <td class="caption">Misc. Charges</td>
+                <td class="value">@((Model.MiscCharges ?? 0).ToString("N0"))</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="amounts-table">
+        <tbody>
+            <tr class="total-row">
+                <td style="text-align: left; width: 70%;">Total (Amount in Due Date)</td>
+                <td>@total.ToString("N2")</td>
+            </tr>
+            <tr>
+                <td style="text-align: left;">L.P. SURCHARGE (10 Percent)</td>
+                <td>@lpSurcharge.ToString("N2")</td>
+            </tr>
+            <tr class="total-row">
+                <td style="text-align: left;">PAY AFTER DUE DATE</td>
+                <td>@payAfterDue.ToString("N2")</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br />
+
+    <button type="button" onclick="window.print();" class="no-print">Print</button>
+
+</div>
+
+</body>
+</html>

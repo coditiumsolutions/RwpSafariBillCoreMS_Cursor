@@ -41,6 +41,10 @@
             text-decoration: none !important;
         }
 
+        .sidebar-divider {
+            border-color: #dee2e6;
+        }
+
         .user-info {
             color: #0056b3; /* Dark gray */
             font-size: 16px; /* Reduce font size */
@@ -57,7 +61,7 @@
             <a class="navbar-brand" href="#">
                 <img src="~/images/logo.png" alt="Logo" class="logo-margin" style="height: 70px; margin-left: 10px;">
             </a>
-            <span class="navbar-text text-white">Bahria Town: Billing System</span>
+            <span class="navbar-text text-white">Safari Rawalpindi</span>
         </div>
     </nav>
 
@@ -100,31 +104,36 @@
 
 
                     <li>
-                        <a asp-controller="SSQCustomers" asp-action="Dashboard">
-                            <i class="fas fa-user-friends" style="color: yellowgreen; font-size: 14px;"></i>
-                            Customers                           
+                        <a asp-controller="MaintenanceNew" asp-action="CustomersMaintenance">
+                            <i class="fas fa-user-cog" style="color: yellowgreen; font-size: 14px;"></i>
+                            M-Customers
                         </a>
                     </li>
-
-                   
-                    <li>
-                        <a asp-controller="EBillU" asp-action="Index">
-                            <i class='fas fa-bolt' style="color: yellowgreen; font-size: 14px;"></i>
-                            Elect Bills
-                        </a>
-                    </li>
-
 
                     <li>
                         <a asp-controller="MaintenanceNew" asp-action="Index">
                             <i class='fas fa-money-bill' style="color: yellowgreen; font-size: 14px;"></i>
-                            Maint Bills
+                            M-Bills
                         </a>
                     </li>
 
+                    <li>
+                        <span class="nav-link" style="cursor: not-allowed; color: #0056b3;">
+                            <i class="fas fa-user-friends" style="color: yellowgreen; font-size: 14px;"></i>
+                            E-Customers
+                        </span>
+                    </li>
 
+                    <li><hr class="my-2 sidebar-divider" /></li>
 
+                    <li>
+                        <span class="nav-link" style="cursor: not-allowed; color: #0056b3;">
+                            <i class='fas fa-bolt' style="color: yellowgreen; font-size: 14px;"></i>
+                            E-Bills
+                        </span>
+                    </li>
 
+                    <li><hr class="my-2 sidebar-divider" /></li>
 
                     <!-- Twistee with collapsible internal links (BMS Home) -->
                     <li class="nav-item">

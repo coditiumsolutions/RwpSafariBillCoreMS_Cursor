@@ -1,19 +1,6 @@
-﻿@using BMSBT.DTO
 @using System.Globalization
-@using X.PagedList
-@using X.PagedList.Mvc.Core
-@model IPagedList<BillDTO>
-
 @{
     Layout = "~/Views/Shared/_LayoutMaintBills.cshtml";
-    var bills = Model ?? new StaticPagedList<BillDTO>(Enumerable.Empty<BillDTO>(), 1, 1, 0);
-    var groupedByProject = bills
-        .GroupBy(b => b.Project)
-        .Select(pg => new
-        {
-            Project = pg.Key,
-            Blocks = pg.GroupBy(b => b.Block).OrderBy(bg => bg.Key)
-        });
 }
 
 <div id="loadingOverlay" class="loading-overlay" style="display:none;">
@@ -56,37 +43,6 @@
         }
     }
 
-    .project-header {
-        background: #e3f2fd;
-        cursor: pointer;
-    }
-
-    .block-header {
-        background: #f5f5f5;
-        cursor: pointer;
-    }
-
-    .category-header {
-        background: #f0f8ff;
-        cursor: pointer;
-    }
-
-    .toggle-icon {
-        transition: transform .3s;
-    }
-
-    .rotate-icon {
-        transform: rotate(90deg);
-    }
-
-    .nested-table {
-        width: 100%;
-        margin-bottom: 0;
-    }
-
-    .search-panel {
-        margin: 15px 0;
-    }
 </style>
 
 @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
@@ -99,213 +55,90 @@
 }
 
 <form id="filterForm" method="post" asp-action="PrintMMultiBills" asp-controller="MaintenanceNew">
-    <div class="row g-3">
+    <div class="row g-3 align-items-end">
         <div class="col-md-3">
-            <select id="Project" name="Project" class="form-control" onchange="loadSectorsAndBlocks()">
-                <option value="">Select Project</option>
+            <label class="form-label">Project</label>
+            <select id="Project" name="project" class="form-control" required>
+                <option value="">-- Select Project --</option>
                 @foreach (var project in (List<string>)ViewBag.Projects)
                 {
-                    <option>@project</option>
+                    <option value="@project">@project</option>
                 }
             </select>
         </div>
-
-
         <div class="col-md-3">
+            <label class="form-label">Billing Month</label>
             <select id="month" name="month" class="form-control" required>
                 <option value="">-- Month --</option>
                 @foreach (var name in CultureInfo.CurrentCulture.DateTimeFormat.MonthNames.Take(12))
                 {
-                    <option>@name</option>
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        <option value="@name">@name</option>
+                    }
                 }
             </select>
         </div>
-
-
-
-    </div>
-    <div class="row" style="margin-top:20px">
         <div class="col-md-3">
+            <label class="form-label">Billing Year</label>
             <select id="year" name="year" class="form-control" required>
                 <option value="">-- Year --</option>
                 @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 10; y--)
                 {
-                    <option>@y</option>
+                    <option value="@y">@y</option>
                 }
             </select>
         </div>
-        <div class="col-md-3">
-            <select id="BlockDropdown" name="Block" class="form-control"><option value="">Select Block</option></select>
-        </div>
-        <div class="col-md-3">
-            <select id="Category" name="Category" class="form-control">
-                <option value="">Select Category</option>
-                <option value="Residential">Residential</option>
-                <option value="Commercial">Commercial</option>
-            </select>
-        </div>
-
-        <div class="col-md-2 d-flex align-items-end gap-2">
-            <button id="PrintButton" type="button" class="btn btn-primary flex-fill">Print</button>
-            @* <button id="PayRecordsButton" type="button" class="btn btn-success flex-fill">Pay</button> *@
+        <div class="col-md-2 d-flex align-items-end">
+            <button id="PrintButton" type="button" class="btn btn-primary">Print</button>
         </div>
     </div>
-
-
 </form>
 
-<div class="search-panel">
-    <input id="searchInput" type="text" placeholder="Search..." class="form-control" style="width:100%;max-width:800px;" />
-</div>
-
-<div class="table-responsive">
-    <table class="table" id="maintenanceTable">
-        <thead>
-            <tr>
-                <th></th>
-                <th><input type="checkbox" id="selectAll" /></th>
-                <th>Category</th>
-                <th>Customer Name</th>
-                <th>BT NO</th>
-                <th>Payment Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var pg in groupedByProject)
-            {
-                var pid = Guid.NewGuid().ToString();
-                <tr class="project-header" data-id="@pid">
-                    <td><i class="fas fa-chevron-right toggle-icon"></i></td>
-                    <td colspan="5">Project: @pg.Project</td>
-                </tr>
-                <tr class="project-content" data-parent="@pid" style="display:none;">
-                    <td colspan="6">
-                        @foreach (var bg in pg.Blocks)
-                        {
-                            var bid = Guid.NewGuid().ToString();
-                            <table class="nested-table">
-                                <tr class="block-header" data-id="@bid">
-                                    <td><i class="fas fa-chevron-right toggle-icon"></i></td>
-                                    <td>@bg.Key</td>
-                                </tr>
-                            </table>
-                            <div class="block-content" data-parent="@bid" style="display:none;">
-                                <table class="nested-table">
-                                    @foreach (var cg in bg.GroupBy(b => b.Category).OrderBy(c => c.Key))
-                                    {
-                                        var cid = Guid.NewGuid().ToString();
-                                        <tr class="category-header" data-id="@cid">
-                                            <td><i class="fas fa-chevron-right toggle-icon"></i></td>
-                                            <td>Category: @cg.Key</td>
-                                        </tr>
-                                        <tr class="category-content" data-parent="@cid" style="display:none;">
-                                            <td colspan="2">
-                                                <table class="nested-table">
-                                                    @foreach (var bill in cg)
-                                                    {
-                                                        <tr>
-                                                            <td><input type="checkbox" class="record-checkbox" value="@bill.Uid" /></td>
-                                                            <td>@bill.Category</td>
-                                                            <td>@bill.CustomerName</td>
-                                                            <td>@bill.Btno</td>
-                                                            <td>@bill.PaymentStatus</td>
-                                                        </tr>
-                                                    }
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    }
-                                </table>
-                            </div>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-
-<div class="text-center">
-    @Html.PagedListPager(Model, page => Url.Action("Index", new { page }))
-</div>
+<p class="text-muted mt-3">Select <strong>Project</strong>, <strong>Billing Month</strong> and <strong>Billing Year</strong>, then click <strong>Print</strong> to generate the maintenance bills report (PDF).</p>
 
 @section Scripts {
     <script>
             $(function(){
-              function toggleSection(selector, headerSel, contentSel) {
-                headerSel.click(function(){
-                  var id = $(this).data('id');
-                  $(this).find('.toggle-icon').toggleClass('rotate-icon');
-                  contentSel.filter(`[data-parent='${id}']`).toggle();
-                });
-              }
-              toggleSection('project', $('.project-header'), $('.project-content'));
-              toggleSection('block', $('.block-header'), $('.block-content'));
-              toggleSection('category', $('.category-header'), $('.category-content'));
+              $('#PrintButton').click(function(){
+                var project = $('#Project').val();
+                var month = $('#month').val();
+                var year = $('#year').val();
+                if (!project || !month || !year) {
+                    alert('Please select Project, Billing Month and Billing Year.');
+                    return;
+                }
+                var data = {
+                    project: project,
+                    month: month,
+                    year: year
+                };
 
-              $('#selectAll').change(function(){ $('.record-checkbox:visible').prop('checked',this.checked); });
-
-              $('#searchInput').on('input', function(){
-                var text = this.value.toLowerCase();
-                $('.project-header, .project-content, .block-header, .block-content, .category-header, .category-content').hide();
-                $('.record-checkbox').closest('tr').filter(function(){ return $(this).text().toLowerCase().includes(text); }).each(function(){
-                  $(this).show();
-                  $(this).parents('tr,div').filter('[data-id]').show();
-                });
-              });
-
-              function ajaxAction(url, payload, onSuccess) {
                 $('#loadingOverlay').show();
-                $.ajax({ url, method:'POST', contentType:'application/json', data: JSON.stringify(payload) })
-                  .done(onSuccess)
-                  .fail(err => alert('Error: '+err.statusText))
-                  .always(()=>$('#loadingOverlay').hide());
-              }
 
-                 $('#PrintButton').click(function(){
-        var uids = $('.record-checkbox:checked').map((i, el) => el.value).get();
-        var data = {
-            uids: uids.join(','),
-                    Category: $('#Category').val(),
-            block: $('#BlockDropdown').val(),
-            month: $('#month').val(),
-            year: $('#year').val(),
-            project: $('#Project').val()
-        };
-
-            $('#loadingOverlay').show(); // Show loading
-
-            $.ajax({
-                url: '/PrintMMultiBills',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(data),
-                xhrFields: { responseType: 'blob' }
-            }).done((data, status, xhr) => {
-                var blob = new Blob([data], { type: 'application/pdf' });
-                window.open(URL.createObjectURL(blob));
-            }).fail(err => {
-                alert('Print failed');
-            }).always(() => {
-                $('#loadingOverlay').hide(); // Hide loading
-            });
-        });
-        ;
-
-              $('#PayRecordsButton').click(function(){
-                var uids = $('.record-checkbox:checked').map((i,el)=>el.value).get();
-                // if(!uids.length){ return alert('Select bills to pay'); }
-                ajaxAction('/EBillU/PayEMultiBill', uids, res=>{ alert(res.message || 'Paid'); location.reload(); });
+                $.ajax({
+                    url: '@Url.Action("PrintMMultiBills", "MaintenanceNew")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    xhrFields: { responseType: 'blob' }
+                }).done(function(responseData) {
+                    var blob = new Blob([responseData], { type: 'application/pdf' });
+                    var url = URL.createObjectURL(blob);
+                    window.open(url);
+                }).fail(function(xhr) {
+                    var msg = xhr.responseText || 'Print failed';
+                    if (xhr.responseType === 'blob' && xhr.response) {
+                        var reader = new FileReader();
+                        reader.onload = function() { alert(reader.result); };
+                        reader.readAsText(xhr.response);
+                    } else {
+                        alert(msg);
+                    }
+                }).always(function() {
+                    $('#loadingOverlay').hide();
+                });
               });
             });
-
-            function loadSectorsAndBlocks(){
-              var project = $('#Project').val();
-              if(!project){ $('#SectorDropdown,#BlockDropdown').empty().append('<option>Select</option>'); return; }
-              $.getJSON('/GetSectorsAndBlocks',{project},data=>{
-                var sec=$('#SectorDropdown').empty().append('<option>Select Sector</option>'); data.sectors.forEach(s=>sec.append(`<option>${s}</option>`));
-                var blk=$('#BlockDropdown').empty().append('<option>Select Block</option>'); data.blocks.forEach(b=>blk.append(`<option>${b}</option>`));
-              });
-            }
     </script>
 }

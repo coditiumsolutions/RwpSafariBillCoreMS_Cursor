@@ -55,7 +55,7 @@ namespace BMSBT.Controllers
             ViewBag.SelectedYear = selectedYear;
             ViewBag.SelectedMonth = selectedMonth;
 
-            // Display total number of customers by project
+            // Display total number of customers and breakdown by project
             var customerCountsByProject = _dbContext.CustomersMaintenance
                 .GroupBy(c => c.Project)
                 .Select(g => new
@@ -67,6 +67,7 @@ namespace BMSBT.Controllers
                 .ToList();
 
             ViewBag.ProjectCustomerCounts = customerCountsByProject;
+            ViewBag.TotalCustomerCount = _dbContext.CustomersMaintenance.Count();
 
 
             // Maintenance Bills summary (Generated, Paid, Unpaid) based on selected month/year
@@ -185,7 +186,7 @@ namespace BMSBT.Controllers
 
 
 
-        public async Task<IActionResult> GenerateBill(string selectedProject, string btNoSearch)
+        public async Task<IActionResult> GenerateBill(string selectedProject, string selectedSubProject, string btNoSearch)
         {
             // Set Operator Name, Billing Month, Billing Year from session and Operators Setup
             string userName = HttpContext.Session.GetString("UserName");
@@ -210,12 +211,21 @@ namespace BMSBT.Controllers
 
             // Dropdown projects
             var projects = _dbContext.CustomersMaintenance
-                .Select(p => p.Project.Trim())
+                .Where(c => c.Project != null)
+                .Select(c => c.Project!.Trim())
                 .Distinct()
                 .ToList();
 
-
-
+            // SubProjects for selected project
+            var subProjects = new List<string>();
+            if (!string.IsNullOrEmpty(selectedProject))
+            {
+                subProjects = _dbContext.CustomersMaintenance
+                    .Where(c => c.Project != null && c.Project.Trim() == selectedProject.Trim() && c.SubProject != null)
+                    .Select(c => c.SubProject!.Trim())
+                    .Distinct()
+                    .ToList();
+            }
 
             // Start with empty result
             var filteredData = new List<MaintSectorCustomersViewModel>();
@@ -223,13 +233,17 @@ namespace BMSBT.Controllers
             // Only load if project is selected
             if (!string.IsNullOrEmpty(selectedProject))
             {
-
                 var query = _dbContext.CustomersMaintenance
-            .Where(c => c.Project.Trim() == selectedProject.Trim());
+                    .Where(c => c.Project != null && c.Project.Trim() == selectedProject.Trim());
+
+                if (!string.IsNullOrEmpty(selectedSubProject))
+                {
+                    query = query.Where(c => c.SubProject != null && c.SubProject.Trim() == selectedSubProject.Trim());
+                }
 
                 if (!string.IsNullOrEmpty(btNoSearch))
                 {
-                    query = query.Where(c => c.BTNo.Contains(btNoSearch));
+                    query = query.Where(c => c.BTNo != null && c.BTNo.Contains(btNoSearch));
                 }
 
                 filteredData = query.GroupBy(c => c.Block)
@@ -244,7 +258,9 @@ namespace BMSBT.Controllers
             }
 
             ViewBag.Projects = projects;
+            ViewBag.SubProjects = subProjects;
             ViewBag.SelectedProject = selectedProject;
+            ViewBag.SelectedSubProject = selectedSubProject;
 
             return View(filteredData);
 
@@ -398,6 +414,93 @@ namespace BMSBT.Controllers
         //    });
         //}
 
+        /// <summary>
+        /// Bills summary by project: one table with Project, Customers (from CustomersMaintenance), Bills Generated (for selected month/year).
+        /// </summary>
+        [HttpGet]
+        public IActionResult BillsSummary(string? month, string? year)
+        {
+            ViewBag.Months = GetMonths();
+            ViewBag.Years = GetYears();
+            ViewBag.SelectedMonth = month ?? DateTime.Now.ToString("MMMM");
+            ViewBag.SelectedYear = year ?? DateTime.Now.Year.ToString();
+
+            var selectedMonth = ViewBag.SelectedMonth as string;
+            var selectedYear = ViewBag.SelectedYear as string;
+
+            // Customers count per project (from CustomersMaintenance)
+            var customerSummaryByProject = _dbContext.CustomersMaintenance
+                .GroupBy(c => c.Project)
+                .Select(g => new { Project = g.Key ?? "", Customers = g.Count() })
+                .OrderBy(x => x.Project)
+                .ToList();
+
+            // Bills count per project for selected month/year
+            var billsByProject = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(selectedMonth) && !string.IsNullOrEmpty(selectedYear))
+            {
+                var billsQuery = from mb in _dbContext.MaintenanceBills
+                                 join cm in _dbContext.CustomersMaintenance on mb.CustomerNo equals cm.CustomerNo
+                                 where mb.BillingMonth == selectedMonth && mb.BillingYear == selectedYear
+                                 group mb by cm.Project into g
+                                 select new { Project = g.Key ?? "", Count = g.Count() };
+                foreach (var x in billsQuery)
+                {
+                    billsByProject[x.Project] = x.Count;
+                }
+            }
+
+            // Combined: one row per project with Project, Customers, BillsGenerated
+            var combined = customerSummaryByProject
+                .Select(c => new BillsSummaryCombinedViewModel
+                {
+                    Project = c.Project,
+                    Customers = c.Customers,
+                    BillsGenerated = billsByProject.TryGetValue(c.Project, out var bills) ? bills : 0
+                })
+                .ToList();
+
+            return View(combined);
+        }
+
+        /// <summary>
+        /// AJAX endpoint: returns combined bills summary (Project, Customers, BillsGenerated) for the given month/year.
+        /// </summary>
+        [HttpGet]
+        public IActionResult GetBillsSummaryData(string month, string year)
+        {
+            var customerSummaryByProject = _dbContext.CustomersMaintenance
+                .GroupBy(c => c.Project)
+                .Select(g => new { Project = g.Key ?? "", Customers = g.Count() })
+                .OrderBy(x => x.Project)
+                .ToList();
+
+            var billsByProject = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(month) && !string.IsNullOrEmpty(year))
+            {
+                var billsQuery = from mb in _dbContext.MaintenanceBills
+                                 join cm in _dbContext.CustomersMaintenance on mb.CustomerNo equals cm.CustomerNo
+                                 where mb.BillingMonth == month && mb.BillingYear == year
+                                 group mb by cm.Project into g
+                                 select new { Project = g.Key ?? "", Count = g.Count() };
+                foreach (var x in billsQuery)
+                {
+                    billsByProject[x.Project] = x.Count;
+                }
+            }
+
+            var combined = customerSummaryByProject
+                .Select(c => new BillsSummaryCombinedViewModel
+                {
+                    Project = c.Project,
+                    Customers = c.Customers,
+                    BillsGenerated = billsByProject.TryGetValue(c.Project, out var bills) ? bills : 0
+                })
+                .ToList();
+
+            return Json(combined);
+        }
+
         private List<string> GetMonths()
         {
             return new List<string> { "January", "February", "March", "April", "May", "June", "July",
@@ -406,7 +509,7 @@ namespace BMSBT.Controllers
 
         private List<string> GetYears()
         {
-            return new List<string> { "2024", "2025" };
+            return new List<string> { "2024", "2025", "2026" };
         }
 
 
@@ -767,22 +870,115 @@ namespace BMSBT.Controllers
 
 
 
+        /// <summary>
+        /// All Bill: same three dropdowns as PrintMMultiBills (Project, Billing Month, Billing Year). Displays records in grid with pagination; optional CustNo/Name search; double-click opens Details.
+        /// </summary>
+        [HttpGet]
+        public IActionResult AllBills(string project, string month, string year, string custNoOrName, int? page)
+        {
+            var projects = _dbContext.CustomersMaintenance
+                .Select(c => c.Project.Trim())
+                .Where(p => !string.IsNullOrEmpty(p))
+                .Distinct()
+                .OrderBy(p => p)
+                .ToList();
+            if (projects == null || !projects.Any())
+            {
+                projects = _dbContext.Configurations
+                    ?.Where(c => c.ConfigKey == "Project")
+                    ?.Select(c => c.ConfigValue)
+                    ?.ToList() ?? new List<string>();
+            }
+            ViewBag.Projects = projects ?? new List<string>();
+            ViewBag.SelectedProject = project ?? "";
+            ViewBag.SelectedMonth = month ?? "";
+            ViewBag.SelectedYear = year ?? "";
+            ViewBag.CustNoOrName = custNoOrName ?? "";
+
+            const int pageSize = 20;
+            var pageNumber = page ?? 1;
+            if (pageNumber < 1) pageNumber = 1;
+
+            var list = new List<MaintenanceBillViewModel>();
+            var totalRecords = 0;
+
+            if (!string.IsNullOrEmpty(project) && !string.IsNullOrEmpty(month) && !string.IsNullOrEmpty(year))
+            {
+                var term = custNoOrName?.Trim();
+                var query = from mb in _dbContext.MaintenanceBills
+                            join cm in _dbContext.CustomersMaintenance on mb.CustomerNo equals cm.CustomerNo
+                            where cm.Project == project && mb.BillingMonth == month && mb.BillingYear == year
+                                  && (string.IsNullOrEmpty(term)
+                                      || (mb.CustomerNo != null && mb.CustomerNo.Contains(term))
+                                      || (mb.CustomerName != null && mb.CustomerName.Contains(term)))
+                            select new MaintenanceBillViewModel
+                            {
+                                Uid = mb.Uid,
+                                CustomerNo = mb.CustomerNo,
+                                InvoiceNo = mb.InvoiceNo,
+                                CustomerName = mb.CustomerName,
+                                Btno = mb.Btno,
+                                BillingMonth = mb.BillingMonth,
+                                BillingYear = mb.BillingYear,
+                                BillAmountInDueDate = mb.BillAmountInDueDate,
+                                BillAmountAfterDueDate = mb.BillAmountAfterDueDate,
+                                PaymentStatus = mb.PaymentStatus,
+                                Block = cm.Block,
+                                DueDate = mb.DueDate
+                            };
+
+                totalRecords = query.Count();
+                list = query.OrderBy(x => x.CustomerNo)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+            }
+
+            var model = new PaginationViewModel<MaintenanceBillViewModel>
+            {
+                Items = list,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalRecords
+            };
+            return View(model);
+        }
+
+        /// <summary>
+        /// Printable maintenance bill (no layout). Open in new tab from AllBills double-click.
+        /// </summary>
+        [HttpGet]
+        public IActionResult Print(int id, string? project = null)
+        {
+            var bill = _dbContext.MaintenanceBills.Find(id);
+            if (bill == null)
+                return NotFound();
+            ViewBag.Project = project ?? "";
+            return View("PrintBill", bill);
+        }
+
         [Route("PrintMMultiBills")]
         [HttpGet]
         public async Task<IActionResult> PrintMMultiBills()
         {
-            var projects = _dbContext.Configurations
-                         .Where(c => c.ConfigKey == "Project")
-                         .Select(c => c.ConfigValue)
-                         .ToList();
+            var projects = _dbContext.CustomersMaintenance
+                .Select(c => c.Project.Trim())
+                .Where(p => !string.IsNullOrEmpty(p))
+                .Distinct()
+                .OrderBy(p => p)
+                .ToList();
 
-            ViewBag.Projects = projects;
-            
+            if (projects == null || !projects.Any())
+            {
+                projects = _dbContext.Configurations
+                    ?.Where(c => c.ConfigKey == "Project")
+                    ?.Select(c => c.ConfigValue)
+                    ?.ToList() ?? new List<string>();
+            }
+
+            ViewBag.Projects = projects ?? new List<string>();
             return View();
         }
-
-
-
 
         [Route("PrintMMultiBills")]
         [HttpPost]
@@ -790,38 +986,17 @@ namespace BMSBT.Controllers
         {
             try
             {
-
-                // Optional: Validate other fields
-                if (
-                     string.IsNullOrEmpty(request.category) ||
-                     string.IsNullOrEmpty(request.block) ||
-                     string.IsNullOrEmpty(request.month) ||
-                     string.IsNullOrEmpty(request.year))
+                if (string.IsNullOrEmpty(request.project) ||
+                    string.IsNullOrEmpty(request.month) ||
+                    string.IsNullOrEmpty(request.year))
                 {
-                    return BadRequest("All fields must be provided.");
+                    return BadRequest("Project, Billing Month and Billing Year are required.");
                 }
-
-
-                // Optional: Log or process request info
-                Console.WriteLine($"Generating bills for Project: {request.project}, Sector: {request.sector}, Block: {request.block}, Month: {request.month}, Year: {request.year}");
 
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/pdf"));
 
-                // var url = $"http://172.20.229.3:84/api/ElectricityBill/GetEBillByUid?uids={request.uids}";
-
-                 var url = $"http://172.20.228.2:81/api/MaintenanceBill/GetMBill?category={request.category}&block={request.block}&month={request.month}&year={request.year}&project={request.project}";
-
-                ////SSQ API Working
-                //var url = $"https://localhost:7077/api/MaintenanceBill/GetMBill?category={request.category}&block={request.block}&month={request.month}&year={request.year}&project={request.project}";
-
-
-
-          
-
-
-                // If needed, you can append filters to the URL or send them in headers/body to the API.
-                // For now, we just log them.
+                var url = $"http://172.20.228.2:81/api/MaintenanceBill/GetMBill?project={Uri.EscapeDataString(request.project)}&month={Uri.EscapeDataString(request.month)}&year={Uri.EscapeDataString(request.year)}";
 
                 var response = await client.GetAsync(url);
 
@@ -839,7 +1014,7 @@ namespace BMSBT.Controllers
                 }
 
                 var errorContent = await response.Content.ReadAsStringAsync();
-                return StatusCode((int)response.StatusCode, $"API Error: {errorContent}");
+                return StatusCode((int)response.StatusCode, errorContent);
             }
             catch (Exception ex)
             {

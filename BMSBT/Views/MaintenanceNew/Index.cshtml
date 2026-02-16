@@ -80,6 +80,17 @@
 
 <div class="row-container">
     <div class="row mb-4">
+        <!-- Overall total customers across all projects -->
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-header">All Projects</div>
+                <div class="card-body">
+                    <h5 class="card-title">@((ViewBag.TotalCustomerCount as int?)?.ToString("N0") ?? "0")</h5>
+                    <p class="card-text">Total Customers</p>
+                </div>
+            </div>
+        </div>
+
         @if (ViewBag.ProjectCustomerCounts != null)
         {
             @foreach (var item in ViewBag.ProjectCustomerCounts)

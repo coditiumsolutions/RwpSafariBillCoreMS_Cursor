@@ -78,7 +78,7 @@
             <a class="navbar-brand" href="#">
                 <img src="~/images/logo.png" alt="Logo" class="logo-margin" style="height: 70px; margin-left: 10px;">
             </a>
-            <span class="navbar-text text-white">Bahria Town: Billing System</span>
+            <span class="navbar-text text-white">Safari Rawalpindi</span>
         </div>
     </nav>
 
@@ -142,13 +142,11 @@
                     </li>
 
                     <li>
-                        <a asp-controller="MaintenanceNew" asp-action="SearchBill">
-                            <i class="fas fa-search" style="color: yellowgreen; font-size: 14px;"></i>
-                            Search
+                        <a asp-controller="MaintenanceNew" asp-action="AllBills">
+                            <i class="fas fa-list" style="color: yellowgreen; font-size: 14px;"></i>
+                            All Bill
                         </a>
                     </li>
-
-
 
                     <li>
                         <a asp-controller="MaintenanceNew" asp-action="GenerateBill">
@@ -161,6 +159,13 @@
                         <a href="@Url.Action("PrintMMultiBills", "MaintenanceNew")">
                             <i class="fas fa-print" style="color: yellowgreen; font-size: 14px;"></i>
                             Print Bill
+                        </a>
+                    </li>
+
+                    <li>
+                        <a asp-controller="MaintenanceNew" asp-action="BillsSummary">
+                            <i class="fas fa-chart-bar" style="color: yellowgreen; font-size: 14px;"></i>
+                            Bills-Summary
                         </a>
                     </li>
 

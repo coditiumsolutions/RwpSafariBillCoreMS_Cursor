@@ -1,0 +1,52 @@
+@model BMSBT.Models.Rate
+@{
+    ViewData["Title"] = "Rate Details";
+    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h4>Rate Details</h4>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">SNo</dt>
+                <dd class="col-sm-9">@Model.SNo</dd>
+
+                <dt class="col-sm-3">Phase</dt>
+                <dd class="col-sm-9">@Model.Phase</dd>
+
+                <dt class="col-sm-3">Size</dt>
+                <dd class="col-sm-9">@Model.Size</dd>
+
+                <dt class="col-sm-3">Category</dt>
+                <dd class="col-sm-9">@Model.Category</dd>
+
+                <dt class="col-sm-3">Unit Type</dt>
+                <dd class="col-sm-9">@Model.UnitType</dd>
+
+                <dt class="col-sm-3">Misc</dt>
+                <dd class="col-sm-9">@Model.Misc</dd>
+
+                <dt class="col-sm-3">Tax</dt>
+                <dd class="col-sm-9">@Model.Tax</dd>
+
+                <dt class="col-sm-3">Maint Charges</dt>
+                <dd class="col-sm-9">@Model.MaintCharges</dd>
+
+                <dt class="col-sm-3">Total</dt>
+                <dd class="col-sm-9">@Model.Total</dd>
+            </dl>
+
+            <div class="form-group">
+                <a asp-action="Edit" asp-route-id="@Model.SNo" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

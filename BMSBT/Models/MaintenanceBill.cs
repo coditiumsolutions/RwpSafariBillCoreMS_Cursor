@@ -11,7 +11,6 @@ public partial class MaintenanceBill
     public int Uid { get; set; }
 
     public string? InvoiceNo { get; set; }
-    
 
     public string? CustomerNo { get; set; }
 
@@ -45,24 +44,38 @@ public partial class MaintenanceBill
 
     public DateTime? LastUpdated { get; set; }
 
-    public decimal? TaxAmount { get; set; }
+    /// <summary>Matches DB: int.</summary>
+    public int? MaintCharges { get; set; }
 
-    public decimal? BillAmountInDueDate { get; set; }
+    /// <summary>Matches DB: int.</summary>
+    public int? BillAmountInDueDate { get; set; }
 
-    public decimal? BillSurcharge { get; set; }
+    /// <summary>Matches DB: int.</summary>
+    public int? BillSurcharge { get; set; }
 
-    public decimal? BillAmountAfterDueDate { get; set; }
+    /// <summary>Matches DB: int.</summary>
+    public int? BillAmountAfterDueDate { get; set; }
 
-    public decimal? Arrears { get; set; }
-    public decimal? MaintCharges { get; set; }
+    /// <summary>Matches DB: int.</summary>
+    public int? Arrears { get; set; }
 
-    // Additional maintenance-related charges
-    public decimal? Fine { get; set; }
+    /// <summary>Matches DB: int.</summary>
+    public int? TaxAmount { get; set; }
 
-    public decimal? OtherCharges { get; set; }
+    /// <summary>Matches DB: int.</summary>
+    public int? Fine { get; set; }
 
-    public decimal? WaterCharges { get; set; }
+    /// <summary>Matches DB: int.</summary>
+    public int? OtherCharges { get; set; }
+
+    /// <summary>Matches DB: int.</summary>
+    public int? WaterCharges { get; set; }
+
+    /// <summary>Matches DB: int.</summary>
+    public int? MiscCharges { get; set; }
 
     public string? History { get; set; }
 
+    /// <summary>Matches DB: varchar 100.</summary>
+    public string? FineDept { get; set; }
 }

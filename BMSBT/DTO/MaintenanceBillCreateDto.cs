@@ -16,10 +16,12 @@ public class MaintenanceBillCreateDto
     // Meter info (optional)
     public string? MeterNo { get; set; }
 
-    // Tariff matching attributes (required for tariff lookup)
+    // Tariff/Rate matching: SubProject matches Rates.Phase for MaintCharges lookup
     public string? Project { get; set; }
+    public string? SubProject { get; set; }
     public string? PlotType { get; set; }
     public string? Size { get; set; }
+    public string? Category { get; set; }
 
     // Billing period
     public string? BillingMonth { get; set; }
