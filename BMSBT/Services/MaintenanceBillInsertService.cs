@@ -63,20 +63,12 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
                     .SumAsync(f => f.FineToCharge, cancellationToken);
             }
 
-            // Fetch Additional Charges (Water & Other) from AdditionalCharges table
-            waterCharges = await _dbContext.AdditionalCharges
-                .Where(a => a.BTNo == dto.BTNo && 
-                           a.ServiceType == "Maintenance" && 
-                           a.ChargesName == "Water Charges")
-                .Select(a => a.ChargesAmount)
-                .FirstOrDefaultAsync(cancellationToken) ?? 0m;
-
-            otherCharges = await _dbContext.AdditionalCharges
-                .Where(a => a.BTNo == dto.BTNo && 
-                           a.ServiceType == "Maintenance" && 
-                           a.ChargesName == "Other Charges")
-                .Select(a => a.ChargesAmount)
-                .FirstOrDefaultAsync(cancellationToken) ?? 0m;
+            // AdditionalCharges table currently only tracks:
+            //   CustomerNo, ServiceName, ServiceType, Month, Year
+            // and does not expose a numeric amount column. Until such a column
+            // is added, we treat additional water/other charges as 0 here.
+            waterCharges = 0m;
+            otherCharges = 0m;
         }
 
         // Calculate billing amounts based on tariff values, arrears, fine, and additional charges (including MiscCharges from Rates)

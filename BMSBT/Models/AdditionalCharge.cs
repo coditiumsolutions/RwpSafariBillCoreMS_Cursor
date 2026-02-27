@@ -7,19 +7,30 @@ namespace BMSBT.Models
     public class AdditionalCharge
     {
         [Key]
-        [Column("uid")]
+        [Column("UID")]
         public int Uid { get; set; }
 
+        // Columns from db.txt:
+        //  - CustomerNo (nvarchar 50)
+        //  - ServiceName (nvarchar 100)
+        //  - ServiceType (nvarchar 50)
+        //  - Month (nvarchar 20)
+        //  - Year (nvarchar 10)
+
         [MaxLength(50)]
-        public string? BTNo { get; set; }
+        public string? CustomerNo { get; set; }
 
         [MaxLength(100)]
+        public string? ServiceName { get; set; }
+
+        [MaxLength(50)]
         public string? ServiceType { get; set; }
 
-        [MaxLength(100)]
-        public string? ChargesName { get; set; }
+        [MaxLength(20)]
+        public string? Month { get; set; }
 
-        public decimal? ChargesAmount { get; set; }
+        [MaxLength(10)]
+        public string? Year { get; set; }
     }
 }
 

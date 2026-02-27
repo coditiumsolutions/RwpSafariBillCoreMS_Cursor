@@ -15,6 +15,35 @@ namespace BMSBT.Controllers
             _dbContext = context;
         }
 
+        private void PopulateDropdowns()
+        {
+            // Service Type values from Configuration where ConfigKey = 'ServiceType'
+            ViewBag.ServiceTypes = _dbContext.Configurations
+                .Where(c => c.ConfigKey == "ServiceType" && c.ConfigValue != null)
+                .Select(c => c.ConfigValue!)
+                .Distinct()
+                .OrderBy(v => v)
+                .ToList();
+
+            // Service Name values from Configuration where ConfigKey = 'ServiceName'
+            ViewBag.ServiceNames = _dbContext.Configurations
+                .Where(c => c.ConfigKey == "ServiceName" && c.ConfigValue != null)
+                .Select(c => c.ConfigValue!)
+                .Distinct()
+                .OrderBy(v => v)
+                .ToList();
+
+            // Month names
+            ViewBag.Months = new[]
+            {
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            };
+
+            // Years: 2025, 2026
+            ViewBag.Years = new[] { "2025", "2026" };
+        }
+
         public override void OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context)
         {
             ViewBag.UserName = HttpContext.Session.GetString("UserName");
@@ -29,9 +58,11 @@ namespace BMSBT.Controllers
             int pageNumber = page ?? 1;
 
             var items = _dbContext.AdditionalCharges
-                .OrderBy(a => a.BTNo)
+                .OrderBy(a => a.CustomerNo)
                 .ThenBy(a => a.ServiceType)
-                .ThenBy(a => a.ChargesName)
+                .ThenBy(a => a.ServiceName)
+                .ThenBy(a => a.Year)
+                .ThenBy(a => a.Month)
                 .ToPagedList(pageNumber, pageSize);
 
             return View(items);
@@ -59,6 +90,7 @@ namespace BMSBT.Controllers
         // GET: AdditionalCharges/Create
         public IActionResult Create()
         {
+            PopulateDropdowns();
             return View(new AdditionalCharge());
         }
 
@@ -74,7 +106,7 @@ namespace BMSBT.Controllers
                 TempData["SuccessMessage"] = "Additional charges record created successfully.";
                 return RedirectToAction(nameof(Index));
             }
-
+            PopulateDropdowns();
             return View(model);
         }
 

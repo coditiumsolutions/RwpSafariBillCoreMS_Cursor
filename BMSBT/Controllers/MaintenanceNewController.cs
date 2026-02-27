@@ -977,6 +977,16 @@ namespace BMSBT.Controllers
             }
 
             ViewBag.Projects = projects ?? new List<string>();
+
+            var subProjects = _dbContext.CustomersMaintenance
+                .Where(c => c.SubProject != null)
+                .Select(c => c.SubProject!.Trim())
+                .Where(sp => !string.IsNullOrEmpty(sp))
+                .Distinct()
+                .OrderBy(sp => sp)
+                .ToList();
+            ViewBag.SubProjects = subProjects ?? new List<string>();
+
             return View();
         }
 
@@ -996,7 +1006,9 @@ namespace BMSBT.Controllers
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/pdf"));
 
-                var url = $"http://172.20.228.2:81/api/MaintenanceBill/GetMBill?project={Uri.EscapeDataString(request.project)}&month={Uri.EscapeDataString(request.month)}&year={Uri.EscapeDataString(request.year)}";
+                var url = $"http://172.20.228.2:82/api/maintenancebills?project={Uri.EscapeDataString(request.project)}&billingMonth={Uri.EscapeDataString(request.month)}&billingYear={Uri.EscapeDataString(request.year)}";
+                if (!string.IsNullOrEmpty(request.subProject))
+                    url += $"&subProject={Uri.EscapeDataString(request.subProject)}";
 
                 var response = await client.GetAsync(url);
 
@@ -1018,7 +1030,8 @@ namespace BMSBT.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var innerMsg = ex.InnerException?.Message;
+                return StatusCode(500, $"Internal server error: {ex.Message}" + (innerMsg != null ? $" | {innerMsg}" : ""));
             }
         }
 

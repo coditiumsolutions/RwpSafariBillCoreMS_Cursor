@@ -918,6 +918,7 @@ namespace BMSBT.Controllers
             public string category { get; set; }
             public string uids { get; set; }
             public string project { get; set; }
+            public string subProject { get; set; }
             public string sector { get; set; }
             public string block { get; set; }
             public string month { get; set; }

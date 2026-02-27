@@ -2,7 +2,7 @@
 @using X.PagedList.Mvc.Core
 @model IPagedList<BMSBT.Models.AdditionalCharge>
 @{
-    Layout = "~/Views/Shared/_LayoutMaintBills.cshtml";
+    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
     ViewData["Title"] = "Additional Charges";
 }
 
@@ -28,10 +28,11 @@
             <table class="table table-bordered table-striped table-sm">
                 <thead class="table-light">
                     <tr>
-                        <th>BT No</th>
+                        <th>Customer No</th>
+                        <th>Service Name</th>
                         <th>Service Type</th>
-                        <th>Charges Name</th>
-                        <th class="text-end">Charges Amount</th>
+                        <th>Month</th>
+                        <th>Year</th>
                         <th style="width:220px;"></th>
                     </tr>
                 </thead>
@@ -39,10 +40,11 @@
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td>@item.BTNo</td>
+                            <td>@item.CustomerNo</td>
+                            <td>@item.ServiceName</td>
                             <td>@item.ServiceType</td>
-                            <td>@item.ChargesName</td>
-                            <td class="text-end">@item.ChargesAmount</td>
+                            <td>@item.Month</td>
+                            <td>@item.Year</td>
                             <td>
                                 <a asp-action="Edit" asp-route-id="@item.Uid" class="btn btn-sm btn-primary">Edit</a>
                                 <a asp-action="Details" asp-route-id="@item.Uid" class="btn btn-sm btn-info">Details</a>

@@ -271,19 +271,21 @@ namespace BMSBT.BillServices
                     .Select(f => (decimal?)f.FineToCharge)
                     .Sum() ?? 0m;
 
-                waterCharges = _dbContext.AdditionalCharges
-                    .Where(a => a.BTNo == btNo &&
-                               a.ServiceType == "Maintenance" &&
-                               a.ChargesName == "Water Charges")
-                    .Select(a => a.ChargesAmount)
-                    .FirstOrDefault() ?? 0m;
-
-                otherCharges = _dbContext.AdditionalCharges
-                    .Where(a => a.BTNo == btNo &&
-                               a.ServiceType == "Maintenance" &&
-                               a.ChargesName == "Other Charges")
-                    .Select(a => a.ChargesAmount)
-                    .FirstOrDefault() ?? 0m;
+                // NOTE:
+                // The live database `AdditionalCharges` table (see db.txt) now has the
+                // shape:
+                //   - CustomerNo
+                //   - ServiceName
+                //   - ServiceType
+                //   - Month
+                //   - Year
+                //
+                // It no longer contains per-BTNo numeric charge columns like
+                // BTNo / ChargesName / ChargesAmount. Until a numeric amount
+                // column is reintroduced, we treat additional charges as 0
+                // for billing calculations.
+                waterCharges = 0m;
+                otherCharges = 0m;
             }
 
             // 1) Bill due on‑time: BillAmountInDueDate = MaintCharges + TaxAmount + Arrears + Fine + WaterCharges + OtherCharges + MiscCharges

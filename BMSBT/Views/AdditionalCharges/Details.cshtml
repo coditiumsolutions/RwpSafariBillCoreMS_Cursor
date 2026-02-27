@@ -1,6 +1,6 @@
 @model BMSBT.Models.AdditionalCharge
 @{
-    Layout = "~/Views/Shared/_LayoutMaintBills.cshtml";
+    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
     ViewData["Title"] = "Additional Charge Details";
 }
 
@@ -10,17 +10,20 @@
     </div>
     <div class="card-body">
         <dl class="row">
-            <dt class="col-sm-3">BT No</dt>
-            <dd class="col-sm-9">@Model.BTNo</dd>
+            <dt class="col-sm-3">Customer No</dt>
+            <dd class="col-sm-9">@Model.CustomerNo</dd>
+
+            <dt class="col-sm-3">Service Name</dt>
+            <dd class="col-sm-9">@Model.ServiceName</dd>
 
             <dt class="col-sm-3">Service Type</dt>
             <dd class="col-sm-9">@Model.ServiceType</dd>
 
-            <dt class="col-sm-3">Charges Name</dt>
-            <dd class="col-sm-9">@Model.ChargesName</dd>
+            <dt class="col-sm-3">Month</dt>
+            <dd class="col-sm-9">@Model.Month</dd>
 
-            <dt class="col-sm-3">Charges Amount</dt>
-            <dd class="col-sm-9">@Model.ChargesAmount</dd>
+            <dt class="col-sm-3">Year</dt>
+            <dd class="col-sm-9">@Model.Year</dd>
         </dl>
 
         <a asp-action="Edit" asp-route-id="@Model.Uid" class="btn btn-primary">Edit</a>

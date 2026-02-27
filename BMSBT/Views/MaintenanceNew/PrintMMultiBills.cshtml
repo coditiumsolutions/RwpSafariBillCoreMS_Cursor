@@ -56,7 +56,7 @@
 
 <form id="filterForm" method="post" asp-action="PrintMMultiBills" asp-controller="MaintenanceNew">
     <div class="row g-3 align-items-end">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label">Project</label>
             <select id="Project" name="project" class="form-control" required>
                 <option value="">-- Select Project --</option>
@@ -66,7 +66,17 @@
                 }
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
+            <label class="form-label">SubProject</label>
+            <select id="SubProject" name="subProject" class="form-control">
+                <option value="">-- Select SubProject --</option>
+                @foreach (var sp in (List<string>)ViewBag.SubProjects)
+                {
+                    <option value="@sp">@sp</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
             <label class="form-label">Billing Month</label>
             <select id="month" name="month" class="form-control" required>
                 <option value="">-- Month --</option>
@@ -79,7 +89,7 @@
                 }
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label">Billing Year</label>
             <select id="year" name="year" class="form-control" required>
                 <option value="">-- Year --</option>
@@ -95,13 +105,14 @@
     </div>
 </form>
 
-<p class="text-muted mt-3">Select <strong>Project</strong>, <strong>Billing Month</strong> and <strong>Billing Year</strong>, then click <strong>Print</strong> to generate the maintenance bills report (PDF).</p>
+<p class="text-muted mt-3">Select <strong>Project</strong>, <strong>SubProject</strong> (optional), <strong>Billing Month</strong> and <strong>Billing Year</strong>, then click <strong>Print</strong> to generate the maintenance bills report (PDF).</p>
 
 @section Scripts {
     <script>
             $(function(){
               $('#PrintButton').click(function(){
                 var project = $('#Project').val();
+                var subProject = $('#SubProject').val();
                 var month = $('#month').val();
                 var year = $('#year').val();
                 if (!project || !month || !year) {
@@ -110,6 +121,7 @@
                 }
                 var data = {
                     project: project,
+                    subProject: subProject,
                     month: month,
                     year: year
                 };
