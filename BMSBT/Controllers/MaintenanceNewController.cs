@@ -5,10 +5,11 @@ using BMSBT.ViewModels;
 using BMSBT.DTO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using System.Data.Entity;
+using Microsoft.EntityFrameworkCore;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Linq;
+using System.Text.Json.Nodes;
 using X.PagedList;
 using X.PagedList.Extensions;
 using X.PagedList.Mvc.Core;
@@ -22,14 +23,16 @@ namespace BMSBT.Controllers
         private readonly MaintenanceFunctions MaintenanceFunctions;
         private readonly ICurrentOperatorService _operatorService;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
        
-        public MaintenanceNewController(IHttpClientFactory httpClientFactory, BmsbtContext context, ICurrentOperatorService operatorService)
+        public MaintenanceNewController(IHttpClientFactory httpClientFactory, BmsbtContext context, ICurrentOperatorService operatorService, IConfiguration configuration)
         {
             _dbContext = context;
             MaintenanceFunctions = new MaintenanceFunctions(_dbContext);
             _operatorService = operatorService;
             _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
         
         }
 
@@ -45,7 +48,7 @@ namespace BMSBT.Controllers
 
 
 
-        public IActionResult Index(string selectedYear, string selectedMonth)
+        public async Task<IActionResult> Index(string selectedYear, string selectedMonth, string? apiPathSegment, string? apiProject, string? phaseNumber)
         {
             // Defaults to current month/year if none provided
             if (string.IsNullOrEmpty(selectedYear)) selectedYear = DateTime.Now.Year.ToString();
@@ -54,6 +57,56 @@ namespace BMSBT.Controllers
             // Retain the selected values
             ViewBag.SelectedYear = selectedYear;
             ViewBag.SelectedMonth = selectedMonth;
+
+            var extSection = _configuration.GetSection("ExternalMaintenanceBillsApi");
+            var apiBase = extSection["BaseUrl"]?.Trim().TrimEnd('/');
+            var pathSeg = string.IsNullOrWhiteSpace(apiPathSegment) ? extSection["DefaultPathSegment"] : apiPathSegment;
+            var proj = string.IsNullOrWhiteSpace(apiProject) ? extSection["DefaultProject"] : apiProject;
+            var phase = string.IsNullOrWhiteSpace(phaseNumber) ? extSection["DefaultPhaseNumber"] : phaseNumber;
+            ViewBag.ApiPathSegment = pathSeg ?? "";
+            ViewBag.ApiProject = proj ?? "";
+            ViewBag.PhaseNumber = phase ?? "";
+
+            List<Dictionary<string, string>>? apiBillRows = null;
+            List<string>? apiBillColumns = null;
+
+            if (!string.IsNullOrEmpty(apiBase) && !string.IsNullOrEmpty(pathSeg))
+            {
+                var url =
+                    $"{apiBase}/api/MaintenanceBills/{Uri.EscapeDataString(pathSeg)}" +
+                    $"?project={Uri.EscapeDataString(proj ?? "")}" +
+                    $"&phaseNumber={Uri.EscapeDataString(phase ?? "")}" +
+                    $"&billingMonth={Uri.EscapeDataString(selectedMonth)}" +
+                    $"&billingYear={Uri.EscapeDataString(selectedYear)}";
+                ViewBag.ExternalBillsRequestUrl = url;
+
+                try
+                {
+                    var client = _httpClientFactory.CreateClient();
+                    client.Timeout = TimeSpan.FromSeconds(60);
+                    var response = await client.GetAsync(url);
+                    var body = await response.Content.ReadAsStringAsync();
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        ViewBag.ExternalBillsError = $"API returned {(int)response.StatusCode}: {body}";
+                    }
+                    else if (!TryParseMaintenanceBillsJson(body, out var columns, out var rows, out var parseErr))
+                    {
+                        ViewBag.ExternalBillsError = parseErr ?? "Could not parse API response.";
+                    }
+                    else
+                    {
+                        apiBillColumns = columns;
+                        apiBillRows = rows;
+                        ViewBag.ExternalBillColumns = columns;
+                        ViewBag.ExternalBillRows = rows;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ViewBag.ExternalBillsError = ex.Message;
+                }
+            }
 
             // Display total number of customers and breakdown by project
             var customerCountsByProject = _dbContext.CustomersMaintenance
@@ -69,56 +122,163 @@ namespace BMSBT.Controllers
             ViewBag.ProjectCustomerCounts = customerCountsByProject;
             ViewBag.TotalCustomerCount = _dbContext.CustomersMaintenance.Count();
 
-
-            // Maintenance Bills summary (Generated, Paid, Unpaid) based on selected month/year
-            var billsQuery = _dbContext.MaintenanceBills.AsQueryable();
-
-            if (!string.IsNullOrEmpty(selectedYear))
+            // Summary from external API rows only (local MaintenanceBills table may not match EF / DB schema).
+            if (apiBillRows != null && apiBillColumns != null && apiBillRows.Count > 0)
             {
-                billsQuery = billsQuery.Where(b => b.BillingYear == selectedYear);
+                SummarizeMaintenanceBillsFromApiRows(extSection, apiBillColumns, apiBillRows, out var totalBills, out var totalAmount, out var paidC, out var paidAmt, out var surC, out var surAmt, out var partC, out var partAmt, out var unC, out var unAmt);
+                ViewBag.TotalBills = totalBills;
+                ViewBag.TotalAmountGenerated = totalAmount;
+                ViewBag.PaidCount = paidC;
+                ViewBag.PaidAmount = paidAmt;
+                ViewBag.SurchargeCount = surC;
+                ViewBag.SurchargeAmount = surAmt;
+                ViewBag.PartialCount = partC;
+                ViewBag.PartialAmount = partAmt;
+                ViewBag.UnpaidBillsCount = unC;
+                ViewBag.BillUnpaidAmount = unAmt;
+                ViewBag.BillsSummarySource = "api";
             }
-
-            if (!string.IsNullOrEmpty(selectedMonth))
+            else
             {
-                billsQuery = billsQuery.Where(b => b.BillingMonth == selectedMonth);
+                ViewBag.TotalBills = 0;
+                ViewBag.TotalAmountGenerated = 0m;
+                ViewBag.PaidCount = 0;
+                ViewBag.PaidAmount = 0m;
+                ViewBag.SurchargeCount = 0;
+                ViewBag.SurchargeAmount = 0m;
+                ViewBag.PartialCount = 0;
+                ViewBag.PartialAmount = 0m;
+                ViewBag.UnpaidBillsCount = 0;
+                ViewBag.BillUnpaidAmount = 0m;
+                ViewBag.BillsSummarySource = apiBillRows != null ? "api" : "none";
             }
-
-            int totalBills = billsQuery.Count();
-            decimal totalAmountGenerated = billsQuery.Sum(b => (decimal?)b.BillAmountInDueDate) ?? 0;
-
-            // Individual Status Calculations
-            var paidBills = billsQuery.Where(b => b.PaymentStatus == "paid" || b.PaymentStatus == "Paid").ToList();
-            var surchargeBills = billsQuery.Where(b => 
-                b.PaymentStatus == "paid with surcharge" || 
-                b.PaymentStatus == "Paid with Surcharge" || 
-                b.PaymentStatus == "PaidWithSurcharge" ||
-                b.PaymentStatus == "Paid with surcharge").ToList();
-            var partialBills = billsQuery.Where(b => b.PaymentStatus == "paritally paid" || b.PaymentStatus == "Partially Paid" || b.PaymentStatus == "partially paid").ToList();
-            var unpaidBills = billsQuery.Where(b => b.PaymentStatus == "unpaid" || b.PaymentStatus == "Unpaid" || string.IsNullOrEmpty(b.PaymentStatus)).ToList();
-
-            ViewBag.TotalBills = totalBills;
-            ViewBag.TotalAmountGenerated = totalAmountGenerated;
-
-            ViewBag.PaidCount = paidBills.Count;
-            ViewBag.PaidAmount = paidBills.Sum(b => b.BillAmountInDueDate) ?? 0m;
-
-            ViewBag.SurchargeCount = surchargeBills.Count;
-            ViewBag.SurchargeAmount = surchargeBills.Sum(b => b.BillAmountInDueDate) ?? 0m;
-
-            ViewBag.PartialCount = partialBills.Count;
-            ViewBag.PartialAmount = partialBills.Sum(b => b.BillAmountInDueDate) ?? 0m;
-
-            ViewBag.UnpaidBillsCount = unpaidBills.Count;
-            ViewBag.BillUnpaidAmount = unpaidBills.Sum(b => b.BillAmountInDueDate) ?? 0m;
 
             return View();
+        }
+
+        /// <summary>
+        /// Maps API JSON columns (configurable or auto-detected) to dashboard aggregates.
+        /// </summary>
+        private static void SummarizeMaintenanceBillsFromApiRows(
+            IConfigurationSection extSection,
+            List<string> columnOrder,
+            List<Dictionary<string, string>> rows,
+            out int totalBills,
+            out decimal totalAmountGenerated,
+            out int paidCount,
+            out decimal paidAmount,
+            out int surchargeCount,
+            out decimal surchargeAmount,
+            out int partialCount,
+            out decimal partialAmount,
+            out int unpaidCount,
+            out decimal unpaidAmount)
+        {
+            totalBills = rows.Count;
+            totalAmountGenerated = 0;
+            paidCount = surchargeCount = partialCount = unpaidCount = 0;
+            paidAmount = surchargeAmount = partialAmount = unpaidAmount = 0m;
+
+            var amountKey = ResolveApiColumnKey(columnOrder, extSection["SummaryColumnBillAmountInDueDate"],
+                "BillAmountInDueDate", "billAmountInDueDate", "BillAmount", "Amount", "TotalAmount", "MaintCharges", "maintCharges");
+            if (amountKey == null)
+            {
+                foreach (var c in columnOrder)
+                {
+                    if (c.Contains("BillAmount", StringComparison.OrdinalIgnoreCase) && c.Contains("Due", StringComparison.OrdinalIgnoreCase))
+                    {
+                        amountKey = c;
+                        break;
+                    }
+                }
+            }
+
+            var statusKey = ResolveApiColumnKey(columnOrder, extSection["SummaryColumnPaymentStatus"],
+                "PaymentStatus", "paymentStatus", "Status", "BillStatus", "Payment_State");
+
+            foreach (var row in rows)
+            {
+                var amt = amountKey != null && row.TryGetValue(amountKey, out var av) ? ParseLooseDecimal(av) : 0m;
+                totalAmountGenerated += amt;
+
+                var statusRaw = statusKey != null && row.TryGetValue(statusKey, out var sv) ? sv : null;
+                var bucket = ClassifyApiPaymentStatus(statusRaw);
+                switch (bucket)
+                {
+                    case "paid":
+                        paidCount++;
+                        paidAmount += amt;
+                        break;
+                    case "surcharge":
+                        surchargeCount++;
+                        surchargeAmount += amt;
+                        break;
+                    case "partial":
+                        partialCount++;
+                        partialAmount += amt;
+                        break;
+                    default:
+                        unpaidCount++;
+                        unpaidAmount += amt;
+                        break;
+                }
+            }
+        }
+
+        private static string? ResolveApiColumnKey(List<string> columnOrder, string? configuredExact, params string[] fallbacks)
+        {
+            if (!string.IsNullOrWhiteSpace(configuredExact))
+            {
+                var hit = columnOrder.FirstOrDefault(c => string.Equals(c, configuredExact.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (hit != null)
+                    return hit;
+            }
+            foreach (var f in fallbacks)
+            {
+                var hit = columnOrder.FirstOrDefault(c => string.Equals(c, f, StringComparison.OrdinalIgnoreCase));
+                if (hit != null)
+                    return hit;
+            }
+            return null;
+        }
+
+        private static decimal ParseLooseDecimal(string? s)
+        {
+            if (string.IsNullOrWhiteSpace(s))
+                return 0m;
+            var t = s.Trim().Replace(",", "");
+            return decimal.TryParse(t, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var d)
+                ? d
+                : 0m;
+        }
+
+        private static string ClassifyApiPaymentStatus(string? paymentStatus)
+        {
+            if (string.IsNullOrWhiteSpace(paymentStatus))
+                return "unpaid";
+            var s = paymentStatus.Trim();
+            var t = s.ToLowerInvariant();
+            if (t == "paid")
+                return "paid";
+            if (t.Contains("surcharge", StringComparison.OrdinalIgnoreCase))
+                return "surcharge";
+            if (t.Contains("partial", StringComparison.OrdinalIgnoreCase))
+                return "partial";
+            if (t == "unpaid")
+                return "unpaid";
+            return "unpaid";
         }
 
 
         public IActionResult CustomersMaintenance()
         {
-            var projects = _dbContext.CustomersMaintenance
-                .Select(c => c.Project.Trim())
+            var projects = _dbContext.Configurations
+                .Where(c => c.ConfigKey == "Projects" && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
                 .Distinct()
                 .OrderBy(p => p)
                 .ToList();
@@ -144,7 +304,7 @@ namespace BMSBT.Controllers
             }
 
             var blocks = blocksQuery
-                .Select(c => c.Block)
+                .Select(c => c.Category)
                 .Distinct()
                 .OrderBy(b => b)
                 .ToList();
@@ -153,7 +313,7 @@ namespace BMSBT.Controllers
         }
 
         [HttpGet]
-        public PartialViewResult FilterCustomers(string project, string block, string btNo, int? page)
+        public PartialViewResult FilterCustomers(string project, string category, string btNo, int? page)
         {
             var query = _dbContext.CustomersMaintenance.AsQueryable();
 
@@ -162,9 +322,9 @@ namespace BMSBT.Controllers
                 query = query.Where(c => c.Project == project);
             }
 
-            if (!string.IsNullOrWhiteSpace(block))
+            if (!string.IsNullOrWhiteSpace(category))
             {
-                query = query.Where(c => c.Block == block);
+                query = query.Where(c => c.Category == category);
             }
 
             if (!string.IsNullOrWhiteSpace(btNo))
@@ -177,7 +337,7 @@ namespace BMSBT.Controllers
 
             var customers = query
                 .OrderBy(c => c.Project)
-                .ThenBy(c => c.Block)
+                .ThenBy(c => c.Category)
                 .ThenBy(c => c.BTNo)
                 .ToPagedList(pageNumber, pageSize);
 
@@ -186,8 +346,13 @@ namespace BMSBT.Controllers
 
 
 
-        public async Task<IActionResult> GenerateBill(string selectedProject, string selectedSubProject, string btNoSearch)
+        public async Task<IActionResult> GenerateBill(string selectedProject, string selectedPhaseNumber, string selectedSubProject, string btNoSearch)
         {
+            // Backward-compatible alias for old query key: selectedSubProject
+            if (string.IsNullOrWhiteSpace(selectedPhaseNumber) && !string.IsNullOrWhiteSpace(selectedSubProject))
+            {
+                selectedPhaseNumber = selectedSubProject;
+            }
             // Set Operator Name, Billing Month, Billing Year from session and Operators Setup
             string userName = HttpContext.Session.GetString("UserName");
             
@@ -209,21 +374,33 @@ namespace BMSBT.Controllers
                 }
             }
 
-            // Dropdown projects
-            var projects = _dbContext.CustomersMaintenance
-                .Where(c => c.Project != null)
-                .Select(c => c.Project!.Trim())
+            // Dropdown projects from Configuration (ConfigKey = "Projects")
+            var projects = _dbContext.Configurations
+                .Where(c => c.ConfigKey == "Projects" && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
                 .Distinct()
+                .OrderBy(p => p)
                 .ToList();
 
-            // SubProjects for selected project
-            var subProjects = new List<string>();
+            // PhaseNumbers for selected project (Configuration: ConfigKey = selectedProject)
+            var phaseNumbers = new List<string>();
             if (!string.IsNullOrEmpty(selectedProject))
             {
-                subProjects = _dbContext.CustomersMaintenance
-                    .Where(c => c.Project != null && c.Project.Trim() == selectedProject.Trim() && c.SubProject != null)
-                    .Select(c => c.SubProject!.Trim())
+                phaseNumbers = _dbContext.Configurations
+                    .Where(c => c.ConfigKey != null
+                                && c.ConfigKey.Trim() == selectedProject.Trim()
+                                && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                    .Select(c => c.ConfigValue!)
+                    .AsEnumerable()
+                    .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(v => v.Trim())
+                    .Where(v => !string.IsNullOrWhiteSpace(v))
                     .Distinct()
+                    .OrderBy(v => v)
                     .ToList();
             }
 
@@ -236,9 +413,9 @@ namespace BMSBT.Controllers
                 var query = _dbContext.CustomersMaintenance
                     .Where(c => c.Project != null && c.Project.Trim() == selectedProject.Trim());
 
-                if (!string.IsNullOrEmpty(selectedSubProject))
+                if (!string.IsNullOrEmpty(selectedPhaseNumber))
                 {
-                    query = query.Where(c => c.SubProject != null && c.SubProject.Trim() == selectedSubProject.Trim());
+                    query = query.Where(c => c.SubProject != null && c.SubProject.Trim() == selectedPhaseNumber.Trim());
                 }
 
                 if (!string.IsNullOrEmpty(btNoSearch))
@@ -246,7 +423,7 @@ namespace BMSBT.Controllers
                     query = query.Where(c => c.BTNo != null && c.BTNo.Contains(btNoSearch));
                 }
 
-                filteredData = query.GroupBy(c => c.Block)
+                filteredData = query.GroupBy(c => c.Category)
                 .Select(g => new MaintSectorCustomersViewModel
                 {
                     Block = g.Key,
@@ -258,9 +435,9 @@ namespace BMSBT.Controllers
             }
 
             ViewBag.Projects = projects;
-            ViewBag.SubProjects = subProjects;
+            ViewBag.PhaseNumbers = phaseNumbers;
             ViewBag.SelectedProject = selectedProject;
-            ViewBag.SelectedSubProject = selectedSubProject;
+            ViewBag.SelectedPhaseNumber = selectedPhaseNumber;
 
             return View(filteredData);
 
@@ -440,7 +617,7 @@ namespace BMSBT.Controllers
             if (!string.IsNullOrEmpty(selectedMonth) && !string.IsNullOrEmpty(selectedYear))
             {
                 var billsQuery = from mb in _dbContext.MaintenanceBills
-                                 join cm in _dbContext.CustomersMaintenance on mb.CustomerNo equals cm.CustomerNo
+                                 join cm in _dbContext.CustomersMaintenance on mb.Btno equals cm.BTNo
                                  where mb.BillingMonth == selectedMonth && mb.BillingYear == selectedYear
                                  group mb by cm.Project into g
                                  select new { Project = g.Key ?? "", Count = g.Count() };
@@ -479,7 +656,7 @@ namespace BMSBT.Controllers
             if (!string.IsNullOrEmpty(month) && !string.IsNullOrEmpty(year))
             {
                 var billsQuery = from mb in _dbContext.MaintenanceBills
-                                 join cm in _dbContext.CustomersMaintenance on mb.CustomerNo equals cm.CustomerNo
+                                 join cm in _dbContext.CustomersMaintenance on mb.Btno equals cm.BTNo
                                  where mb.BillingMonth == month && mb.BillingYear == year
                                  group mb by cm.Project into g
                                  select new { Project = g.Key ?? "", Count = g.Count() };
@@ -499,6 +676,104 @@ namespace BMSBT.Controllers
                 .ToList();
 
             return Json(combined);
+        }
+
+        /// <summary>
+        /// Accepts a JSON array of objects, or an object with data/items/value/result/records array.
+        /// </summary>
+        private static bool TryParseMaintenanceBillsJson(string json, out List<string> columns, out List<Dictionary<string, string>> rows, out string? error)
+        {
+            columns = new List<string>();
+            rows = new List<Dictionary<string, string>>();
+            error = null;
+            try
+            {
+                var node = JsonNode.Parse(json);
+                JsonArray? arr = node as JsonArray;
+                if (arr == null && node is JsonObject jo)
+                {
+                    foreach (var key in new[] { "data", "items", "value", "result", "records" })
+                    {
+                        if (jo[key] is JsonArray ja)
+                        {
+                            arr = ja;
+                            break;
+                        }
+                    }
+                }
+
+                if (arr == null && node is JsonObject singleRow)
+                {
+                    var dict = FlattenJsonObjectToRow(singleRow, out var keys);
+                    if (dict.Count == 0)
+                    {
+                        error = "JSON object had no properties to display.";
+                        return false;
+                    }
+                    columns = keys;
+                    rows.Add(dict);
+                    return true;
+                }
+
+                if (arr == null)
+                {
+                    error = "Expected a JSON array of bill rows, a single object, or a wrapper with data/items/value/result/records.";
+                    return false;
+                }
+
+                var keyOrder = new List<string>();
+                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var item in arr)
+                {
+                    if (item is not JsonObject rowObj)
+                        continue;
+                    var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var prop in rowObj)
+                    {
+                        var text = JsonValueToDisplayString(prop.Value);
+                        dict[prop.Key] = text;
+                        if (seen.Add(prop.Key))
+                            keyOrder.Add(prop.Key);
+                    }
+                    if (dict.Count > 0)
+                        rows.Add(dict);
+                }
+
+                columns = keyOrder;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        private static string JsonValueToDisplayString(JsonNode? n)
+        {
+            if (n == null) return "";
+            if (n is JsonValue v)
+            {
+                if (v.TryGetValue<bool>(out var b)) return b.ToString();
+                if (v.TryGetValue<int>(out var i)) return i.ToString();
+                if (v.TryGetValue<long>(out var l)) return l.ToString();
+                if (v.TryGetValue<double>(out var d)) return d.ToString("G");
+                if (v.TryGetValue<decimal>(out var m)) return m.ToString("G");
+                return v.ToString()?.Trim('"') ?? "";
+            }
+            return n.ToJsonString();
+        }
+
+        private static Dictionary<string, string> FlattenJsonObjectToRow(JsonObject rowObj, out List<string> keyOrder)
+        {
+            keyOrder = new List<string>();
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var prop in rowObj)
+            {
+                dict[prop.Key] = JsonValueToDisplayString(prop.Value);
+                keyOrder.Add(prop.Key);
+            }
+            return dict;
         }
 
         private List<string> GetMonths()
@@ -600,7 +875,7 @@ namespace BMSBT.Controllers
 
 
                ViewBag.Blocks = _dbContext.CustomersMaintenance
-                .Select(c => c.Block)
+                .Select(c => c.Category)
                 .Where(b => !string.IsNullOrEmpty(b))
                 .Distinct()
                 .OrderBy(b => b)
@@ -654,7 +929,7 @@ namespace BMSBT.Controllers
 
             if (!string.IsNullOrEmpty(block))
             {
-                baseQuery = baseQuery.Where(x => x.cm.Block == block);
+                baseQuery = baseQuery.Where(x => x.cm.Category == block);
             }
 
             if (!string.IsNullOrEmpty(btNo))
@@ -673,7 +948,7 @@ namespace BMSBT.Controllers
                 BillAmountInDueDate = x.mb.BillAmountInDueDate,
                 BillAmountAfterDueDate = x.mb.BillAmountAfterDueDate,
                 PaymentStatus = x.mb.PaymentStatus,
-                Block = x.cm.Block,
+                Block = x.cm.Category,
                 DueDate = x.mb.DueDate,
               
                 //DueDate = x.mb.DueDate.HasValue
@@ -732,7 +1007,7 @@ namespace BMSBT.Controllers
 
             // Load Block options from CustomersMaintenance
             ViewBag.BlockList = _dbContext.CustomersMaintenance
-                .Select(x => x.Block)
+                .Select(x => x.Category)
                 .Distinct()
                 .OrderBy(x => x)
                 .ToList();
@@ -874,23 +1149,21 @@ namespace BMSBT.Controllers
         /// All Bill: same three dropdowns as PrintMMultiBills (Project, Billing Month, Billing Year). Displays records in grid with pagination; optional CustNo/Name search; double-click opens Details.
         /// </summary>
         [HttpGet]
-        public IActionResult AllBills(string project, string month, string year, string custNoOrName, int? page)
+        public IActionResult AllBills(string project, string subProject, string month, string year, string custNoOrName, int? page)
         {
-            var projects = _dbContext.CustomersMaintenance
-                .Select(c => c.Project.Trim())
+            var projects = _dbContext.Configurations
+                .Where(c => c.ConfigKey == "Projects" && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
                 .Where(p => !string.IsNullOrEmpty(p))
                 .Distinct()
                 .OrderBy(p => p)
                 .ToList();
-            if (projects == null || !projects.Any())
-            {
-                projects = _dbContext.Configurations
-                    ?.Where(c => c.ConfigKey == "Project")
-                    ?.Select(c => c.ConfigValue)
-                    ?.ToList() ?? new List<string>();
-            }
             ViewBag.Projects = projects ?? new List<string>();
             ViewBag.SelectedProject = project ?? "";
+            ViewBag.SelectedSubProject = subProject ?? "";
             ViewBag.SelectedMonth = month ?? "";
             ViewBag.SelectedYear = year ?? "";
             ViewBag.CustNoOrName = custNoOrName ?? "";
@@ -902,19 +1175,29 @@ namespace BMSBT.Controllers
             var list = new List<MaintenanceBillViewModel>();
             var totalRecords = 0;
 
-            if (!string.IsNullOrEmpty(project) && !string.IsNullOrEmpty(month) && !string.IsNullOrEmpty(year))
+            var term = custNoOrName?.Trim();
+            var hasTerm = !string.IsNullOrWhiteSpace(term);
+            var hasAnyFilter = !string.IsNullOrWhiteSpace(project) || !string.IsNullOrWhiteSpace(month) || !string.IsNullOrWhiteSpace(year);
+            var hasAllDateFilters = !string.IsNullOrWhiteSpace(project) && !string.IsNullOrWhiteSpace(month) && !string.IsNullOrWhiteSpace(year);
+            ViewBag.IncompleteFilterSelection = !hasTerm && hasAnyFilter && !hasAllDateFilters;
+
+            if (hasTerm || hasAllDateFilters)
             {
-                var term = custNoOrName?.Trim();
                 var query = from mb in _dbContext.MaintenanceBills
-                            join cm in _dbContext.CustomersMaintenance on mb.CustomerNo equals cm.CustomerNo
-                            where cm.Project == project && mb.BillingMonth == month && mb.BillingYear == year
-                                  && (string.IsNullOrEmpty(term)
-                                      || (mb.CustomerNo != null && mb.CustomerNo.Contains(term))
-                                      || (mb.CustomerName != null && mb.CustomerName.Contains(term)))
+                            join cm in _dbContext.CustomersMaintenance on mb.Btno equals cm.BTNo into cmGroup
+                            from cm in cmGroup.DefaultIfEmpty()
+                            where hasTerm
+                                ? ((mb.Btno != null && mb.Btno.Contains(term!))
+                                   || (mb.CustomerName != null && mb.CustomerName.Contains(term!)))
+                                : (cm != null
+                                   && cm.Project == project
+                                   && mb.BillingMonth == month
+                                   && mb.BillingYear == year
+                                   && (string.IsNullOrWhiteSpace(subProject) || cm.SubProject == subProject))
                             select new MaintenanceBillViewModel
                             {
                                 Uid = mb.Uid,
-                                CustomerNo = mb.CustomerNo,
+                                CustomerNo = cm != null ? cm.CustomerNo : "",
                                 InvoiceNo = mb.InvoiceNo,
                                 CustomerName = mb.CustomerName,
                                 Btno = mb.Btno,
@@ -923,12 +1206,13 @@ namespace BMSBT.Controllers
                                 BillAmountInDueDate = mb.BillAmountInDueDate,
                                 BillAmountAfterDueDate = mb.BillAmountAfterDueDate,
                                 PaymentStatus = mb.PaymentStatus,
-                                Block = cm.Block,
+                                Block = cm != null ? cm.Category : "",
                                 DueDate = mb.DueDate
                             };
 
                 totalRecords = query.Count();
                 list = query.OrderBy(x => x.CustomerNo)
+                    .ThenBy(x => x.Btno)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
                     .ToList();
@@ -961,33 +1245,54 @@ namespace BMSBT.Controllers
         [HttpGet]
         public async Task<IActionResult> PrintMMultiBills()
         {
-            var projects = _dbContext.CustomersMaintenance
-                .Select(c => c.Project.Trim())
-                .Where(p => !string.IsNullOrEmpty(p))
+            var projects = _dbContext.Configurations
+                .Where(c => c.ConfigKey == "Projects" && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrEmpty(v))
                 .Distinct()
                 .OrderBy(p => p)
                 .ToList();
 
             if (projects == null || !projects.Any())
             {
-                projects = _dbContext.Configurations
-                    ?.Where(c => c.ConfigKey == "Project")
-                    ?.Select(c => c.ConfigValue)
-                    ?.ToList() ?? new List<string>();
+                projects = new List<string>();
             }
 
             ViewBag.Projects = projects ?? new List<string>();
 
-            var subProjects = _dbContext.CustomersMaintenance
-                .Where(c => c.SubProject != null)
-                .Select(c => c.SubProject!.Trim())
-                .Where(sp => !string.IsNullOrEmpty(sp))
-                .Distinct()
-                .OrderBy(sp => sp)
-                .ToList();
-            ViewBag.SubProjects = subProjects ?? new List<string>();
-
             return View();
+        }
+
+        /// <summary>
+        /// JSON: subprojects from Configuration where ConfigKey = selected Project.
+        /// Supports both one-value-per-row and comma-separated ConfigValue entries.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetSubProjectPhaseNumbers([FromQuery] string? project)
+        {
+            if (string.IsNullOrWhiteSpace(project))
+                return Json(new List<string>());
+
+            var pNorm = project.Trim();
+
+            var raw = await _dbContext.Configurations
+                .AsNoTracking()
+                .Where(c => c.ConfigKey != null && c.ConfigKey.Trim() == pNorm && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .ToListAsync();
+
+            var list = raw
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x)
+                .ToList();
+
+            return Json(list);
         }
 
         [Route("PrintMMultiBills")]
@@ -1006,9 +1311,29 @@ namespace BMSBT.Controllers
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/pdf"));
 
-                var url = $"http://172.20.228.2:82/api/maintenancebills?project={Uri.EscapeDataString(request.project)}&billingMonth={Uri.EscapeDataString(request.month)}&billingYear={Uri.EscapeDataString(request.year)}";
-                if (!string.IsNullOrEmpty(request.subProject))
-                    url += $"&subProject={Uri.EscapeDataString(request.subProject)}";
+                var projectApiMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Safari-1"] = "http://172.20.229.2:84/api/MaintenanceBills/Safari-1",
+                    ["Safari-2"] = "http://172.20.229.2:84/api/MaintenanceBills/Safari-2",
+                    ["Safari-3"] = "http://172.20.229.2:84/api/MaintenanceBills/Safari-3",
+                    ["SafariHeights"] = "http://172.20.229.2:84/api/MaintenanceBills/SafariHeights"
+                };
+
+                if (!projectApiMap.TryGetValue(request.project, out var baseUrl))
+                {
+                    return BadRequest($"Unsupported project '{request.project}'.");
+                }
+
+                var project = request.project.Trim();
+                var phaseNumber = string.IsNullOrWhiteSpace(request.subProject) ? "" : request.subProject.Trim();
+                var billingMonth = request.month.Trim();
+                var billingYear = request.year.Trim();
+
+                var url =
+                    $"{baseUrl}?project={Uri.EscapeDataString(project)}" +
+                    $"&phaseNumber={Uri.EscapeDataString(phaseNumber)}" +
+                    $"&billingMonth={Uri.EscapeDataString(billingMonth)}" +
+                    $"&billingYear={Uri.EscapeDataString(billingYear)}";
 
                 var response = await client.GetAsync(url);
 
@@ -1137,10 +1462,10 @@ namespace BMSBT.Controllers
                             SubProject = customer != null ? customer.SubProject : "",
                             TariffName = customer != null ? customer.TariffName : "",
                             BankNo = customer != null ? customer.BankNo : "",
-                            BtnoMaintenance = customer != null ? customer.BTNoMaintenance : "",
+                            BtnoMaintenance = customer != null ? customer.BTNo : "",
                             Category = customer != null ? customer.Category : "",
-                            Block = customer != null ? customer.Block : "",
-                            PlotType = customer != null ? customer.PlotType : "",
+                            Block = customer != null ? customer.Category : "",
+                            PlotType = customer != null ? customer.PlotStatus : "",
                             Size = customer != null ? customer.Size : "",
                             Sector = customer != null ? customer.Sector : "",
                             PloNo = customer != null ? customer.PloNo : "",

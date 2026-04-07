@@ -184,16 +184,16 @@ namespace BMSBT.BillServices
                 // Return the matching maintenance tariff if customer details are found
                 return _dbContext.MaintenanceTarrifs
                     .FirstOrDefault(t => customerDetail != null
-                                         && t.PlotType == customerDetail.PlotType
+                                         && t.PlotType == customerDetail.PlotStatus
                                          && t.Size == customerDetail.Size
                                          && t.Project == customerDetail.Project);
             }
 
 
-        /// <summary>Effective BTNo from CustomersMaintenance: BTNoMaintenance if set, else BTNo. Used when adding or matching MaintenanceBills.</summary>
+        /// <summary>Effective BTNo on bill rows (dbo.CustomersMaintenance has BTNo only; BTNoMaintenance not in current schema).</summary>
         private static string? GetEffectiveBTNo(CustomersMaintenance customer)
         {
-            return !string.IsNullOrWhiteSpace(customer.BTNoMaintenance) ? customer.BTNoMaintenance.Trim() : customer.BTNo?.Trim();
+            return customer.BTNo?.Trim();
         }
 
         private MaintenanceBill? GetPreviousBill(CustomersMaintenance customer, string month, string year)

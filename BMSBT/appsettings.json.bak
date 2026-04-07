@@ -5,15 +5,8 @@
     }
   },
   "ConnectionStrings": {
+  "ConnectionStrings": {
     "DefaultConnection": "Server=172.20.229.2;Database=BMSSafariRwp;User Id=admin;Password=Pakistan@786;MultipleActiveResultSets=True;TrustServerCertificate=True;"
-  },
-  "ExternalMaintenanceBillsApi": {
-    "BaseUrl": "http://172.20.229.2:84",
-    "DefaultPathSegment": "Safari-1",
-    "DefaultProject": "Safari-2",
-    "DefaultPhaseNumber": "Safari ii",
-    "SummaryColumnPaymentStatus": "",
-    "SummaryColumnBillAmountInDueDate": ""
   }
 
 

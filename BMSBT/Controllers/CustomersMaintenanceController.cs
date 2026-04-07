@@ -67,9 +67,9 @@ namespace BMSBT.Controllers
                 htmlContent.AppendLine("<td>" + (string.IsNullOrEmpty(item.Project) ? "" : System.Net.WebUtility.HtmlEncode(item.Project)) + "</td>");
                 htmlContent.AppendLine("<td>" + (string.IsNullOrEmpty(item.SubProject) ? "" : System.Net.WebUtility.HtmlEncode(item.SubProject)) + "</td>");
                 htmlContent.AppendLine("<td>" + (string.IsNullOrEmpty(item.Sector) ? "" : System.Net.WebUtility.HtmlEncode(item.Sector)) + "</td>");
-                htmlContent.AppendLine("<td>" + (string.IsNullOrEmpty(item.TariffName) ? "" : System.Net.WebUtility.HtmlEncode(item.TariffName)) + "</td>");
-                htmlContent.AppendLine("<td>" + (string.IsNullOrEmpty(item.BTNoMaintenance) ? "" : System.Net.WebUtility.HtmlEncode(item.BTNoMaintenance)) + "</td>");
-                htmlContent.AppendLine("<td><span class='badge " + GetStatusBadgeClass(item.BillStatusMaint) + "'>" + (string.IsNullOrEmpty(item.BillStatusMaint) ? "" : System.Net.WebUtility.HtmlEncode(item.BillStatusMaint)) + "</span></td>");
+                htmlContent.AppendLine("<td>" + (string.IsNullOrEmpty(item.Category) ? "" : System.Net.WebUtility.HtmlEncode(item.Category)) + "</td>");
+                htmlContent.AppendLine("<td>" + (string.IsNullOrEmpty(item.StreetNumber) ? "" : System.Net.WebUtility.HtmlEncode(item.StreetNumber)) + "</td>");
+                htmlContent.AppendLine("<td><span class='badge " + GetStatusBadgeClass(item.BillGenerationStatus) + "'>" + (string.IsNullOrEmpty(item.BillGenerationStatus) ? "" : System.Net.WebUtility.HtmlEncode(item.BillGenerationStatus)) + "</span></td>");
                 htmlContent.AppendLine("<td>");
                 htmlContent.AppendLine("<div class='btn-group btn-group-sm'>");
                 htmlContent.AppendLine("<a href='/CustomersMaintenance/Edit/" + item.Uid + "' class='btn btn-outline-primary' title='Edit'><i class='fas fa-edit'></i></a>");

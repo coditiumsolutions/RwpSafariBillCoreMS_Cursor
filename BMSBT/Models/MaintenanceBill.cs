@@ -8,30 +8,43 @@ namespace BMSBT.Models;
 public partial class MaintenanceBill
 {
     [Key]
+    [Column("uid")]
     public int Uid { get; set; }
 
+    /// <summary>Not persisted; MaintenanceBills has BTNo only (see db.txt).</summary>
+    [NotMapped]
     public string? InvoiceNo { get; set; }
 
-    public string? CustomerNo { get; set; }
+    /// <summary>Alias for <see cref="Btno"/> (BTNo column). Not a separate SQL column.</summary>
+    [NotMapped]
+    public string? CustomerNo
+    {
+        get => Btno;
+        set => Btno = value;
+    }
 
     public string? CustomerName { get; set; }
 
     public string? PlotStatus { get; set; }
 
+    [NotMapped]
     public string? MeterNo { get; set; }
 
+    [Column("BTNo")]
     public string? Btno { get; set; }
 
     public string? BillingMonth { get; set; }
 
     public string? BillingYear { get; set; }
 
+    [NotMapped]
     public DateOnly? BillingDate { get; set; }
 
     public DateOnly? DueDate { get; set; }
 
     public DateOnly? IssueDate { get; set; }
 
+    [NotMapped]
     public DateOnly? ValidDate { get; set; }
 
     public string? PaymentStatus { get; set; }
@@ -42,6 +55,7 @@ public partial class MaintenanceBill
 
     public string? BankDetail { get; set; }
 
+    [NotMapped]
     public DateTime? LastUpdated { get; set; }
 
     /// <summary>Matches DB: int.</summary>
@@ -59,10 +73,11 @@ public partial class MaintenanceBill
     /// <summary>Matches DB: int.</summary>
     public int? Arrears { get; set; }
 
-    /// <summary>Matches DB: int.</summary>
+    /// <summary>DB column: current_gst.</summary>
+    [Column("current_gst")]
     public int? TaxAmount { get; set; }
 
-    /// <summary>Matches DB: int.</summary>
+    [NotMapped]
     public int? Fine { get; set; }
 
     /// <summary>Matches DB: int.</summary>
@@ -76,6 +91,6 @@ public partial class MaintenanceBill
 
     public string? History { get; set; }
 
-    /// <summary>Matches DB: varchar 100.</summary>
+    [NotMapped]
     public string? FineDept { get; set; }
 }

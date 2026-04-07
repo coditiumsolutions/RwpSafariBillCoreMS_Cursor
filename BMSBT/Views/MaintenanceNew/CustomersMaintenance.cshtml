@@ -21,12 +21,12 @@
                 </select>
             </div>
             <div class="form-group col-md-4">
-                <label for="blockFilter">Block</label>
-                <select id="blockFilter" class="form-control">
-                    <option value="">-- All Blocks --</option>
-                    @foreach (var block in Model.Blocks)
+                <label for="categoryFilter">Category</label>
+                <select id="categoryFilter" class="form-control">
+                    <option value="">-- All Categories --</option>
+                    @foreach (var category in Model.Blocks)
                     {
-                        <option value="@block">@block</option>
+                        <option value="@category">@category</option>
                     }
                 </select>
             </div>
@@ -48,38 +48,38 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-            function loadBlocks(project, selectedBlock) {
+            function loadBlocks(project, selectedCategory) {
                 return $.get('@Url.Action("GetBlocksByProject", "MaintenanceNew")',
                     { project: project },
                     function (data) {
-                        var $block = $('#blockFilter');
+                        var $block = $('#categoryFilter');
                         $block.empty();
-                        $block.append($('<option>').val('').text('-- All Blocks --'));
+                        $block.append($('<option>').val('').text('-- All Categories --'));
                         $.each(data, function (i, b) {
                             $block.append($('<option>').val(b).text(b));
                         });
-                        if (selectedBlock) {
-                            $block.val(selectedBlock);
+                        if (selectedCategory) {
+                            $block.val(selectedCategory);
                         }
                     });
             }
 
             function loadCustomers(page) {
                 var project = $('#projectFilter').val();
-                var block = $('#blockFilter').val();
+                var category = $('#categoryFilter').val();
                 var btno = $('#btnoSearch').val();
 
                 // Save search state
                 var searchState = {
                     project: project,
-                    block: block,
+                    category: category,
                     btno: btno,
                     page: page
                 };
                 sessionStorage.setItem('maintCustomerSearchState', JSON.stringify(searchState));
 
                 $.get('@Url.Action("FilterCustomers", "MaintenanceNew")',
-                    { project: project, block: block, btNo: btno, page: page },
+                    { project: project, category: category, btNo: btno, page: page },
                     function (html) {
                         $('#gridContainer').html(html);
                     });
@@ -121,7 +121,7 @@
                 $('#btnoSearch').val(state.btno);
                 
                 if (state.project) {
-                    loadBlocks(state.project, state.block).then(function() {
+                    loadBlocks(state.project, state.category).then(function() {
                         loadCustomers(state.page || 1);
                     });
                 } else {

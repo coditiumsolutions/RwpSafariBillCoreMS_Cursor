@@ -9,6 +9,11 @@
 </div>
 
 <style>
+    .print-fields .form-control {
+        min-height: calc(1.6em + .9rem + 2px);
+        font-size: 1.05rem;
+    }
+
     .loading-overlay {
         position: fixed;
         top: 0;
@@ -55,8 +60,8 @@
 }
 
 <form id="filterForm" method="post" asp-action="PrintMMultiBills" asp-controller="MaintenanceNew">
-    <div class="row g-3 align-items-end">
-        <div class="col-md-2">
+    <div class="row g-3 align-items-end print-fields">
+        <div class="col-md-3">
             <label class="form-label">Project</label>
             <select id="Project" name="project" class="form-control" required>
                 <option value="">-- Select Project --</option>
@@ -66,17 +71,13 @@
                 }
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <label class="form-label">SubProject</label>
             <select id="SubProject" name="subProject" class="form-control">
                 <option value="">-- Select SubProject --</option>
-                @foreach (var sp in (List<string>)ViewBag.SubProjects)
-                {
-                    <option value="@sp">@sp</option>
-                }
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <label class="form-label">Billing Month</label>
             <select id="month" name="month" class="form-control" required>
                 <option value="">-- Month --</option>
@@ -89,7 +90,7 @@
                 }
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <label class="form-label">Billing Year</label>
             <select id="year" name="year" class="form-control" required>
                 <option value="">-- Year --</option>
@@ -99,7 +100,7 @@
                 }
             </select>
         </div>
-        <div class="col-md-2 d-flex align-items-end">
+        <div class="col-12 d-flex justify-content-start mt-2">
             <button id="PrintButton" type="button" class="btn btn-primary">Print</button>
         </div>
     </div>
@@ -110,6 +111,26 @@
 @section Scripts {
     <script>
             $(function(){
+              var phaseNumbersUrl = '@Url.Action("GetSubProjectPhaseNumbers", "MaintenanceNew")';
+
+              function refillSubProject(project) {
+                var $sp = $('#SubProject');
+                $sp.empty().append($('<option></option>').val('').text('-- Select SubProject --'));
+                if (!project) return;
+                $.getJSON(phaseNumbersUrl, { project: project })
+                  .done(function (list) {
+                    if (Array.isArray(list)) {
+                      list.forEach(function (v) {
+                        $sp.append($('<option></option>').val(v).text(v));
+                      });
+                    }
+                  });
+              }
+
+              $('#Project').on('change', function () {
+                refillSubProject($(this).val());
+              });
+
               $('#PrintButton').click(function(){
                 var project = $('#Project').val();
                 var subProject = $('#SubProject').val();

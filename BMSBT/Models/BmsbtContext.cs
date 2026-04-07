@@ -56,9 +56,16 @@ public partial class BmsbtContext : DbContext
     public DbSet<Fine> Fine { get; set; }
     public DbSet<AdditionalCharge> AdditionalCharges { get; set; }
 
+    /// <summary>dbo.SubProject — keyless read for phase dropdowns.</summary>
+    public virtual DbSet<SubProjectPhase> SubProjectPhases { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=172.20.228.2;Database=BMSSafariRwp;User ID=sa;Password=Pakistan@786;TrustServerCertificate=True;");
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlServer("Server=172.20.229.2;Database=BMSSafariRwp;User Id=admin;Password=Pakistan@786;MultipleActiveResultSets=True;TrustServerCertificate=True;");
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -77,12 +84,25 @@ public partial class BmsbtContext : DbContext
                 .IsUnicode(false);
         });
 
+        modelBuilder.Entity<SubProjectPhase>(entity =>
+        {
+            entity.HasNoKey();
+            entity.ToTable("SubProject");
+            entity.Property(e => e.Project).HasMaxLength(100);
+            entity.Property(e => e.PhaseNumber)
+                .HasColumnName("Phase_Number")
+                .HasMaxLength(100);
+        });
+
         modelBuilder.Entity<CustomersMaintenance>(entity =>
         {
             entity.ToTable("CustomersMaintenance");
-            entity.Property(e => e.ConnectionStatus)
-                .HasMaxLength(50)
-                .HasColumnName("ConnectionStatus");
+            entity.Property(e => e.CustomerNo).HasColumnName("KuickPayNo").HasMaxLength(20);
+            entity.Property(e => e.SubProject).HasColumnName("PhaseNumber").HasMaxLength(50);
+            entity.Property(e => e.CNICNo).HasColumnName("CNICNo").HasMaxLength(50);
+            entity.Property(e => e.PloNo).HasColumnName("PloNo").HasMaxLength(100);
+            entity.Property(e => e.StreetNumber).HasColumnName("StreetNumber").HasMaxLength(50);
+            entity.Property(e => e.ConnectionStatus).HasMaxLength(20);
         });
 
         // Configure BillingReportData as keyless entity
@@ -280,6 +300,13 @@ public partial class BmsbtContext : DbContext
         });
 
        
+
+        modelBuilder.Entity<MaintenanceBill>(entity =>
+        {
+            entity.ToTable("MaintenanceBills");
+            entity.Property(e => e.Btno).HasMaxLength(50).HasColumnName("BTNo");
+            entity.Property(e => e.TaxAmount).HasColumnName("current_gst");
+        });
 
         modelBuilder.Entity<MaintenanceTarrif>(entity =>
         {

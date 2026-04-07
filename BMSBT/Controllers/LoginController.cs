@@ -9,8 +9,7 @@ using BMSBT.Models;
 using System.Threading.Tasks;
 using System.Runtime.ExceptionServices;
 using BMSBT.BillServices;
-using Microsoft.AspNetCore.Identity;
-using System.Text.Json; // Required at the top
+using System.Text.Json;
 
 namespace BMSBT.Controllers
 {
@@ -50,11 +49,7 @@ namespace BMSBT.Controllers
                 return View();
             }
 
-            // Verify password using PasswordHasher
-            var passwordHasher = new PasswordHasher<User>();
-            var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
-
-            if (result == PasswordVerificationResult.Success)
+            if (user.PasswordHash == password)
             {
                 // ✅ Await the InitializeAsync call
               

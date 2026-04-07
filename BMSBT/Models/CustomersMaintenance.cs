@@ -1,20 +1,26 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BMSBT.Models
 {
+    /// <summary>Maps to dbo.CustomersMaintenance (see db.txt).</summary>
     public class CustomersMaintenance
     {
         [Key]
+        [Column("uid")]
         public int Uid { get; set; }
 
+        /// <summary>DB column KuickPayNo (not CustomerNo).</summary>
         [Required]
         [StringLength(20)]
-        public string CustomerNo { get; set; }
+        [Column("KuickPayNo")]
+        public string CustomerNo { get; set; } = null!;
 
         [StringLength(20)]
+        [Column("BTNo")]
         public string? BTNo { get; set; }
 
-        [StringLength(70)]
+        [StringLength(200)]
         public string? CustomerName { get; set; }
 
         [StringLength(50)]
@@ -24,86 +30,73 @@ namespace BMSBT.Models
         public string? LocationSeqNo { get; set; }
 
         [StringLength(50)]
+        [Column("CNICNo")]
         public string? CNICNo { get; set; }
 
         [StringLength(70)]
         public string? FatherName { get; set; }
 
-        [StringLength(20)]
-        public string? InstalledOn { get; set; }
-
         [StringLength(50)]
         public string? MobileNo { get; set; }
-
-        [StringLength(50)]
-        public string? TelephoneNo { get; set; }
-
-        [StringLength(50)]
-        public string? MeterType { get; set; }
-
-        [StringLength(50)]
-        public string? NTNNumber { get; set; }
 
         [StringLength(50)]
         public string? City { get; set; }
 
         [Required]
         [StringLength(50)]
-        public string Project { get; set; }
+        public string Project { get; set; } = null!;
 
+        /// <summary>DB column PhaseNumber.</summary>
         [Required]
         [StringLength(50)]
-        public string SubProject { get; set; }
-
-        [Required]
-        [StringLength(50)]
-        public string TariffName { get; set; }
-
-        [StringLength(50)]
-        public string? BankNo { get; set; }
-
-        [StringLength(30)]
-        public string? BTNoMaintenance { get; set; }
+        [Column("PhaseNumber")]
+        public string SubProject { get; set; } = null!;
 
         [Required]
         [StringLength(100)]
-        public string Category { get; set; }
-
-        [Required]
-        [StringLength(100)]
-        public string Block { get; set; }
-
-        [StringLength(50)]
-        public string? PlotType { get; set; }
+        public string Category { get; set; } = null!;
 
         [StringLength(50)]
         public string? Size { get; set; }
 
         [Required]
         [StringLength(100)]
-        public string Sector { get; set; }
+        public string Sector { get; set; } = null!;
 
         [Required]
         [StringLength(100)]
-        public string PloNo { get; set; }
-
-        public string? BillStatusMaint { get; set; }
-
-        public string? BillStatus { get; set; }
+        [Column("PloNo")]
+        public string PloNo { get; set; } = null!;
 
         public string? History { get; set; }
 
         [StringLength(50)]
         public string? BillGenerationStatus { get; set; }
 
-        [StringLength(50)]
-        public string? MeterNo { get; set; }
-
-        /// <summary>Connection status; "Disconnected" skips bill generation (LotusScript logic).</summary>
-        [StringLength(50)]
+        [StringLength(20)]
         public string? ConnectionStatus { get; set; }
+
+        [StringLength(50)]
+        public string? PlotStatus { get; set; }
+
+        [StringLength(50)]
+        [Column("StreetNumber")]
+        public string? StreetNumber { get; set; }
+
+        [StringLength(50)]
+        public string? UnitType { get; set; }
+
+        // --- Not persisted (legacy UI / binding); do not use in EF LINQ-to-SQL ---
+        [NotMapped] public string? InstalledOn { get; set; }
+        [NotMapped] public string? TelephoneNo { get; set; }
+        [NotMapped] public string? MeterType { get; set; }
+        [NotMapped] public string? NTNNumber { get; set; }
+        [NotMapped] public string? TariffName { get; set; }
+        [NotMapped] public string? BankNo { get; set; }
+        [NotMapped] public string? BTNoMaintenance { get; set; }
+        [NotMapped] public string? PlotType { get; set; }
+        [NotMapped] public string? BillStatusMaint { get; set; }
+        [NotMapped] public string? BillStatus { get; set; }
+        [NotMapped] public string? MeterNo { get; set; }
     }
-
-
 }
-

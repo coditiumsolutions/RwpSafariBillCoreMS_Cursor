@@ -95,10 +95,8 @@ public class MaintenanceBillInsertController : ControllerBase
 
             foreach (var customer in customers)
             {
-                // BTNo from CustomersMaintenance: prefer BTNoMaintenance, fallback to BTNo (trimmed); saved on new bill record
-                string? btNoForLookup = !string.IsNullOrWhiteSpace(customer.BTNoMaintenance)
-                    ? customer.BTNoMaintenance.Trim()
-                    : customer.BTNo?.Trim();
+                // dbo.CustomersMaintenance: BTNo only (legacy BTNoMaintenance column removed from schema).
+                string? btNoForLookup = customer.BTNo?.Trim();
                 string statusValue = "";
                 bool shouldGenerate = false;
 
@@ -109,7 +107,7 @@ public class MaintenanceBillInsertController : ControllerBase
                           b.BillingMonth == billingMonth &&
                           b.BillingYear == billingYear)
                     : _dbContext.MaintenanceBills.Any(b =>
-                          b.CustomerNo == customer.CustomerNo &&
+                          b.Btno == customer.CustomerNo &&
                           b.BillingMonth == billingMonth &&
                           b.BillingYear == billingYear);
 
@@ -140,7 +138,7 @@ public class MaintenanceBillInsertController : ControllerBase
                           b.BillingMonth == previousMonth &&
                           b.BillingYear == previousYear)
                     : _dbContext.MaintenanceBills.Any(b =>
-                          b.CustomerNo == customer.CustomerNo &&
+                          b.Btno == customer.CustomerNo &&
                           b.BillingMonth == previousMonth &&
                           b.BillingYear == previousYear);
 
@@ -154,7 +152,7 @@ public class MaintenanceBillInsertController : ControllerBase
                     // Previous month bill NOT found -> check if customer has ANY bill (any month/year)
                     bool anyBillExists = !string.IsNullOrEmpty(btNoForLookup)
                         ? _dbContext.MaintenanceBills.Any(b => b.Btno == btNoForLookup)
-                        : _dbContext.MaintenanceBills.Any(b => b.CustomerNo == customer.CustomerNo);
+                        : _dbContext.MaintenanceBills.Any(b => b.Btno == customer.CustomerNo);
 
                     if (!anyBillExists)
                     {
@@ -188,13 +186,13 @@ public class MaintenanceBillInsertController : ControllerBase
                         CustomerNo = customer.CustomerNo ?? string.Empty,
                         CustomerName = customer.CustomerName ?? string.Empty,
                         BTNo = btNoForLookup,
-                        PlotStatus = customer.PlotType,
-                        MeterNo = customer.MeterNo,
+                        PlotStatus = customer.PlotStatus,
+                        MeterNo = null,
 
-                        // Rate matching: SubProject = Rates.Phase for MaintCharges
+                        // Rate matching: SubProject (PhaseNumber) = Rates.Phase for MaintCharges
                         Project = customer.Project,
                         SubProject = customer.SubProject,
-                        PlotType = customer.PlotType,
+                        PlotType = customer.PlotStatus,
                         Size = customer.Size,
                         Category = customer.Category,
 

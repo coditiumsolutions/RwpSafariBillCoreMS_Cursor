@@ -195,7 +195,7 @@ namespace BMSBT.Controllers
                     btNoValue = customer.BTNo;
                     projectName = customer.Project;
                     customerName = customer.CustomerName;
-                    block = customer.Block;
+                    block = customer.Category;
                     sector = customer.Sector;
                 }
 

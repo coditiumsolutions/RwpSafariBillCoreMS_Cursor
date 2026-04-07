@@ -443,24 +443,24 @@ namespace BMSBT.Controllers
                     CustomerName = customer.CustomerName,
                     Cnicno = customer.CNICNo,
                     FatherName = customer.FatherName,
-                    InstalledOn = customer.InstalledOn,
+                    InstalledOn = null,
                     MobileNo = customer.MobileNo,
-                    TelephoneNo = customer.TelephoneNo,
-                    Ntnnumber = customer.NTNNumber,
+                    TelephoneNo = null,
+                    Ntnnumber = null,
                     City = customer.City,
                     Project = customer.Project,
                     SubProject = customer.SubProject,
-                    TariffName = customer.TariffName,
-                    BankNo = customer.BankNo,
+                    TariffName = "",
+                    BankNo = null,
                     BtnoMaintenance = customer.BTNo,
                     Category = customer.Category,
-                    Block = customer.Block,
-                    PlotType = customer.PlotType,
+                    Block = customer.Category,
+                    PlotType = customer.PlotStatus,
                     Size = customer.Size,
                     Sector = customer.Sector,
                     PloNo = customer.PloNo,
-                    BillStatusMaint = customer.BillStatusMaint,
-                    BillStatus = customer.BillStatus,
+                    BillStatusMaint = customer.BillGenerationStatus,
+                    BillStatus = customer.BillGenerationStatus,
                     InvoiceNo = bill.InvoiceNo,
                     BillingMonth = bill.BillingMonth,
                     BillingYear = bill.BillingYear,
@@ -508,8 +508,10 @@ namespace BMSBT.Controllers
         [Route("Maintenance/Details/{id}")]
         public IActionResult Details(string id)
         {
-            // Fetch the bill by ID
-            var bill = _dbContext.MaintenanceBills.FirstOrDefault(b => b.InvoiceNo == id);
+            // InvoiceNo is not a DB column; details route uses uid (see MaintenanceBills / db.txt).
+            MaintenanceBill? bill = null;
+            if (int.TryParse(id, out var uid))
+                bill = _dbContext.MaintenanceBills.FirstOrDefault(b => b.Uid == uid);
 
             // Handle case where the bill does not exist
             if (bill == null)

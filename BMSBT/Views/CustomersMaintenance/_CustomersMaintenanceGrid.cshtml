@@ -8,18 +8,18 @@
                    value="@item.Uid"
                    data-btno="@item.BTNo"
                    data-customer-name="@item.CustomerName"
-                   data-tariff-name="@item.TariffName" />
+                   data-tariff-name="@item.Category" />
         </td>
         <td>@item.CustomerName</td>
         <td>@item.BTNo</td>
         <td>@item.Project</td>
         <td>@item.SubProject</td>
         <td>@item.Sector</td>
-        <td>@item.TariffName</td>
-        <td>@item.BTNoMaintenance</td>
+        <td>@item.Category</td>
+        <td>@item.StreetNumber</td>
         <td>
-            <span class="badge @(item.BillStatusMaint == "Paid" ? "badge-success" : "badge-warning")">
-                @item.BillStatusMaint
+            <span class="badge badge-secondary">
+                @(item.BillGenerationStatus ?? "—")
             </span>
         </td>
         <td>

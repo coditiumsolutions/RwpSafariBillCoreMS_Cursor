@@ -5,9 +5,11 @@
     Layout = "~/Views/Shared/_LayoutMaintBills.cshtml";
     var projects = ViewBag.Projects as List<string> ?? new List<string>();
     var selectedProject = ViewBag.SelectedProject as string ?? "";
+    var selectedSubProject = ViewBag.SelectedSubProject as string ?? "";
     var selectedMonth = ViewBag.SelectedMonth as string ?? "";
     var selectedYear = ViewBag.SelectedYear as string ?? "";
     var custNoOrName = ViewBag.CustNoOrName as string ?? "";
+    var incompleteFilterSelection = (bool?)ViewBag.IncompleteFilterSelection ?? false;
     var monthNames = CultureInfo.CurrentCulture.DateTimeFormat.MonthNames.Take(12).Where(n => !string.IsNullOrEmpty(n)).ToList();
     var paginationStartPage = 1;
     var paginationEndPage = 1;
@@ -96,7 +98,7 @@
         <div class="row g-3 align-items-end">
             <div class="col-md-3">
                 <label class="form-label">Project</label>
-                <select name="project" id="project" class="form-control" required>
+                <select name="project" id="project" class="form-control">
                     <option value="">-- Select Project --</option>
                     @foreach (var p in projects)
                     {
@@ -113,7 +115,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Billing Month</label>
-                <select name="month" id="month" class="form-control" required>
+                <select name="month" id="month" class="form-control">
                     <option value="">-- Month --</option>
                     @foreach (var name in monthNames)
                     {
@@ -129,8 +131,14 @@
                 </select>
             </div>
             <div class="col-md-3">
+                <label class="form-label">SubProject</label>
+                <select name="subProject" id="subProject" class="form-control">
+                    <option value="">-- All SubProjects --</option>
+                </select>
+            </div>
+            <div class="col-md-3">
                 <label class="form-label">Billing Year</label>
-                <select name="year" id="year" class="form-control" required>
+                <select name="year" id="year" class="form-control">
                     <option value="">-- Year --</option>
                     @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 10; y--)
                     {
@@ -146,20 +154,32 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">CustNo/Name</label>
-                <input type="text" name="custNoOrName" class="form-control" placeholder="Customer No or Name (optional)" value="@custNoOrName" />
+                <label class="form-label">BTNo/CustomerName</label>
+                <input type="text" name="custNoOrName" id="custNoOrName" class="form-control" placeholder="BTNo or CustomerName (optional)" value="@custNoOrName" />
             </div>
             <div class="col-md-2 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary">Search Bills</button>
             </div>
         </div>
+        <div class="row mt-2">
+            <div class="col-12">
+                <small class="text-muted">Use either: (1) Project + Billing Month + Billing Year, or (2) BTNo/CustomerName to search by either BTNo or CustomerName.</small>
+            </div>
+        </div>
     </form>
+
+    @if (incompleteFilterSelection)
+    {
+        <div class="alert alert-warning">
+            Please select <strong>Project</strong>, <strong>Billing Month</strong>, and <strong>Billing Year</strong> together, or use <strong>BTNo/CustomerName</strong> only.
+        </div>
+    }
 
     <div class="table-responsive">
         <table class="table table-bordered grid-table">
             <thead>
                 <tr>
-                    <th>Customer No</th>
+                    <th>BTNo</th>
                     <th>Customer Name</th>
                     <th>Billing Month</th>
                     <th>Billing Year</th>
@@ -174,7 +194,7 @@
                     @foreach (var item in Model.Items)
                     {
                         <tr class="bill-row" data-uid="@item.Uid" data-print-url="@Url.Action("Print", "MaintenanceNew", new { id = item.Uid, project = selectedProject })" ondblclick="window.open(this.getAttribute('data-print-url'), '_blank');">
-                            <td>@item.CustomerNo</td>
+                            <td>@item.Btno</td>
                             <td>@item.CustomerName</td>
                             <td>@item.BillingMonth</td>
                             <td>@item.BillingYear</td>
@@ -190,8 +210,8 @@
                 {
                     <tr>
                         <td colspan="7" class="no-data">
-                            @(string.IsNullOrEmpty(selectedProject) || string.IsNullOrEmpty(selectedMonth) || string.IsNullOrEmpty(selectedYear)
-                                ? "Select Project, Billing Month and Billing Year, then click Search Bills."
+                            @(string.IsNullOrEmpty(custNoOrName) && (string.IsNullOrEmpty(selectedProject) || string.IsNullOrEmpty(selectedMonth) || string.IsNullOrEmpty(selectedYear))
+                                ? "Select Project, Billing Month and Billing Year, or enter BTNo/CustomerName, then click Search Bills."
                                 : "No records found for the selected criteria.")
                         </td>
                     </tr>
@@ -200,7 +220,7 @@
         </table>
     </div>
 
-    @if (Model != null && !string.IsNullOrEmpty(selectedProject) && !string.IsNullOrEmpty(selectedMonth) && !string.IsNullOrEmpty(selectedYear))
+    @if (Model != null && (!string.IsNullOrEmpty(custNoOrName) || (!string.IsNullOrEmpty(selectedProject) && !string.IsNullOrEmpty(selectedMonth) && !string.IsNullOrEmpty(selectedYear))))
     {
         <p class="mt-2 mb-1"><strong>Total Records:</strong> @Model.TotalRecords</p>
     }
@@ -217,6 +237,7 @@
                         <a class="page-link"
                            asp-action="AllBills"
                            asp-route-project="@selectedProject"
+                           asp-route-subProject="@selectedSubProject"
                            asp-route-month="@selectedMonth"
                            asp-route-year="@selectedYear"
                            asp-route-custNoOrName="@custNoOrName"
@@ -231,6 +252,7 @@
                             <a class="page-link"
                                asp-action="AllBills"
                                asp-route-project="@selectedProject"
+                               asp-route-subProject="@selectedSubProject"
                                asp-route-month="@selectedMonth"
                                asp-route-year="@selectedYear"
                                asp-route-custNoOrName="@custNoOrName"
@@ -243,6 +265,7 @@
                         <a class="page-link"
                            asp-action="AllBills"
                            asp-route-project="@selectedProject"
+                           asp-route-subProject="@selectedSubProject"
                            asp-route-month="@selectedMonth"
                            asp-route-year="@selectedYear"
                            asp-route-custNoOrName="@custNoOrName"
@@ -255,6 +278,7 @@
             </nav>
             <form method="get" asp-action="AllBills" asp-controller="MaintenanceNew" class="go-to-page d-inline">
                 <input type="hidden" name="project" value="@selectedProject" />
+                <input type="hidden" name="subProject" value="@selectedSubProject" />
                 <input type="hidden" name="month" value="@selectedMonth" />
                 <input type="hidden" name="year" value="@selectedYear" />
                 <input type="hidden" name="custNoOrName" value="@custNoOrName" />
@@ -267,3 +291,57 @@
 
     <p class="text-muted small mt-2">Double-click a row to open the printable bill in a new tab.</p>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var form = document.querySelector('form.filter-section');
+            if (!form) return;
+            var subProjectUrl = '@Url.Action("GetSubProjectPhaseNumbers", "MaintenanceNew")';
+            var selectedSubProject = '@selectedSubProject';
+
+            function loadSubProjects(project, preselect) {
+                var ddl = document.getElementById('subProject');
+                if (!ddl) return;
+                ddl.innerHTML = '';
+                ddl.appendChild(new Option('-- All SubProjects --', ''));
+                if (!project) return;
+
+                $.getJSON(subProjectUrl, { project: project }, function (items) {
+                    if (Array.isArray(items)) {
+                        items.forEach(function (v) {
+                            ddl.appendChild(new Option(v, v));
+                        });
+                    }
+                    if (preselect) {
+                        ddl.value = preselect;
+                    }
+                });
+            }
+
+            var projectDdl = document.getElementById('project');
+            if (projectDdl) {
+                projectDdl.addEventListener('change', function () {
+                    loadSubProjects(this.value || '', '');
+                });
+            }
+
+            loadSubProjects((document.getElementById('project') || {}).value || '', selectedSubProject);
+
+            form.addEventListener('submit', function (e) {
+                var project = (document.getElementById('project') || {}).value || '';
+                var month = (document.getElementById('month') || {}).value || '';
+                var year = (document.getElementById('year') || {}).value || '';
+                var term = (document.getElementById('custNoOrName') || {}).value || '';
+                var hasTerm = term.trim().length > 0;
+                var hasAnyFilter = project || month || year;
+                var hasAllFilters = project && month && year;
+
+                if (!hasTerm && hasAnyFilter && !hasAllFilters) {
+                    e.preventDefault();
+                    alert('Please select Project, Billing Month and Billing Year together, or enter BTNo/CustomerName only.');
+                }
+            });
+        })();
+    </script>
+}
