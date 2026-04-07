@@ -92,6 +92,25 @@ public class MaintenanceBillInsertController : ControllerBase
             }
 
             var updates = new List<object>();
+            var reasonCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            int createdCount = 0;
+
+            void AddReason(string reason)
+            {
+                if (string.IsNullOrWhiteSpace(reason))
+                {
+                    reason = "Unknown";
+                }
+
+                if (reasonCounts.ContainsKey(reason))
+                {
+                    reasonCounts[reason]++;
+                }
+                else
+                {
+                    reasonCounts[reason] = 1;
+                }
+            }
 
             foreach (var customer in customers)
             {
@@ -116,6 +135,7 @@ public class MaintenanceBillInsertController : ControllerBase
                     statusValue = $"Bill Already Generated-{billingYear}-{billingMonth}";
                     customer.BillGenerationStatus = statusValue;
                     updates.Add(new { uid = customer.Uid, status = statusValue });
+                    AddReason(statusValue);
                     continue;
                 }
 
@@ -125,6 +145,7 @@ public class MaintenanceBillInsertController : ControllerBase
                     statusValue = "Disconnected Customer";
                     customer.BillGenerationStatus = statusValue;
                     updates.Add(new { uid = customer.Uid, status = statusValue });
+                    AddReason(statusValue);
                     continue;
                 }
 
@@ -165,6 +186,7 @@ public class MaintenanceBillInsertController : ControllerBase
                         statusValue = "previous bill not exist";
                         customer.BillGenerationStatus = statusValue;
                         updates.Add(new { uid = customer.Uid, status = statusValue });
+                        AddReason(statusValue);
                         continue;
                     }
                 }
@@ -178,6 +200,7 @@ public class MaintenanceBillInsertController : ControllerBase
                         statusValue = "Rates Undefined";
                         customer.BillGenerationStatus = statusValue;
                         updates.Add(new { uid = customer.Uid, status = statusValue });
+                        AddReason(statusValue);
                         continue;
                     }
 
@@ -210,6 +233,8 @@ public class MaintenanceBillInsertController : ControllerBase
                     // Update BillGenerationStatus in CustomersMaintenance table
                     statusValue = $"{billingMonth}-{billingYear}";
                     customer.BillGenerationStatus = statusValue;
+                    createdCount++;
+                    AddReason("Created");
                 }
 
                 updates.Add(new { uid = customer.Uid, status = statusValue });
@@ -218,7 +243,23 @@ public class MaintenanceBillInsertController : ControllerBase
             // Save all customer status updates to the database
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            return Ok(new { success = true, message = $"Maintenance bills process completed for {billingMonth} {billingYear}.", updates });
+            var matchedCount = customers.Count;
+            var skippedCount = matchedCount - createdCount;
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Maintenance bills process completed for {billingMonth} {billingYear}.",
+                updates,
+                summary = new
+                {
+                    selected = customerUids.Length,
+                    matched = matchedCount,
+                    created = createdCount,
+                    skipped = skippedCount,
+                    reasons = reasonCounts
+                }
+            });
         }
         catch (Exception ex)
         {

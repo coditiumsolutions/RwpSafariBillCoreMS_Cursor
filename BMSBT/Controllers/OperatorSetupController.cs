@@ -101,6 +101,16 @@ namespace BMSBT.Controllers
             return View(data);
         }
 
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var data = await _context.OperatorsSetups.FirstOrDefaultAsync(o => o.Uid == id);
+            if (data == null) return NotFound();
+
+            return View(data);
+        }
+
 
 
         [HttpPost]

@@ -1,0 +1,33 @@
+@model BMSBT.Models.OperatorsSetup
+
+@{
+    ViewData["Title"] = "Operator Setup Details";
+    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
+}
+
+<h3>Operator Setup Details</h3>
+
+<table class="table table-bordered table-striped">
+    <tbody>
+        <tr><th>Operator ID</th><td>@Model.OperatorID</td></tr>
+        <tr><th>Operator Name</th><td>@Model.OperatorName</td></tr>
+        <tr><th>Billing Month</th><td>@Model.BillingMonth</td></tr>
+        <tr><th>Billing Year</th><td>@Model.BillingYear</td></tr>
+        <tr><th>Bank Name</th><td>@Model.BankName</td></tr>
+        <tr><th>Reading Date</th><td>@Model.ReadingDate?.ToString("yyyy-MM-dd")</td></tr>
+        <tr><th>Issue Date</th><td>@Model.IssueDate?.ToString("yyyy-MM-dd")</td></tr>
+        <tr><th>Due Date</th><td>@Model.DueDate?.ToString("yyyy-MM-dd")</td></tr>
+        <tr><th>Paid Date</th><td>@Model.PaidDate?.ToString("yyyy-MM-dd")</td></tr>
+        <tr><th>Valid Date</th><td>@Model.ValidDate?.ToString("yyyy-MM-dd")</td></tr>
+        <tr><th>FPA Month 1</th><td>@Model.FPAMonth1</td></tr>
+        <tr><th>FPA Year 1</th><td>@Model.FPAYEAR1</td></tr>
+        <tr><th>FPA Rate 1</th><td>@Model.FPARate1</td></tr>
+        <tr><th>FPA Month 2</th><td>@Model.FPAMonth2</td></tr>
+        <tr><th>FPA Year 2</th><td>@Model.FPAYEAR2</td></tr>
+        <tr><th>FPA Rate 2</th><td>@Model.FPARate2</td></tr>
+        <tr><th>History</th><td>@Model.History</td></tr>
+    </tbody>
+</table>
+
+<a asp-action="Edit" asp-route-id="@Model.Uid" class="btn btn-primary">Edit</a>
+<a asp-action="Index" class="btn btn-secondary">Back</a>

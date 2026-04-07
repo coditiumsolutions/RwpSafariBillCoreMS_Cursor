@@ -205,7 +205,28 @@
                                 checkbox.prop('checked', false);
                             });
                         }
-                        alert(response.message || 'MBills process completed.');
+                        var message = response.message || 'MBills process completed.';
+                        if (response.summary) {
+                            var s = response.summary;
+                            var lines = [
+                                message,
+                                '',
+                                'Selected: ' + (s.selected ?? 0),
+                                'Matched: ' + (s.matched ?? 0),
+                                'Created: ' + (s.created ?? 0),
+                                'Skipped: ' + (s.skipped ?? 0)
+                            ];
+
+                            if (s.reasons) {
+                                lines.push('', 'Reason-wise:');
+                                Object.keys(s.reasons).forEach(function (k) {
+                                    lines.push('- ' + k + ': ' + s.reasons[k]);
+                                });
+                            }
+                            alert(lines.join('\n'));
+                        } else {
+                            alert(message);
+                        }
                     } else {
                         alert('MBill generation completed, but response was unexpected.');
                     }
