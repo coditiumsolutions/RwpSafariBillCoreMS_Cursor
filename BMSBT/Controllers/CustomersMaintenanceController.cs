@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BMSBT.Models;
 using System.Linq;
@@ -144,16 +145,12 @@ namespace BMSBT.Controllers
         // GET: CustomersMaintenance/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var customer = await _context.CustomersMaintenance.FindAsync(id);
-            if (customer == null)
-            {
-                return NotFound();
-            }
+            if (customer == null) return NotFound();
+
+            PopulateEditDropdowns(customer.Project);
             return View(customer);
         }
 
@@ -162,10 +159,7 @@ namespace BMSBT.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, CustomersMaintenance customer)
         {
-            if (id != customer.Uid)
-            {
-                return NotFound();
-            }
+            if (id != customer.Uid) return NotFound();
 
             if (ModelState.IsValid)
             {
@@ -173,21 +167,82 @@ namespace BMSBT.Controllers
                 {
                     _context.Update(customer);
                     await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = $"Customer '{customer.CustomerName}' updated successfully.";
+                    return RedirectToAction("CustomersMaintenance", "MaintenanceNew");
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!CustomerExists(customer.Uid))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    if (!CustomerExists(customer.Uid)) return NotFound();
+                    throw;
                 }
-                return RedirectToAction(nameof(Index));
             }
+            PopulateEditDropdowns(customer.Project);
             return View(customer);
+        }
+
+        [HttpGet]
+        public JsonResult GetPhasesByProject(string project)
+        {
+            if (string.IsNullOrWhiteSpace(project))
+                return Json(new List<string>());
+
+            var phases = _context.Configurations
+                .Where(c => c.ConfigKey != null && c.ConfigKey.Trim() == project.Trim()
+                            && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct()
+                .OrderBy(v => v)
+                .ToList();
+            return Json(phases);
+        }
+
+        private void PopulateEditDropdowns(string? selectedProject)
+        {
+            ViewBag.ProjectList = _context.Configurations
+                .Where(c => c.ConfigKey == "Projects" && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct()
+                .OrderBy(p => p)
+                .Select(p => new SelectListItem { Value = p, Text = p })
+                .ToList();
+
+            var phaseNumbers = new List<SelectListItem>();
+            if (!string.IsNullOrWhiteSpace(selectedProject))
+            {
+                phaseNumbers = _context.Configurations
+                    .Where(c => c.ConfigKey != null && c.ConfigKey.Trim() == selectedProject.Trim()
+                                && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                    .Select(c => c.ConfigValue!)
+                    .AsEnumerable()
+                    .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(v => v.Trim())
+                    .Where(v => !string.IsNullOrWhiteSpace(v))
+                    .Distinct()
+                    .OrderBy(v => v)
+                    .Select(v => new SelectListItem { Value = v, Text = v })
+                    .ToList();
+            }
+            ViewBag.PhaseNameList = phaseNumbers;
+
+            ViewBag.CategoryList = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "Residential", Text = "Residential" },
+                new SelectListItem { Value = "Commercial",  Text = "Commercial"  }
+            };
+
+            ViewBag.ConnectionStatusList = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "Connected",    Text = "Connected"    },
+                new SelectListItem { Value = "Disconnected", Text = "Disconnected" }
+            };
         }
 
         // GET: CustomersMaintenance/Delete/5

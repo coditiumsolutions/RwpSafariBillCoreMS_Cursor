@@ -1,3 +1,4 @@
+using BMSBT.BillServices;
 using BMSBT.DTO;
 using BMSBT.Models;
 using BMSBT.Services;
@@ -15,11 +16,13 @@ public class MaintenanceBillInsertController : ControllerBase
 {
     private readonly IMaintenanceBillInsertService _service;
     private readonly BmsbtContext _dbContext;
+    private readonly IBillingService _billingService;
 
-    public MaintenanceBillInsertController(IMaintenanceBillInsertService service, BmsbtContext dbContext)
+    public MaintenanceBillInsertController(IMaintenanceBillInsertService service, BmsbtContext dbContext, IBillingService billingService)
     {
         _service = service;
         _dbContext = dbContext;
+        _billingService = billingService;
     }
 
     /// <summary>
@@ -54,10 +57,13 @@ public class MaintenanceBillInsertController : ControllerBase
     /// Uses BillingMonth/BillingYear from OperatorsSetup where OperatorName = 'Shahid'.
     /// </summary>
     [HttpPost("from-customers")]
-    public async Task<IActionResult> CreateFromCustomerSelection([FromBody] int[] customerUids, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateFromCustomerSelection([FromBody] BillingSelectionRequest request, CancellationToken cancellationToken)
     {
         try
         {
+            var customerUids = request?.SelectedIds ?? Array.Empty<int>();
+            var dryRun = request?.DryRun ?? false;
+
             if (customerUids == null || customerUids.Length == 0)
             {
                 return BadRequest(new { success = false, message = "No customers selected." });
@@ -93,6 +99,7 @@ public class MaintenanceBillInsertController : ControllerBase
 
             var updates = new List<object>();
             var reasonCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var detailedLogs = new List<BillingCustomerResult>();
             int createdCount = 0;
 
             void AddReason(string reason)
@@ -114,6 +121,21 @@ public class MaintenanceBillInsertController : ControllerBase
 
             foreach (var customer in customers)
             {
+                BillingCustomerResult BaseLog(string status, string reason) => new BillingCustomerResult
+                {
+                    CustomerUid = customer.Uid,
+                    CustomerNo = customer.CustomerNo ?? string.Empty,
+                    BTNo = customer.BTNo ?? string.Empty,
+                    CustomerName = customer.CustomerName ?? string.Empty,
+                    Project = customer.Project ?? string.Empty,
+                    Category = customer.Category ?? string.Empty,
+                    Size = customer.Size ?? string.Empty,
+                    PhaseName = customer.SubProject ?? string.Empty,
+                    Status = status,
+                    Reason = reason,
+                    RulesVersion = "1.3"
+                };
+
                 // dbo.CustomersMaintenance: BTNo only (legacy BTNoMaintenance column removed from schema).
                 string? btNoForLookup = customer.BTNo?.Trim();
                 string statusValue = "";
@@ -134,6 +156,7 @@ public class MaintenanceBillInsertController : ControllerBase
                 {
                     statusValue = $"Bill Already Generated-{billingYear}-{billingMonth}";
                     customer.BillGenerationStatus = statusValue;
+                    detailedLogs.Add(BaseLog("Skipped", statusValue));
                     updates.Add(new { uid = customer.Uid, status = statusValue });
                     AddReason(statusValue);
                     continue;
@@ -144,6 +167,7 @@ public class MaintenanceBillInsertController : ControllerBase
                 {
                     statusValue = "Disconnected Customer";
                     customer.BillGenerationStatus = statusValue;
+                    detailedLogs.Add(BaseLog("Skipped", statusValue));
                     updates.Add(new { uid = customer.Uid, status = statusValue });
                     AddReason(statusValue);
                     continue;
@@ -185,6 +209,7 @@ public class MaintenanceBillInsertController : ControllerBase
                         // Last month bill missing but other bill(s) exist -> do not generate, set status
                         statusValue = "previous bill not exist";
                         customer.BillGenerationStatus = statusValue;
+                        detailedLogs.Add(BaseLog("Skipped", statusValue));
                         updates.Add(new { uid = customer.Uid, status = statusValue });
                         AddReason(statusValue);
                         continue;
@@ -193,12 +218,13 @@ public class MaintenanceBillInsertController : ControllerBase
 
                 if (shouldGenerate)
                 {
-                    // Check if Rate is defined (SubProject = Rates.Phase) before creating bill
-                    var rate = LookupRateByPhase(customer.SubProject);
-                    if (rate == null)
+                    // MaintenanceTarrif: Project + Category + Size
+                    var tariff = MaintenanceTariffLookup.FindTariff(_dbContext, customer.Project, customer.Category, customer.Size);
+                    if (tariff == null)
                     {
                         statusValue = "Rates Undefined";
                         customer.BillGenerationStatus = statusValue;
+                        detailedLogs.Add(BaseLog("Failed", statusValue));
                         updates.Add(new { uid = customer.Uid, status = statusValue });
                         AddReason(statusValue);
                         continue;
@@ -228,35 +254,65 @@ public class MaintenanceBillInsertController : ControllerBase
                         ValidDate = validDate
                     };
 
-                    await _service.CreateAsync(dto, cancellationToken);
+                    // Step 1-3: Billing rules service with optional dry-run
+                    var result = _billingService.generateMaintenanceBill(customer, dryRun);
+                    detailedLogs.Add(result);
+                    statusValue = result.Status;
+                    if (!string.IsNullOrWhiteSpace(result.Reason))
+                    {
+                        statusValue = $"{result.Status}: {result.Reason}";
+                    }
 
-                    // Update BillGenerationStatus in CustomersMaintenance table
-                    statusValue = $"{billingMonth}-{billingYear}";
-                    customer.BillGenerationStatus = statusValue;
-                    createdCount++;
-                    AddReason("Created");
+                    if (!dryRun && result.Status == "Generated")
+                    {
+                        createdCount++;
+                        AddReason("Generated");
+                    }
+                    else if (result.Status == "Skipped" || result.Status == "Preview")
+                    {
+                        AddReason(result.Status);
+                    }
+                    else
+                    {
+                        AddReason("Failed");
+                    }
+                }
+                else
+                {
+                    statusValue = "Not eligible for generation";
+                    detailedLogs.Add(BaseLog("Skipped", statusValue));
                 }
 
                 updates.Add(new { uid = customer.Uid, status = statusValue });
             }
 
             // Save all customer status updates to the database
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            if (!dryRun)
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
 
             var matchedCount = customers.Count;
-            var skippedCount = matchedCount - createdCount;
+            var failedCount = detailedLogs.Count(x => x.Status == "Failed");
+            var skippedCount = detailedLogs.Count(x => x.Status == "Skipped" || x.Status == "Preview");
 
             return Ok(new
             {
                 success = true,
-                message = $"Maintenance bills process completed for {billingMonth} {billingYear}.",
+                message = dryRun
+                    ? $"Dry-run completed for {billingMonth} {billingYear}. No bills were saved."
+                    : $"Maintenance bills process completed for {billingMonth} {billingYear}.",
+                dryRun,
                 updates,
+                customerLogs = detailedLogs,
                 summary = new
                 {
                     selected = customerUids.Length,
                     matched = matchedCount,
                     created = createdCount,
                     skipped = skippedCount,
+                    failed = failedCount,
+                    rulesVersion = "1.3",
                     reasons = reasonCounts
                 }
             });
@@ -267,18 +323,6 @@ public class MaintenanceBillInsertController : ControllerBase
             var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
             return StatusCode(500, new { success = false, message = $"Error generating MBills: {message}", details = ex.StackTrace });
         }
-    }
-
-    private Rate? LookupRateByPhase(string? subProject)
-    {
-        var phase = subProject?.Trim() ?? "";
-        if (string.IsNullOrEmpty(phase))
-            return null;
-
-        return _dbContext.Rates
-            .AsEnumerable()
-            .FirstOrDefault(r =>
-                string.Equals(r.Phase?.Trim(), phase, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -297,5 +341,11 @@ public class MaintenanceBillInsertController : ControllerBase
 
         return (months[prevMonthIdx], prevYear.ToString());
     }
+}
+
+public sealed class BillingSelectionRequest
+{
+    public int[] SelectedIds { get; set; } = Array.Empty<int>();
+    public bool DryRun { get; set; }
 }
 

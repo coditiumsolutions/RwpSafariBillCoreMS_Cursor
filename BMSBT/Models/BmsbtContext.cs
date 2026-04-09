@@ -98,7 +98,7 @@ public partial class BmsbtContext : DbContext
         {
             entity.ToTable("CustomersMaintenance");
             entity.Property(e => e.CustomerNo).HasColumnName("KuickPayNo").HasMaxLength(20);
-            entity.Property(e => e.SubProject).HasColumnName("PhaseNumber").HasMaxLength(50);
+            entity.Property(e => e.SubProject).HasColumnName("PhaseName").HasMaxLength(50);
             entity.Property(e => e.CNICNo).HasColumnName("CNICNo").HasMaxLength(50);
             entity.Property(e => e.PloNo).HasColumnName("PloNo").HasMaxLength(100);
             entity.Property(e => e.StreetNumber).HasColumnName("StreetNumber").HasMaxLength(50);
@@ -315,7 +315,9 @@ public partial class BmsbtContext : DbContext
             entity.ToTable("MaintenanceTarrif");
 
             entity.Property(e => e.Uid).HasColumnName("UID");
-            entity.Property(e => e.PlotType).IsUnicode(false);
+            entity.Property(e => e.Category)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.Project)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -535,3 +537,4 @@ public partial class BmsbtContext : DbContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
+

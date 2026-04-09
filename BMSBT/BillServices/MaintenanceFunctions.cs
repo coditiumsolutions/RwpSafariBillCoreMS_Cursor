@@ -49,23 +49,19 @@ namespace BMSBT.BillServices
                 return $"Disconnected customer: {customer.CustomerName}. Bill not generated.";
             }
 
-            // Pick Rate by SubProject from CustomersMaintenance matching Rates.Phase.
-            // Use:
-            // - Rates.MaintCharges  -> MaintenanceBills.MaintCharges
-            // - Rates.Tax           -> MaintenanceBills.TaxAmount
-            // - Rates.Misc          -> MaintenanceBills.MiscCharges (and include in total bill)
-            var rate = GetRateByPhase(customer.SubProject);
-            if (rate == null)
+            // Pick charges from MaintenanceTarrif: Project + Category + Size must match the customer row.
+            var tariff = MaintenanceTariffLookup.FindTariff(_dbContext, customer.Project, customer.Category, customer.Size);
+            if (tariff == null)
             {
                 customer.BillGenerationStatus = "Rates Undefined";
                 _dbContext.Update(customer);
                 _dbContext.SaveChanges();
-                return $"Rates undefined for SubProject/Phase={customer.SubProject}. Bill not generated for {customer.CustomerName}.";
+                return $"Rates undefined for Project={customer.Project}, Category={customer.Category}, Size={customer.Size}. Bill not generated for {customer.CustomerName}.";
             }
 
-            decimal maintCharges = rate.MaintCharges;
-            decimal taxAmount = rate.Tax;
-            decimal miscCharges = rate.Misc;
+            decimal maintCharges = (decimal)tariff.Charges;
+            decimal taxAmount = MaintenanceTariffLookup.ParseTaxAmount(tariff.Tax);
+            decimal miscCharges = 0m;
 
             // Check previous bill and determine arrears
             decimal? arrearsAmount = 0;
@@ -94,7 +90,7 @@ namespace BMSBT.BillServices
             }
 
 
-            // Generate a new bill with arrears (MaintCharges + MiscCharges from Rates table)
+            // Generate a new bill with arrears (MaintCharges + Tax from MaintenanceTarrif; Misc = 0)
             var newBill = CreateNewBill(customer, currentBillingMonth, currentBillingYear,
                                         maintCharges, taxAmount, miscCharges,
                                         IssueDate, DueDate, arrearsAmount);
@@ -161,33 +157,6 @@ namespace BMSBT.BillServices
 
         }
 
-
-
-        /// <summary>Look up Rates by Phase = CustomersMaintenance.SubProject. Returns null if no matching active rate. MaintCharges from this rate is used for MaintenanceBills.MaintCharges.</summary>
-        private Rate? GetRateByPhase(string? subProject)
-        {
-            var phase = subProject?.Trim() ?? "";
-            if (string.IsNullOrEmpty(phase))
-                return null;
-
-            return _dbContext.Rates
-                .AsEnumerable()
-                .FirstOrDefault(r =>
-                    string.Equals(r.Phase?.Trim(), phase, StringComparison.OrdinalIgnoreCase));
-        }
-
-        private MaintenanceTarrif? GetTarrifDetails(CustomersMaintenance customer, string month, string year)
-            {
-                // Fetch the customer details based on the BTNo
-                var customerDetail = _dbContext.CustomersMaintenance.FirstOrDefault(c => c.BTNo == customer.BTNo);
-
-                // Return the matching maintenance tariff if customer details are found
-                return _dbContext.MaintenanceTarrifs
-                    .FirstOrDefault(t => customerDetail != null
-                                         && t.PlotType == customerDetail.PlotStatus
-                                         && t.Size == customerDetail.Size
-                                         && t.Project == customerDetail.Project);
-            }
 
 
         /// <summary>Effective BTNo on bill rows (dbo.CustomersMaintenance has BTNo only; BTNoMaintenance not in current schema).</summary>
@@ -309,8 +278,11 @@ namespace BMSBT.BillServices
                 CustomerNo = customer.CustomerNo,
                 CustomerName = customer.CustomerName,
                 Btno = btNoFromCustomer,
+                Project = customer.Project,
+                Category = customer.Category,
                 BillingMonth = month,
                 BillingYear = year,
+                PhaseName = customer.SubProject,
 
                 // Assign as int (DB columns are int)
                 BillAmountInDueDate = (int)billInDueDate,
@@ -387,3 +359,4 @@ namespace BMSBT.BillServices
      
     }
 }
+

@@ -1,3 +1,4 @@
+using BMSBT.BillServices;
 using BMSBT.DTO;
 using BMSBT.Models;
 using Microsoft.EntityFrameworkCore;
@@ -30,16 +31,16 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
         var now = DateTime.Now;
         var today = DateOnly.FromDateTime(now);
 
-        // Match: CustomersMaintenance.SubProject = Rates.Phase; Fetch: Rates.MaintCharges, Rates.Tax, Rates.Misc
-        var rate = LookupRateByPhase(dto.SubProject);
-        if (rate == null)
+        // Match: MaintenanceTarrif on Project, Category, Size from customer / DTO.
+        var tariff = MaintenanceTariffLookup.FindTariff(_dbContext, dto.Project, dto.Category, dto.Size);
+        if (tariff == null)
         {
             throw new InvalidOperationException("Rates Undefined");
         }
 
-        decimal maintCharges = rate.MaintCharges;
-        decimal taxAmount = rate.Tax;
-        decimal miscCharges = rate.Misc;
+        decimal maintCharges = (decimal)tariff.Charges;
+        decimal taxAmount = MaintenanceTariffLookup.ParseTaxAmount(tariff.Tax);
+        decimal miscCharges = 0m;
 
         // Carry forward arrears logic
         decimal arrears = 0;
@@ -86,6 +87,9 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
             // Billing period (optional, can be null if caller doesn't provide)
             BillingMonth = dto.BillingMonth,
             BillingYear = dto.BillingYear,
+            Project = dto.Project,
+            Category = dto.Category,
+            PhaseName = dto.SubProject,
 
             // Tariff-based values (DB columns are int)
             MaintCharges = (int)maintCharges,
@@ -123,21 +127,6 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return bill;
-    }
-
-    /// <summary>
-    /// Matches: CustomersMaintenance.SubProject = Rates.Phase. Fetches Rates.MaintCharges and Rates.Tax.
-    /// </summary>
-    private Rate? LookupRateByPhase(string? subProject)
-    {
-        var phase = subProject?.Trim() ?? "";
-        if (string.IsNullOrEmpty(phase))
-            return null;
-
-        return _dbContext.Rates
-            .AsEnumerable()
-            .FirstOrDefault(r =>
-                string.Equals(r.Phase?.Trim(), phase, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -255,4 +244,5 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
         return $"{datePart}{lastFive}";
     }
 }
+
 

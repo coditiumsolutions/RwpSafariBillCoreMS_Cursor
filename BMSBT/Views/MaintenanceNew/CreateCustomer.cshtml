@@ -2,12 +2,12 @@
 @using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
-    ViewData["Title"] = "Edit Maintenance Customer";
+    ViewData["Title"] = "Create Maintenance Customer";
     Layout = "~/Views/Shared/_LayoutMaintBills.cshtml";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">Edit Maintenance Customer</h3>
+    <h3 class="mb-0">Create Maintenance Customer</h3>
     <a asp-action="CustomersMaintenance" asp-controller="MaintenanceNew" class="btn btn-secondary">
         <i class="fa fa-arrow-left"></i> Back to List
     </a>
@@ -15,12 +15,11 @@
 
 <div class="card shadow-sm">
     <div class="card-header text-white" style="background-color:#101f63;">
-        <h5 class="mb-0">Customer Information — UID: @Model.Uid</h5>
+        <h5 class="mb-0">Customer Information</h5>
     </div>
     <div class="card-body">
-        <form asp-action="Edit" method="post">
+        <form asp-action="CreateCustomer" asp-controller="MaintenanceNew" method="post">
             @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="Uid" />
 
             @if (!ViewData.ModelState.IsValid)
             {
@@ -37,36 +36,37 @@
             <h6 class="text-muted border-bottom pb-1 mb-3">Identity</h6>
             <div class="row">
                 <div class="col-md-3 mb-3">
-                    <label asp-for="CustomerNo" class="form-label fw-bold">KuickPay No <span class="text-danger">*</span></label>
-                    <input asp-for="CustomerNo" class="form-control" maxlength="20" />
+                    <label asp-for="CustomerNo" class="form-label">KuickPay No <span class="text-danger">*</span></label>
+                    <input asp-for="CustomerNo" class="form-control" maxlength="20" placeholder="e.g. 4010001000" />
                     <span asp-validation-for="CustomerNo" class="text-danger small"></span>
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="BTNo" class="form-label fw-bold">BT No</label>
-                    <input asp-for="BTNo" class="form-control" maxlength="20" />
+                    <label asp-for="BTNo" class="form-label">BT No</label>
+                    <input asp-for="BTNo" class="form-control" maxlength="20" placeholder="e.g. 4010001000" />
                     <span asp-validation-for="BTNo" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6 mb-3">
-                    <label asp-for="CustomerName" class="form-label fw-bold">Customer Name</label>
+                    <label asp-for="CustomerName" class="form-label">Customer Name</label>
                     <input asp-for="CustomerName" class="form-control" maxlength="200" />
+                    <span asp-validation-for="CustomerName" class="text-danger small"></span>
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-md-3 mb-3">
-                    <label asp-for="FatherName" class="form-label fw-bold">Father Name</label>
+                    <label asp-for="FatherName" class="form-label">Father Name</label>
                     <input asp-for="FatherName" class="form-control" maxlength="70" />
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="CNICNo" class="form-label fw-bold">CNIC No</label>
-                    <input asp-for="CNICNo" class="form-control" maxlength="50" />
+                    <label asp-for="CNICNo" class="form-label">CNIC No</label>
+                    <input asp-for="CNICNo" class="form-control" maxlength="50" placeholder="00000-0000000-0" />
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="MobileNo" class="form-label fw-bold">Mobile No</label>
-                    <input asp-for="MobileNo" class="form-control" maxlength="50" />
+                    <label asp-for="MobileNo" class="form-label">Mobile No</label>
+                    <input asp-for="MobileNo" class="form-control" maxlength="50" placeholder="03XX-XXXXXXX" />
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="City" class="form-label fw-bold">City</label>
+                    <label asp-for="City" class="form-label">City</label>
                     <input asp-for="City" class="form-control" maxlength="50" />
                 </div>
             </div>
@@ -74,7 +74,7 @@
             <h6 class="text-muted border-bottom pb-1 mb-3 mt-2">Property</h6>
             <div class="row">
                 <div class="col-md-3 mb-3">
-                    <label asp-for="Project" class="form-label fw-bold">Project <span class="text-danger">*</span></label>
+                    <label asp-for="Project" class="form-label">Project <span class="text-danger">*</span></label>
                     <select asp-for="Project" id="projectSelect" class="form-control"
                             asp-items="@(ViewBag.ProjectList as IEnumerable<SelectListItem>)">
                         <option value="">-- Select Project --</option>
@@ -82,7 +82,7 @@
                     <span asp-validation-for="Project" class="text-danger small"></span>
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="SubProject" class="form-label fw-bold">Phase Name <span class="text-danger">*</span></label>
+                    <label asp-for="SubProject" class="form-label">Phase Name <span class="text-danger">*</span></label>
                     <select asp-for="SubProject" id="phaseSelect" class="form-control"
                             asp-items="@(ViewBag.PhaseNameList as IEnumerable<SelectListItem>)">
                         <option value="">-- Select Phase Name --</option>
@@ -90,7 +90,7 @@
                     <span asp-validation-for="SubProject" class="text-danger small"></span>
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="Category" class="form-label fw-bold">Category <span class="text-danger">*</span></label>
+                    <label asp-for="Category" class="form-label">Category <span class="text-danger">*</span></label>
                     <select asp-for="Category" class="form-control"
                             asp-items="@(ViewBag.CategoryList as IEnumerable<SelectListItem>)">
                         <option value="">-- Select Category --</option>
@@ -98,28 +98,28 @@
                     <span asp-validation-for="Category" class="text-danger small"></span>
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="Size" class="form-label fw-bold">Size</label>
-                    <input asp-for="Size" class="form-control" maxlength="50" />
+                    <label asp-for="Size" class="form-label">Size</label>
+                    <input asp-for="Size" class="form-control" maxlength="50" placeholder="e.g. 814 Sq. Ft." />
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-md-3 mb-3">
-                    <label asp-for="Sector" class="form-label fw-bold">Sector <span class="text-danger">*</span></label>
+                    <label asp-for="Sector" class="form-label">Sector <span class="text-danger">*</span></label>
                     <input asp-for="Sector" class="form-control" maxlength="100" />
                     <span asp-validation-for="Sector" class="text-danger small"></span>
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="PloNo" class="form-label fw-bold">Plot No <span class="text-danger">*</span></label>
+                    <label asp-for="PloNo" class="form-label">Plot No <span class="text-danger">*</span></label>
                     <input asp-for="PloNo" class="form-control" maxlength="100" />
                     <span asp-validation-for="PloNo" class="text-danger small"></span>
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="StreetNumber" class="form-label fw-bold">Street Number</label>
+                    <label asp-for="StreetNumber" class="form-label">Street Number</label>
                     <input asp-for="StreetNumber" class="form-control" maxlength="50" />
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="UnitType" class="form-label fw-bold">Unit Type</label>
+                    <label asp-for="UnitType" class="form-label">Unit Type</label>
                     <input asp-for="UnitType" class="form-control" maxlength="50" />
                 </div>
             </div>
@@ -127,30 +127,30 @@
             <h6 class="text-muted border-bottom pb-1 mb-3 mt-2">Status</h6>
             <div class="row">
                 <div class="col-md-3 mb-3">
-                    <label asp-for="ConnectionStatus" class="form-label fw-bold">Connection Status</label>
+                    <label asp-for="ConnectionStatus" class="form-label">Connection Status</label>
                     <select asp-for="ConnectionStatus" class="form-control"
                             asp-items="@(ViewBag.ConnectionStatusList as IEnumerable<SelectListItem>)">
                         <option value="">-- Select --</option>
                     </select>
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="PlotStatus" class="form-label fw-bold">Plot Status</label>
+                    <label asp-for="PlotStatus" class="form-label">Plot Status</label>
                     <input asp-for="PlotStatus" class="form-control" maxlength="50" />
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="BillGenerationStatus" class="form-label fw-bold">Bill Generation Status</label>
-                    <input asp-for="BillGenerationStatus" class="form-control" maxlength="50" />
+                    <label asp-for="LocationSeqNo" class="form-label">Location Seq No</label>
+                    <input asp-for="LocationSeqNo" class="form-control" maxlength="50" />
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label asp-for="LocationSeqNo" class="form-label fw-bold">Location Seq No</label>
-                    <input asp-for="LocationSeqNo" class="form-control" maxlength="50" />
+                    <label asp-for="GeneratedMonthYear" class="form-label">Generated Month/Year</label>
+                    <input asp-for="GeneratedMonthYear" class="form-control" maxlength="50" placeholder="e.g. April-2026" />
                 </div>
             </div>
 
             <div class="row mt-3">
                 <div class="col-md-12">
                     <button type="submit" class="btn btn-success px-4">
-                        <i class="fa fa-save"></i> Save Changes
+                        <i class="fa fa-save"></i> Save
                     </button>
                     <a asp-action="CustomersMaintenance" asp-controller="MaintenanceNew" class="btn btn-secondary ms-2">Cancel</a>
                 </div>
@@ -163,32 +163,19 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
         $(document).ready(function () {
-            var currentPhase = '@Html.Raw(Model.SubProject?.Replace("'", "\\'") ?? "")';
-
-            function loadPhases(project, selectValue) {
+            $('#projectSelect').change(function () {
+                var project = $(this).val();
                 var $phase = $('#phaseSelect');
                 $phase.empty().append($('<option>').val('').text('-- Select Phase Name --'));
+
                 if (!project) return;
 
-                $.getJSON('@Url.Action("GetPhasesByProject", "CustomersMaintenance")', { project: project }, function (data) {
+                $.getJSON('@Url.Action("GetPhasesByProject", "MaintenanceNew")', { project: project }, function (data) {
                     $.each(data, function (i, phase) {
-                        var $opt = $('<option>').val(phase).text(phase);
-                        if (phase === selectValue) $opt.prop('selected', true);
-                        $phase.append($opt);
+                        $phase.append($('<option>').val(phase).text(phase));
                     });
                 });
-            }
-
-            // On project change: reload phases, clear selected phase
-            $('#projectSelect').change(function () {
-                loadPhases($(this).val(), '');
             });
-
-            // On page load: if a project is already selected, reload its phases and re-select the current phase
-            var currentProject = $('#projectSelect').val();
-            if (currentProject) {
-                loadPhases(currentProject, currentPhase);
-            }
         });
     </script>
 }

@@ -3,7 +3,7 @@ Database: BMSSafariRwp
 Connection (from appsettings.json DefaultConnection, password redacted):
   Server=172.20.229.2; Database=BMSSafariRwp; User Id=admin; Password=***; MultipleActiveResultSets=True; TrustServerCertificate=True;
 
-Generated: 2026-04-07 14:55:11
+Generated: 2026-04-08 12:20:18
 Source: INFORMATION_SCHEMA (user base tables only)
 
 ---
@@ -112,7 +112,7 @@ Table: CustomersMaintenance  (schema: dbo)
   - MobileNo  |  varchar (50)  |  nullable: YES
   - City  |  varchar (50)  |  nullable: YES
   - Project  |  varchar (50)  |  nullable: NO
-  - PhaseNumber  |  varchar (50)  |  nullable: NO
+  - PhaseName  |  varchar (50)  |  nullable: NO
   - Category  |  varchar (100)  |  nullable: NO
   - Size  |  nvarchar (50)  |  nullable: YES
   - Sector  |  varchar (100)  |  nullable: NO
@@ -404,9 +404,9 @@ Table: MaintenanceBills  (schema: dbo)
   - BTNo  |  varchar (50)  |  nullable: YES
   - Plot_Number  |  varchar (50)  |  nullable: YES
   - Street_Number  |  varchar (50)  |  nullable: YES
-  - Phase_Number  |  varchar (50)  |  nullable: YES
-  - Plot_Category  |  varchar (50)  |  nullable: YES
-  - PROJECTNAME  |  varchar (100)  |  nullable: YES
+  - PhaseName  |  varchar (50)  |  nullable: YES
+  - Category  |  varchar (50)  |  nullable: YES
+  - Project  |  varchar (100)  |  nullable: YES
   - PlotStatus  |  varchar (50)  |  nullable: YES
   - BillingMonth  |  varchar (50)  |  nullable: YES
   - BillingYear  |  varchar (50)  |  nullable: YES
@@ -491,9 +491,9 @@ Table: MaintenanceBills_Backup  (schema: dbo)
 Table: MaintenanceTarrif  (schema: dbo)
   - UID  |  int (10,0)  |  nullable: NO
   - Project  |  varchar (50)  |  nullable: NO
-  - PlotType  |  varchar (max)  |  nullable: NO
+  - Category  |  varchar (50)  |  nullable: NO
   - Size  |  nvarchar (100)  |  nullable: NO
-  - Charges  |  float (53)  |  nullable: NO
+  - Charges  |  float  |  nullable: NO
   - Tax  |  nchar (10)  |  nullable: YES
   - History  |  varchar (max)  |  nullable: YES
 
@@ -616,9 +616,9 @@ Table: Tarrif  (schema: dbo)
   - Sequence  |  nvarchar (50)  |  nullable: YES
   - Range  |  varchar (50)  |  nullable: NO
   - Rate1  |  decimal (18,2)  |  nullable: NO
-  - Rate2  |  float (53)  |  nullable: NO
-  - NM  |  float (53)  |  nullable: NO
-  - Min Charges  |  float (53)  |  nullable: YES
+  - Rate2  |  float  |  nullable: NO
+  - NM  |  float  |  nullable: NO
+  - Min Charges  |  float  |  nullable: YES
   - Details  |  varchar (50)  |  nullable: NO
   - CreatedBy  |  varchar (max)  |  nullable: YES
   - CreatedOn  |  varchar (max)  |  nullable: YES
@@ -644,6 +644,3 @@ Table: Users  (schema: dbo)
   - CreatedBy  |  varchar (max)  |  nullable: YES
   - CreatedOn  |  varchar (max)  |  nullable: YES
   - History  |  varchar (max)  |  nullable: YES
-
----
-Total tables: 31

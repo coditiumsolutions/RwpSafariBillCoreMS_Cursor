@@ -1,0 +1,269 @@
+# Billing Business Rules
+**System:** Property Maintenance & Electricity Billing System  
+**Version:** 1.3  
+**Last Updated:** 2026-04-09  
+**Status:** 🟡 In Progress — Maintenance Module (Phase 1 of N)
+
+> Runtime note: This `.mdc` file is documentation and guidance only.  
+> The live billing engine executes C# code in `BMSBT/Services/BillingService.cs` and related controllers/services.
+
+---
+
+## 📋 Table of Contents
+1. [General Rules](#1-general-rules)
+2. [Database Tables](#2-database-tables)
+3. [Tariff Lookup — How to Pick Charges from DB](#3-tariff-lookup--how-to-pick-charges-from-db)
+4. [Maintenance Bill — Calculation Rules](#4-maintenance-bill--calculation-rules)
+5. [Maintenance Bill — Calculation Formula](#5-maintenance-bill--calculation-formula)
+6. [Maintenance Bill — Worked Example](#6-maintenance-bill--worked-example)
+7. [Maintenance Bill — Edge Cases & Validations](#7-maintenance-bill--edge-cases--validations)
+8. [Bill Generation Flow](#8-bill-generation-flow)
+9. [Future Modules (Pending)](#9-future-modules-pending)
+
+---
+
+## 1. General Rules
+
+| Rule | Value |
+|---|---|
+| Billing Cycle | Monthly |
+| Currency | PKR (Pakistani Rupees) |
+| Rounding | Round to nearest whole PKR (no paisa) |
+| Bill Date | 1st of each month |
+| Due Date | 15th of each month (or as configured) |
+| Surcharge Rate | 10% of TotalBill (applied only after Due Date) |
+
+---
+
+## 2. Database Tables
+
+### Table: `MaintenanceTariff`
+This is the **source of truth** for all maintenance charges.  
+The system must ALWAYS read charges from this table — never hardcode amounts.
+
+| Column | Type | Description |
+|---|---|---|
+| `Project` | string | Project name the property belongs to |
+| `Category` | string | Property category (e.g. Residential, Commercial) |
+| `Size` | number | Property size in square yards |
+| `Charges` | number (PKR) | Maintenance charge for this combination |
+| `Tax` | number (PKR) | Tax amount for this combination |
+
+### Table: `Properties`
+| Column | Type | Description |
+|---|---|---|
+| `property_id` | unique id | Unique property identifier |
+| `owner_name` | string | Owner name |
+| `project` | string | Must match `MaintenanceTariff.Project` |
+| `category` | string | Must match `MaintenanceTariff.Category` |
+| `size` | number | Must match `MaintenanceTariff.Size` |
+| `is_active` | boolean | Only active properties are billed |
+
+---
+
+## 3. Tariff Lookup — How to Pick Charges from DB
+
+### Rule T-01 — Lookup Key
+To find the correct tariff for a property, match on **all three fields together**:
+
+```
+Project + Category + Size → one unique row in MaintenanceTariff
+```
+
+### Rule T-02 — SQL Query to Fetch Tariff
+```sql
+SELECT Charges, Tax
+FROM MaintenanceTariff
+WHERE Project  = :property.project
+  AND Category = :property.category
+  AND Size     = :property.size
+```
+
+### Rule T-03 — What to do with fetched values
+```
+BillAmount = MaintenanceTariff.Charges   -- map Charges → BillAmount
+TaxAmount  = MaintenanceTariff.Tax       -- map Tax → TaxAmount
+```
+
+### Rule T-04 — Lookup Failure Handling
+| Scenario | Expected Behavior |
+|---|---|
+| No matching row found | ❌ Reject — log error "Tariff not found for Project+Category+Size", skip bill |
+| Multiple rows found | ❌ Reject — log error "Duplicate tariff entry", alert admin |
+| `Charges` is null or 0 | ❌ Reject — invalid tariff, skip bill |
+| `Tax` is null | ❌ Reject — tax must be defined, skip bill |
+
+> ⚠️ **Rule:** Never proceed to bill calculation if tariff lookup fails.  
+> Always validate the fetched values before calculating.
+
+---
+
+## 4. Maintenance Bill — Calculation Rules
+
+### Rule M-01 — Fetch Charges from Tariff Table
+- Read `Charges` and `Tax` from `MaintenanceTariff` using Project + Category + Size.
+- Map: `BillAmount = Charges`, `TaxAmount = Tax`
+
+### Rule M-02 — Calculate Total Bill
+```
+TotalBill = BillAmount + TaxAmount
+```
+
+### Rule M-03 — Calculate Surcharge
+- Surcharge applies **only if payment is made after the Due Date**.
+- Surcharge is always calculated on `TotalBill`.
+```
+Surcharge = TotalBill * 10 / 100
+```
+
+### Rule M-04 — Payable Amount Based on Payment Date
+```
+BillInDueDate  = TotalBill                  -- paid on or before Due Date
+BillAfterDate  = TotalBill + Surcharge      -- paid after Due Date
+```
+
+### Rule M-05 — Active Properties Only
+- Generate bills only for properties where `is_active = true`.
+
+### Rule M-06 — One Bill Per Property Per Month
+- Prevent duplicate bills for the same property + billing month.
+- If bill already exists → reject and log error.
+
+---
+
+## 5. Maintenance Bill — Calculation Formula
+
+```
+// STEP 1 — Fetch from MaintenanceTariff
+SELECT Charges, Tax
+FROM MaintenanceTariff
+WHERE Project  = property.project
+  AND Category = property.category
+  AND Size     = property.size
+
+// STEP 2 — Map values
+BillAmount = Charges
+TaxAmount  = Tax
+
+// STEP 3 — Core calculation
+TotalBill  = BillAmount + TaxAmount
+
+// STEP 4 — Surcharge
+Surcharge  = TotalBill * 10 / 100
+
+// STEP 5 — Payable amounts
+BillInDueDate = TotalBill
+BillAfterDate = TotalBill + Surcharge
+
+// STEP 6 — Output Bill Record
+Bill {
+  property_id    : property.property_id
+  billing_month  : YYYY-MM
+  bill_amount    : BillAmount
+  tax_amount     : TaxAmount
+  total_bill     : TotalBill
+  surcharge      : Surcharge
+  due_date_amt   : BillInDueDate
+  after_date_amt : BillAfterDate
+  generated_at   : current timestamp
+  status         : "unpaid"
+}
+```
+
+---
+
+## 6. Maintenance Bill — Worked Example
+
+| Step | Field | Calculation | Value |
+|---|---|---|---|
+| Lookup | Project | — | DHA |
+| Lookup | Category | — | Residential |
+| Lookup | Size | — | 3,000 sq yards |
+| Fetched | BillAmount (Charges) | from DB | PKR 5,250 |
+| Fetched | TaxAmount (Tax) | from DB | PKR 336 |
+| Step 3 | TotalBill | 5,250 + 336 | **PKR 5,586** |
+| Step 4 | Surcharge | 5,586 × 10 / 100 | **PKR 558.6 → PKR 559** |
+| Step 5 | BillInDueDate | TotalBill | **PKR 5,586** |
+| Step 5 | BillAfterDate | 5,586 + 559 | **PKR 6,145** |
+
+---
+
+## 7. Maintenance Bill — Edge Cases & Validations
+
+| Scenario | Expected Behavior |
+|---|---|
+| Tariff row not found in DB | ❌ Reject — log "Tariff not found", skip |
+| Duplicate tariff rows in DB | ❌ Reject — log "Duplicate tariff", alert admin |
+| `Charges` is 0 or null | ❌ Reject — invalid tariff |
+| `Tax` is null | ❌ Reject — tax must be defined |
+| `is_active = false` | ⏭️ Skip — do not generate bill |
+| Bill already exists for this month | ❌ Reject — duplicate bill prevention |
+| TotalBill = 0 | ⚠️ Warn — log suspicious, admin override required |
+| Payment on Due Date | ✅ Charge BillInDueDate (no surcharge) |
+| Payment after Due Date | ✅ Charge BillAfterDate (with surcharge) |
+
+---
+
+## 8. Bill Generation Flow
+
+```
+START
+  │
+  ▼
+Get all active properties (is_active = true)
+  │
+  ▼
+For each property:
+  │
+  ├─► Check: Bill already exists for this month?
+  │         YES → Skip, log duplicate warning
+  │         NO  → Continue
+  │
+  ├─► Lookup MaintenanceTariff
+  │   WHERE Project  = property.project
+  │     AND Category = property.category
+  │     AND Size     = property.size
+  │
+  ├─► Lookup successful?
+  │         NO  → Skip, log "Tariff not found"
+  │         YES → Continue
+  │
+  ├─► Map: BillAmount = Charges, TaxAmount = Tax
+  │
+  ├─► Validate: BillAmount > 0 AND TaxAmount is not null
+  │         FAIL → Skip, log error
+  │         PASS → Continue
+  │
+  ├─► TotalBill     = BillAmount + TaxAmount
+  ├─► Surcharge     = TotalBill * 10 / 100
+  ├─► BillInDueDate = TotalBill
+  ├─► BillAfterDate = TotalBill + Surcharge
+  │
+  ├─► Save Bill record (status = "unpaid")
+  │
+  └─► Log: Bill generated successfully
+  │
+END
+```
+
+---
+
+## 9. Future Modules (Pending)
+
+| # | Module | Status |
+|---|---|---|
+| 1 | ✅ Maintenance Charge | Done (Phase 1) |
+| 2 | ✅ Surcharge & Due Date Logic | Done (Phase 1) |
+| 3 | ⏳ Electricity — Unit Charges & Tariff Slabs | Pending |
+| 4 | ⏳ Electricity — Fuel Price Adjustment (FPA) | Pending |
+| 5 | ⏳ Electricity — GST on Electricity | Pending |
+| 6 | ⏳ Water Charges | Pending |
+| 7 | ⏳ Arrears Carry Forward | Pending |
+| 8 | ⏳ Subsidies / Discounts | Pending |
+| 9 | ⏳ Generator / DG Charges | Pending |
+| 10 | ⏳ Other charges (to be defined) | Pending |
+
+---
+
+*This document is the single source of truth for billing logic.*  
+*Always reference `@Billing_BusinessRules.mdc` in Cursor when generating billing-related code.*

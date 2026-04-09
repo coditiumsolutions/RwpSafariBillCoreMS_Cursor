@@ -27,11 +27,20 @@ public partial class MaintenanceBill
 
     public string? PlotStatus { get; set; }
 
+    [Column("Project")]
+    public string? Project { get; set; }
+
+    [Column("Category")]
+    public string? Category { get; set; }
+
     [NotMapped]
     public string? MeterNo { get; set; }
 
     [Column("BTNo")]
     public string? Btno { get; set; }
+
+    [Column("PhaseName")]
+    public string? PhaseName { get; set; }
 
     public string? BillingMonth { get; set; }
 
@@ -94,3 +103,4 @@ public partial class MaintenanceBill
     [NotMapped]
     public string? FineDept { get; set; }
 }
+

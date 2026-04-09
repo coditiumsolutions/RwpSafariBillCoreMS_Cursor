@@ -9,7 +9,7 @@ public partial class MaintenanceTarrif
 
     public string Project { get; set; } = null!;
 
-    public string PlotType { get; set; } = null!;
+    public string Category { get; set; } = null!;
 
     public string Size { get; set; } = null!;
 

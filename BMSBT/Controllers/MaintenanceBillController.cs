@@ -5,6 +5,7 @@ using BMSBT.Requests;
 using BMSBT.Roles;
 using DevExpress.XtraRichEdit.Import.Html;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages;
 using System.Data.Entity;
@@ -581,7 +582,7 @@ namespace BMSBT.Controllers
 
 
         [Route("Maintenance/MaintTariff")]
-        public IActionResult MaintTariff(string project, string plotType, int? page)
+        public IActionResult MaintTariff(string project, string category, int? page)
         {
             int pageSize = 20; // Number of records per page
             int pageNumber = (page ?? 1); // If no page is specified, default to the first page
@@ -593,28 +594,33 @@ namespace BMSBT.Controllers
                 query = query.Where(t => t.Project == project);
             }
 
-            if (!string.IsNullOrEmpty(plotType))
+            if (!string.IsNullOrEmpty(category))
             {
-                query = query.Where(t => t.PlotType == plotType);
+                query = query.Where(t => t.Category == category);
             }
 
-            // Prepare dropdown data
-            ViewBag.Projects = _dbContext.MaintenanceTarrifs
-                .Select(t => t.Project)
-                .Where(p => p != null)
+            // Project list from Configuration (ConfigKey = "Projects", comma-separated ConfigValue)
+            var projectsFromConfig = _dbContext.Configurations
+                .Where(c => c.ConfigKey == "Projects" && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
                 .Distinct()
                 .OrderBy(p => p)
                 .ToList();
+            ViewBag.Projects = projectsFromConfig;
 
-            ViewBag.PlotTypes = _dbContext.MaintenanceTarrifs
-                .Select(t => t.PlotType)
-                .Where(pt => pt != null)
+            ViewBag.Categories = _dbContext.MaintenanceTarrifs
+                .Select(t => t.Category)
+                .Where(c => c != null)
                 .Distinct()
-                .OrderBy(pt => pt)
+                .OrderBy(c => c)
                 .ToList();
 
             ViewBag.SelectedProject = project;
-            ViewBag.SelectedPlotType = plotType;
+            ViewBag.SelectedCategory = category;
 
             // Convert to paginated list
             var paginatedList = query.ToPagedList(pageNumber, pageSize);
@@ -630,19 +636,47 @@ namespace BMSBT.Controllers
         [Route("Maintenance/CreateTariff")]
         public IActionResult CreateTariff()
         {
-            return View(); // Display the empty form
+            PopulateCreateTariffDropdowns();
+            return View();
         }
 
         [Route("Maintenance/CreateTariff")]
         [HttpPost]
         public IActionResult CreateTariff(MaintenanceTarrif model)
         {
-            
-                _dbContext.MaintenanceTarrifs.Add(model);
-                _dbContext.SaveChanges();
-                return RedirectToAction("MaintTariff"); // Redirect to the list view after saving
-           
-           
+            PopulateCreateTariffDropdowns();
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            _dbContext.MaintenanceTarrifs.Add(model);
+            _dbContext.SaveChanges();
+            return RedirectToAction("MaintTariff");
+        }
+
+        private void PopulateCreateTariffDropdowns()
+        {
+            var projectsFromConfig = _dbContext.Configurations
+                .Where(c => c.ConfigKey == "Projects" && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct()
+                .OrderBy(p => p)
+                .ToList();
+
+            ViewBag.ProjectList = projectsFromConfig
+                .Select(p => new SelectListItem { Value = p, Text = p })
+                .ToList();
+
+            ViewBag.CategoryList = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "Residential", Text = "Residential" },
+                new SelectListItem { Value = "Commercial", Text = "Commercial" }
+            };
         }
 
         public IActionResult EditTariff(int id)
@@ -666,7 +700,7 @@ namespace BMSBT.Controllers
                 if (existingTariff != null)
                 {
                     existingTariff.Project = model.Project;
-                    existingTariff.PlotType = model.PlotType;
+                    existingTariff.Category = model.Category;
                     existingTariff.Size = model.Size;
                     existingTariff.Charges = model.Charges;
                     existingTariff.Tax = model.Tax;
@@ -678,6 +712,23 @@ namespace BMSBT.Controllers
             }
             TempData["ErrorMessage"] = "Error updating tariff.";
             return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteTariff(int id)
+        {
+            var tariff = _dbContext.MaintenanceTarrifs.Find(id);
+            if (tariff == null)
+            {
+                TempData["ErrorMessage"] = "Tariff not found.";
+                return RedirectToAction("MaintTariff");
+            }
+
+            _dbContext.MaintenanceTarrifs.Remove(tariff);
+            _dbContext.SaveChanges();
+            TempData["SuccessMessage"] = "Tariff removed successfully.";
+            return RedirectToAction("MaintTariff");
         }
 
 

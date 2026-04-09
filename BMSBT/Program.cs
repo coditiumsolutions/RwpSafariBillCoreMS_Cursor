@@ -52,6 +52,7 @@ public class Program
 
         // Maintenance bills insert service (isolated from MaintenanceNew UI)
         builder.Services.AddScoped<IMaintenanceBillInsertService, MaintenanceBillInsertService>();
+        builder.Services.AddScoped<IBillingService, BillingService>();
 
         builder.Services.AddScoped<IOperatorSettingService, OperatorSettingService>();  // Operator settings
 

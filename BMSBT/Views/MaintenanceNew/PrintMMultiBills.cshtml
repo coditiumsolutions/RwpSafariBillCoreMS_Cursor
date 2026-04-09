@@ -63,7 +63,7 @@
     <div class="row g-3 align-items-end print-fields">
         <div class="col-md-3">
             <label class="form-label">Project</label>
-            <select id="Project" name="project" class="form-control" required>
+            <select id="Project" name="project" class="form-control">
                 <option value="">-- Select Project --</option>
                 @foreach (var project in (List<string>)ViewBag.Projects)
                 {
@@ -72,9 +72,9 @@
             </select>
         </div>
         <div class="col-md-3">
-            <label class="form-label">SubProject</label>
-            <select id="SubProject" name="subProject" class="form-control">
-                <option value="">-- Select SubProject --</option>
+            <label class="form-label">Phase Name</label>
+            <select id="PhaseName" name="subProject" class="form-control">
+                <option value="">-- Select Phase Name --</option>
             </select>
         </div>
         <div class="col-md-3">
@@ -106,7 +106,7 @@
     </div>
 </form>
 
-<p class="text-muted mt-3">Select <strong>Project</strong>, <strong>SubProject</strong> (optional), <strong>Billing Month</strong> and <strong>Billing Year</strong>, then click <strong>Print</strong> to generate the maintenance bills report (PDF).</p>
+<p class="text-muted mt-3">Select <strong>Project</strong>, <strong>Phase Name</strong> (optional), <strong>Billing Month</strong> and <strong>Billing Year</strong>, then click <strong>Print</strong> to generate the maintenance bills report (PDF).</p>
 
 @section Scripts {
     <script>
@@ -114,8 +114,8 @@
               var phaseNumbersUrl = '@Url.Action("GetSubProjectPhaseNumbers", "MaintenanceNew")';
 
               function refillSubProject(project) {
-                var $sp = $('#SubProject');
-                $sp.empty().append($('<option></option>').val('').text('-- Select SubProject --'));
+                var $sp = $('#PhaseName');
+                $sp.empty().append($('<option></option>').val('').text('-- Select Phase Name --'));
                 if (!project) return;
                 $.getJSON(phaseNumbersUrl, { project: project })
                   .done(function (list) {
@@ -133,16 +133,16 @@
 
               $('#PrintButton').click(function(){
                 var project = $('#Project').val();
-                var subProject = $('#SubProject').val();
+                var phaseName = $('#PhaseName').val();
                 var month = $('#month').val();
                 var year = $('#year').val();
-                if (!project || !month || !year) {
-                    alert('Please select Project, Billing Month and Billing Year.');
+                if (!month || !year) {
+                    alert('Please select Billing Month and Billing Year.');
                     return;
                 }
                 var data = {
                     project: project,
-                    subProject: subProject,
+                    subProject: phaseName,
                     month: month,
                     year: year
                 };

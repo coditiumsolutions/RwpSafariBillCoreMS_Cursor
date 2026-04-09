@@ -294,6 +294,96 @@ namespace BMSBT.Controllers
         }
 
         [HttpGet]
+        public IActionResult CreateCustomer()
+        {
+            PopulateCreateCustomerDropdowns(null);
+            return View(new CustomersMaintenance());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult CreateCustomer(CustomersMaintenance model)
+        {
+            if (ModelState.IsValid)
+            {
+                _dbContext.CustomersMaintenance.Add(model);
+                _dbContext.SaveChanges();
+                TempData["SuccessMessage"] = $"Customer '{model.CustomerName}' created successfully.";
+                return RedirectToAction("CustomersMaintenance");
+            }
+            PopulateCreateCustomerDropdowns(model.Project);
+            return View(model);
+        }
+
+        private void PopulateCreateCustomerDropdowns(string? selectedProject)
+        {
+            // Projects from Configuration
+            var projects = _dbContext.Configurations
+                .Where(c => c.ConfigKey == "Projects" && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct()
+                .OrderBy(p => p)
+                .Select(p => new SelectListItem { Value = p, Text = p })
+                .ToList();
+            ViewBag.ProjectList = projects;
+
+            // Phase numbers for the selected project
+            var phaseNumbers = new List<SelectListItem>();
+            if (!string.IsNullOrWhiteSpace(selectedProject))
+            {
+                phaseNumbers = _dbContext.Configurations
+                    .Where(c => c.ConfigKey != null && c.ConfigKey.Trim() == selectedProject.Trim()
+                                && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                    .Select(c => c.ConfigValue!)
+                    .AsEnumerable()
+                    .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(v => v.Trim())
+                    .Where(v => !string.IsNullOrWhiteSpace(v))
+                    .Distinct()
+                    .OrderBy(v => v)
+                    .Select(v => new SelectListItem { Value = v, Text = v })
+                    .ToList();
+            }
+            ViewBag.PhaseNameList = phaseNumbers;
+
+            ViewBag.CategoryList = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "Residential", Text = "Residential" },
+                new SelectListItem { Value = "Commercial",  Text = "Commercial"  }
+            };
+
+            ViewBag.ConnectionStatusList = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "Connected",    Text = "Connected"    },
+                new SelectListItem { Value = "Disconnected", Text = "Disconnected" }
+            };
+        }
+
+        [HttpGet]
+        public JsonResult GetPhasesByProject(string project)
+        {
+            if (string.IsNullOrWhiteSpace(project))
+                return Json(new List<string>());
+
+            var phases = _dbContext.Configurations
+                .Where(c => c.ConfigKey != null && c.ConfigKey.Trim() == project.Trim()
+                            && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct()
+                .OrderBy(v => v)
+                .ToList();
+            return Json(phases);
+        }
+
+        [HttpGet]
         public JsonResult GetBlocksByProject(string project)
         {
             var blocksQuery = _dbContext.CustomersMaintenance.AsQueryable();
@@ -346,12 +436,16 @@ namespace BMSBT.Controllers
 
 
 
-        public async Task<IActionResult> GenerateBill(string selectedProject, string selectedPhaseNumber, string selectedSubProject, string btNoSearch)
+        public async Task<IActionResult> GenerateBill(string selectedProject, string selectedPhaseName, string selectedPhaseNumber, string selectedSubProject, string btNoSearch)
         {
-            // Backward-compatible alias for old query key: selectedSubProject
-            if (string.IsNullOrWhiteSpace(selectedPhaseNumber) && !string.IsNullOrWhiteSpace(selectedSubProject))
+            // Backward-compatible aliases for old query keys
+            if (string.IsNullOrWhiteSpace(selectedPhaseName) && !string.IsNullOrWhiteSpace(selectedPhaseNumber))
             {
-                selectedPhaseNumber = selectedSubProject;
+                selectedPhaseName = selectedPhaseNumber;
+            }
+            if (string.IsNullOrWhiteSpace(selectedPhaseName) && !string.IsNullOrWhiteSpace(selectedSubProject))
+            {
+                selectedPhaseName = selectedSubProject;
             }
             // Set Operator Name, Billing Month, Billing Year from session and Operators Setup
             string userName = HttpContext.Session.GetString("UserName");
@@ -413,9 +507,9 @@ namespace BMSBT.Controllers
                 var query = _dbContext.CustomersMaintenance
                     .Where(c => c.Project != null && c.Project.Trim() == selectedProject.Trim());
 
-                if (!string.IsNullOrEmpty(selectedPhaseNumber))
+                if (!string.IsNullOrEmpty(selectedPhaseName))
                 {
-                    query = query.Where(c => c.SubProject != null && c.SubProject.Trim() == selectedPhaseNumber.Trim());
+                    query = query.Where(c => c.SubProject != null && c.SubProject.Trim() == selectedPhaseName.Trim());
                 }
 
                 if (!string.IsNullOrEmpty(btNoSearch))
@@ -435,9 +529,9 @@ namespace BMSBT.Controllers
             }
 
             ViewBag.Projects = projects;
-            ViewBag.PhaseNumbers = phaseNumbers;
+            ViewBag.PhaseNames = phaseNumbers;
             ViewBag.SelectedProject = selectedProject;
-            ViewBag.SelectedPhaseNumber = selectedPhaseNumber;
+            ViewBag.SelectedPhaseName = selectedPhaseName;
 
             return View(filteredData);
 
@@ -1301,9 +1395,9 @@ namespace BMSBT.Controllers
         {
             try
             {
-                if (string.IsNullOrEmpty(request.project) ||
-                    string.IsNullOrEmpty(request.month) ||
-                    string.IsNullOrEmpty(request.year))
+                if (string.IsNullOrWhiteSpace(request.project) ||
+                    string.IsNullOrWhiteSpace(request.month) ||
+                    string.IsNullOrWhiteSpace(request.year))
                 {
                     return BadRequest("Project, Billing Month and Billing Year are required.");
                 }
@@ -1311,27 +1405,31 @@ namespace BMSBT.Controllers
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/pdf"));
 
-                var projectApiMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["Safari-1"] = "http://172.20.229.2:84/api/MaintenanceBills/Safari-1",
-                    ["Safari-2"] = "http://172.20.229.2:84/api/MaintenanceBills/Safari-2",
-                    ["Safari-3"] = "http://172.20.229.2:84/api/MaintenanceBills/Safari-3",
-                    ["SafariHeights"] = "http://172.20.229.2:84/api/MaintenanceBills/SafariHeights"
-                };
-
-                if (!projectApiMap.TryGetValue(request.project, out var baseUrl))
-                {
-                    return BadRequest($"Unsupported project '{request.project}'.");
-                }
-
-                var project = request.project.Trim();
-                var phaseNumber = string.IsNullOrWhiteSpace(request.subProject) ? "" : request.subProject.Trim();
+                var selectedProject = request.project.Trim();
+                var selectedPhaseName = request.subProject?.Trim();
                 var billingMonth = request.month.Trim();
                 var billingYear = request.year.Trim();
 
+                // Project-to-API mapping as requested.
+                var projectMappings = new Dictionary<string, (string pathSegment, string apiProject, string defaultPhase)>(StringComparer.OrdinalIgnoreCase)
+                {
+                    { "Safari-1", ("Safari-1", "Safari-1", "Safari Villas") },
+                    { "Safari-2", ("Safari-2", "Safari-2", "Safari II") },
+                    { "Bahria Spring", ("Safari-3", "Safari-3", "Bahria Springs Commercial Close") },
+                    { "Bahria Heights-1", ("SafariHeights", "Bahria Heights-1", "Bahria Heights Ext.1") }
+                };
+
+                if (!projectMappings.TryGetValue(selectedProject, out var map))
+                {
+                    return BadRequest($"Unsupported project '{selectedProject}'.");
+                }
+
+                var phaseName = string.IsNullOrWhiteSpace(selectedPhaseName) ? map.defaultPhase : selectedPhaseName;
+                var baseUrl = $"http://172.20.229.2:84/api/MaintenanceBills/{Uri.EscapeDataString(map.pathSegment)}";
+
                 var url =
-                    $"{baseUrl}?project={Uri.EscapeDataString(project)}" +
-                    $"&phaseNumber={Uri.EscapeDataString(phaseNumber)}" +
+                    $"{baseUrl}?project={Uri.EscapeDataString(map.apiProject)}" +
+                    $"&phaseName={Uri.EscapeDataString(phaseName)}" +
                     $"&billingMonth={Uri.EscapeDataString(billingMonth)}" +
                     $"&billingYear={Uri.EscapeDataString(billingYear)}";
 
