@@ -255,7 +255,7 @@ public class MaintenanceBillInsertController : ControllerBase
                     };
 
                     // Step 1-3: Billing rules service with optional dry-run
-                    var result = _billingService.generateMaintenanceBill(customer, dryRun);
+                    var result = _billingService.generateMaintenanceBill(customer, dryRun, billingMonth, billingYear);
                     detailedLogs.Add(result);
                     statusValue = result.Status;
                     if (!string.IsNullOrWhiteSpace(result.Reason))

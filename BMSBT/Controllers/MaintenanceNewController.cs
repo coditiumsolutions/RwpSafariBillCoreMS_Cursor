@@ -602,6 +602,45 @@ namespace BMSBT.Controllers
             return Json(new { success = true, message = "Results generated successfully!", results });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> InitializeCustomers([FromBody] MaintenanceBillRequest request)
+        {
+            var selectedIds = request?.SelectedIds ?? new List<int>();
+            if (!selectedIds.Any())
+            {
+                return Json(new { success = false, message = "No customers selected." });
+            }
+
+            var customers = await _dbContext.CustomersMaintenance
+                .Where(c => selectedIds.Contains(c.Uid))
+                .ToListAsync();
+
+            if (!customers.Any())
+            {
+                return Json(new { success = false, message = "No matching customers found." });
+            }
+
+            foreach (var customer in customers)
+            {
+                customer.BillGenerationStatus = "Not Generated";
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            var updates = customers.Select(c => new
+            {
+                uid = c.Uid,
+                status = c.BillGenerationStatus
+            }).ToList();
+
+            return Json(new
+            {
+                success = true,
+                message = $"Initialized {customers.Count} customer(s).",
+                updates
+            });
+        }
+
 
 
 

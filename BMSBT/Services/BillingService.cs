@@ -8,7 +8,11 @@ namespace BMSBT.Services;
 public interface IBillingService
 {
     TariffAmounts getTariff(string project, string category, string size);
-    BillingCustomerResult generateMaintenanceBill(CustomersMaintenance customer, bool dryRun = false);
+    BillingCustomerResult generateMaintenanceBill(
+        CustomersMaintenance customer,
+        bool dryRun = false,
+        string? billingMonth = null,
+        string? billingYear = null);
     MonthlyBillingSummary runMonthlyBillingForAll(bool dryRun = false);
 }
 
@@ -90,7 +94,11 @@ public sealed class BillingService : IBillingService
         }
     }
 
-    public BillingCustomerResult generateMaintenanceBill(CustomersMaintenance customer, bool dryRun = false)
+    public BillingCustomerResult generateMaintenanceBill(
+        CustomersMaintenance customer,
+        bool dryRun = false,
+        string? billingMonth = null,
+        string? billingYear = null)
     {
         var result = new BillingCustomerResult
         {
@@ -112,15 +120,23 @@ public sealed class BillingService : IBillingService
                 throw new InvalidOperationException("Customer is required.");
             }
 
-            var currentMonthYear = DateTime.Now.ToString("MM-yyyy");
+            var now = DateTime.Now;
+            var targetMonth = string.IsNullOrWhiteSpace(billingMonth) ? now.ToString("MMMM") : billingMonth.Trim();
+            var targetYear = string.IsNullOrWhiteSpace(billingYear) ? now.ToString("yyyy") : billingYear.Trim();
+            var targetMonthYear = $"{targetMonth}-{targetYear}";
+            var btNo = string.IsNullOrWhiteSpace(customer.BTNo) ? customer.CustomerNo : customer.BTNo;
 
-            // Rule M-06: skip if GeneratedMonthYear already has current MM-YYYY.
-            if (string.Equals(customer.GeneratedMonthYear?.Trim(), currentMonthYear, StringComparison.OrdinalIgnoreCase))
+            // Skip only when a bill already exists for the target billing period.
+            var alreadyGeneratedForTargetPeriod = _dbContext.MaintenanceBills.Any(b =>
+                b.Btno == btNo &&
+                b.BillingMonth == targetMonth &&
+                b.BillingYear == targetYear);
+            if (alreadyGeneratedForTargetPeriod)
             {
                 result.Status = "Skipped";
-                result.Reason = $"Already generated for {currentMonthYear}";
+                result.Reason = $"Already generated for {targetMonthYear}";
                 _logger.LogInformation("Skipped customer {Uid}/{BTNo}: already generated for {MonthYear}.",
-                    customer.Uid, customer.BTNo, currentMonthYear);
+                    customer.Uid, customer.BTNo, targetMonthYear);
                 return result;
             }
 
@@ -144,10 +160,8 @@ public sealed class BillingService : IBillingService
             var billAfterDate = Convert.ToInt32(Math.Round((double)(totalBill + surcharge), MidpointRounding.AwayFromZero));
             result.BillAfterDate = billAfterDate;
 
-            var btNo = string.IsNullOrWhiteSpace(customer.BTNo) ? customer.CustomerNo : customer.BTNo;
-            var now = DateTime.Now;
-            var month = now.ToString("MM");
-            var year = now.ToString("yyyy");
+            var month = targetMonth;
+            var year = targetYear;
 
             // Step 2 logging requirement
             _logger.LogInformation(
@@ -189,7 +203,7 @@ public sealed class BillingService : IBillingService
             };
 
             _dbContext.MaintenanceBills.Add(bill);
-            customer.GeneratedMonthYear = currentMonthYear;
+            customer.GeneratedMonthYear = targetMonthYear;
             _dbContext.CustomersMaintenance.Update(customer);
             _dbContext.SaveChanges();
 

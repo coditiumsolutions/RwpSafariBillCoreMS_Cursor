@@ -95,6 +95,9 @@
         <button id="generateMBillButton" type="button" class="btn btn-outline-primary" style="width:170px">
             Generate MBill
         </button>
+        <button id="initializeCustomersButton" type="button" class="btn btn-outline-warning" style="width:170px">
+            Initialise Customers
+        </button>
     </div>
 </form>
 
@@ -295,8 +298,54 @@
             });
         }
 
+        function initializeCustomers() {
+            var selectedIds = getSelectedIds();
+
+            if (!selectedIds.length) {
+                alert('No records selected.');
+                return;
+            }
+
+            if (!confirm('Set Bill Generation Status to Not Generated for selected customers?')) {
+                return;
+            }
+
+            $('#loadingOverlay').show();
+
+            $.ajax({
+                url: '@Url.Action("InitializeCustomers", "MaintenanceNew")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ selectedIds: selectedIds })
+            }).done(function (response) {
+                if (response && response.success && response.updates) {
+                    response.updates.forEach(function (update) {
+                        var checkbox = $('.record-checkbox[value="' + update.uid + '"]');
+                        var row = checkbox.closest('tr');
+                        row.find('td:last').text(update.status || 'Not Generated');
+                        checkbox.prop('checked', false);
+                    });
+                    alert(response.message || 'Customers initialized successfully.');
+                } else {
+                    alert((response && response.message) || 'Initialization completed with unexpected response.');
+                }
+            }).fail(function (xhr) {
+                var errorMsg = 'Failed to initialize customers.';
+                if (xhr.responseText) {
+                    try {
+                        var res = JSON.parse(xhr.responseText);
+                        if (res.message) errorMsg = res.message;
+                    } catch (e) {}
+                }
+                alert(errorMsg);
+            }).always(function () {
+                $('#loadingOverlay').hide();
+            });
+        }
+
         $('#previewMBillButton').click(function () { runBilling(true); });
         $('#generateMBillButton').click(function () { runBilling(false); });
+        $('#initializeCustomersButton').click(function () { initializeCustomers(); });
     });
 </script> 
 
