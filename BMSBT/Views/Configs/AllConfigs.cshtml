@@ -2,15 +2,110 @@
 
 @{
     ViewData["Title"] = "All Configurations";
-    Layout = "~/Views/Shared/_LayoutMaintBills.cshtml";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container-fluid">
-    <div class="card">
-        <div class="card-header">
-            <h4>All Configurations</h4>
+<style>
+    .cm-detail-page {
+        --cm-surface: #ffffff;
+        --cm-heading: #0f172a;
+        --cm-border: #e2e8f0;
+        --cm-row-odd: #fafbfc;
+        --cm-row-even: #ffffff;
+        --cm-row-hover: #eef6ff;
+        font-size: 0.9375rem;
+        line-height: 1.45;
+        color: #334155;
+    }
+
+    .cm-page-title {
+        color: var(--cm-heading);
+        font-weight: 700;
+        margin-bottom: 0.85rem;
+    }
+
+    .cm-card {
+        background: #ffffff;
+        border: 1px solid var(--cm-border);
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .cm-card-header {
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        border-bottom: 1px solid var(--cm-border);
+        padding: 0.75rem 1.25rem;
+    }
+
+    .cm-card-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .cm-badge-soft {
+        background: #e8f1ff;
+        color: #1e40af;
+        font-size: 0.7rem;
+        border-radius: 4px;
+        padding: 0.2rem 0.45rem;
+        font-weight: 600;
+    }
+
+    .cm-card-body {
+        padding: 1rem 1.25rem;
+    }
+
+    .cm-table-wrap {
+        border: 1px solid var(--cm-border);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    #configurationsGrid {
+        margin: 0 !important;
+    }
+
+    #configurationsGrid thead th {
+        background: #f1f5f9;
+        color: #475569;
+        border-color: var(--cm-border);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+    }
+
+    #configurationsGrid td {
+        border-color: var(--cm-border);
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    #configurationsGrid tbody tr:nth-child(odd) {
+        background-color: var(--cm-row-odd);
+    }
+
+    #configurationsGrid tbody tr:nth-child(even) {
+        background-color: var(--cm-row-even);
+    }
+
+    #configurationsGrid tbody tr:hover {
+        background-color: var(--cm-row-hover);
+    }
+</style>
+
+<div class="container-fluid cm-detail-page">
+    <h4 class="cm-page-title">All Configurations</h4>
+    <div class="cm-card">
+        <div class="cm-card-header d-flex justify-content-between align-items-center flex-wrap">
+            <h5 class="cm-card-title">Configurations</h5>
+            <span class="cm-badge-soft">Total: @(Model?.Configurations?.Count() ?? 0)</span>
         </div>
-        <div class="card-body">
+        <div class="cm-card-body">
             <!-- Action Buttons -->
             <div class="row mb-3">
                 <div class="col-md-12 text-right">
@@ -21,9 +116,10 @@
             </div>
 
             <!-- DataTables Grid -->
-            <div class="table-responsive">
-                <table id="configurationsGrid" class="table table-striped table-bordered table-hover" style="width:100%">
-                    <thead class="thead-dark">
+            <div class="cm-table-wrap">
+                <div class="table-responsive">
+                    <table id="configurationsGrid" class="table table-striped table-bordered table-hover" style="width:100%">
+                    <thead>
                         <tr>
                             <th>UID</th>
                             <th>Config ID</th>
@@ -56,8 +152,15 @@
                                 </tr>
                             }
                         }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No records found.</td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </div>

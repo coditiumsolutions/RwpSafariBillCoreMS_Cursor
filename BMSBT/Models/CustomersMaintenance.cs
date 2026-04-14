@@ -46,10 +46,10 @@ namespace BMSBT.Models
         [StringLength(50)]
         public string Project { get; set; } = null!;
 
-        /// <summary>DB column PhaseName.</summary>
+        /// <summary>DB column Phase.</summary>
         [Required]
         [StringLength(50)]
-        [Column("PhaseName")]
+        [Column("Phase")]
         public string SubProject { get; set; } = null!;
 
         [Required]

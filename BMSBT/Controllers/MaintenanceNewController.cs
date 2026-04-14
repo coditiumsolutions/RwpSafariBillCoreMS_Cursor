@@ -272,21 +272,12 @@ namespace BMSBT.Controllers
 
         public IActionResult CustomersMaintenance()
         {
-            var projects = _dbContext.Configurations
-                .Where(c => c.ConfigKey == "Projects" && !string.IsNullOrWhiteSpace(c.ConfigValue))
-                .Select(c => c.ConfigValue!)
-                .AsEnumerable()
-                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                .Select(v => v.Trim())
-                .Where(v => !string.IsNullOrWhiteSpace(v))
-                .Distinct()
-                .OrderBy(p => p)
-                .ToList();
+            var projects = GetConfigurationCsvValuesByKey("Projects");
 
             var model = new MaintenanceCustomerFilterViewModel
             {
                 Projects = projects,
-                Blocks = new List<string>(),
+                Phases = new List<string>(),
                 Customers = new List<CustomersMaintenance>().ToPagedList(1, 20)
             };
 
@@ -369,17 +360,7 @@ namespace BMSBT.Controllers
             if (string.IsNullOrWhiteSpace(project))
                 return Json(new List<string>());
 
-            var phases = _dbContext.Configurations
-                .Where(c => c.ConfigKey != null && c.ConfigKey.Trim() == project.Trim()
-                            && !string.IsNullOrWhiteSpace(c.ConfigValue))
-                .Select(c => c.ConfigValue!)
-                .AsEnumerable()
-                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                .Select(v => v.Trim())
-                .Where(v => !string.IsNullOrWhiteSpace(v))
-                .Distinct()
-                .OrderBy(v => v)
-                .ToList();
+            var phases = GetConfigurationCsvValuesByKey(project.Trim());
             return Json(phases);
         }
 
@@ -403,18 +384,20 @@ namespace BMSBT.Controllers
         }
 
         [HttpGet]
-        public PartialViewResult FilterCustomers(string project, string category, string btNo, int? page)
+        public PartialViewResult FilterCustomers(string project, string phase, string btNo, int? page)
         {
             var query = _dbContext.CustomersMaintenance.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(project))
             {
-                query = query.Where(c => c.Project == project);
+                var selectedProject = project.Trim();
+                query = query.Where(c => c.Project != null && c.Project.Trim() == selectedProject);
             }
 
-            if (!string.IsNullOrWhiteSpace(category))
+            if (!string.IsNullOrWhiteSpace(phase))
             {
-                query = query.Where(c => c.Category == category);
+                var selectedPhase = phase.Trim();
+                query = query.Where(c => c.SubProject != null && c.SubProject.Trim() == selectedPhase);
             }
 
             if (!string.IsNullOrWhiteSpace(btNo))
@@ -427,11 +410,31 @@ namespace BMSBT.Controllers
 
             var customers = query
                 .OrderBy(c => c.Project)
-                .ThenBy(c => c.Category)
+                .ThenBy(c => c.SubProject)
                 .ThenBy(c => c.BTNo)
                 .ToPagedList(pageNumber, pageSize);
 
             return PartialView("_MaintenanceCustomersGrid", customers);
+        }
+
+        private List<string> GetConfigurationCsvValuesByKey(string configKey)
+        {
+            var rawValues = _dbContext.Configurations
+                .Where(c => c.ConfigKey != null && c.ConfigValue != null)
+                .AsEnumerable()
+                .Where(c => c.ConfigKey != null
+                            && c.ConfigKey.Trim().Equals(configKey, StringComparison.OrdinalIgnoreCase)
+                            && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .ToList();
+
+            return rawValues
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(v => v)
+                .ToList();
         }
 
 
@@ -1279,24 +1282,21 @@ namespace BMSBT.Controllers
 
 
         /// <summary>
-        /// All Bill: same three dropdowns as PrintMMultiBills (Project, Billing Month, Billing Year). Displays records in grid with pagination; optional CustNo/Name search; double-click opens Details.
+        /// All Bill: Project + optional Phase + Billing Month + Billing Year filters, or BTNo/CustomerName search.
         /// </summary>
         [HttpGet]
-        public IActionResult AllBills(string project, string subProject, string month, string year, string custNoOrName, int? page)
+        public IActionResult AllBills(string project, string phase, string subProject, string month, string year, string custNoOrName, int? page)
         {
-            var projects = _dbContext.Configurations
-                .Where(c => c.ConfigKey == "Projects" && !string.IsNullOrWhiteSpace(c.ConfigValue))
-                .Select(c => c.ConfigValue!)
-                .AsEnumerable()
-                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                .Select(v => v.Trim())
-                .Where(p => !string.IsNullOrEmpty(p))
-                .Distinct()
-                .OrderBy(p => p)
-                .ToList();
+            if (string.IsNullOrWhiteSpace(phase) && !string.IsNullOrWhiteSpace(subProject))
+            {
+                // Backward compatibility for old querystring key.
+                phase = subProject;
+            }
+
+            var projects = GetConfigurationCsvValuesByKey("Projects");
             ViewBag.Projects = projects ?? new List<string>();
             ViewBag.SelectedProject = project ?? "";
-            ViewBag.SelectedSubProject = subProject ?? "";
+            ViewBag.SelectedPhase = phase ?? "";
             ViewBag.SelectedMonth = month ?? "";
             ViewBag.SelectedYear = year ?? "";
             ViewBag.CustNoOrName = custNoOrName ?? "";
@@ -1326,7 +1326,7 @@ namespace BMSBT.Controllers
                                    && cm.Project == project
                                    && mb.BillingMonth == month
                                    && mb.BillingYear == year
-                                   && (string.IsNullOrWhiteSpace(subProject) || cm.SubProject == subProject))
+                                   && (string.IsNullOrWhiteSpace(phase) || cm.SubProject == phase))
                             select new MaintenanceBillViewModel
                             {
                                 Uid = mb.Uid,

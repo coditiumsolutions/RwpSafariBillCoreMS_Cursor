@@ -54,19 +54,11 @@ $lines = @()
 $lines += "Database: $dbName"
 $lines += "Connection: $connStrMasked"
 $lines += "(From appsettings: DefaultConnection)"
+$lines += ("Generated: {0}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"))
 $lines += ""
 $lines += "---"
-$lines += "FIX for SqlException: Invalid column name 'ConnectionStatus'"
-$lines += "Run Scripts/AddConnectionStatus.sql on this database, or run the following in SSMS:"
 $lines += ""
-$lines += "  USE $dbName;"
-$lines += "  IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.CustomersMaintenance') AND name = 'ConnectionStatus')"
-$lines += "    ALTER TABLE dbo.CustomersMaintenance ADD ConnectionStatus NVARCHAR(50) NULL;"
-$lines += ""
-$lines += "Bill generation: if ConnectionStatus = 'Disconnected' then bills are not generated for that customer; else they are generated."
-$lines += "---"
-$lines += ""
-$lines += "Tables and columns (from live database INFORMATION_SCHEMA.COLUMNS):"
+$lines += "Tables and columns (from INFORMATION_SCHEMA.COLUMNS):"
 $lines += ""
 
 $sortedKeys = $byTable.Keys | Sort-Object
@@ -81,6 +73,9 @@ foreach ($key in $sortedKeys) {
     }
     $lines += ""
 }
+
+$lines += "---"
+$lines += ("Total tables/views: {0}" -f $byTable.Count)
 
 $outPath = Join-Path (Join-Path $PSScriptRoot "..") "db.txt"
 $lines | Set-Content -Path $outPath -Encoding UTF8

@@ -6,142 +6,185 @@
 }
 
 <style>
-    .custom-table {
-        width: 100%;
-        border-collapse: collapse;
-        background-color: #ffffff;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.15);
-        font-family: Arial, sans-serif;
-        margin-bottom: 20px;
+    .cm-detail-page {
+        --cm-surface: #ffffff;
+        --cm-heading: #0f172a;
+        --cm-border: #e2e8f0;
+        --cm-row-odd: #fafbfc;
+        --cm-row-even: #ffffff;
+        --cm-row-hover: #eef6ff;
+        font-size: 0.9375rem;
+        line-height: 1.45;
+        color: #334155;
     }
 
-    .custom-table th {
-        background-color: #00bfff;
-        color: #000000;
-        font-weight: bold;
-        padding: 12px;
+    .cm-card {
+        background: var(--cm-surface);
+        border: 1px solid var(--cm-border);
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .cm-card-header {
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        border-bottom: 1px solid var(--cm-border);
+        padding: 0.9rem 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .cm-card-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--cm-heading);
+    }
+
+    .cm-badge-soft {
+        background: #e8f1ff;
+        color: #1e40af;
+        font-size: 0.7rem;
+        border-radius: 4px;
+        padding: 0.2rem 0.45rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+
+    .cm-table-wrap {
+        width: 100%;
+        border: 1px solid var(--cm-border);
+        border-radius: 6px;
+        overflow: hidden;
+        margin: 1rem 1.25rem;
+    }
+
+    .cm-detail-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+    .cm-detail-table th {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid var(--cm-border);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 10px 12px;
         text-align: left;
         width: 20%;
     }
 
-    .custom-table td {
-        border: 1px solid #ddd;
-        padding: 12px;
+    .cm-detail-table td {
+        border: 1px solid var(--cm-border);
+        padding: 10px 12px;
         text-align: left;
-        background-color: #f9f9f9;
+        background: #ffffff;
         width: 30%;
     }
 
-    .custom-table tr:nth-child(odd) td {
-        background-color: #fffbe6;
+    .cm-detail-table tr:nth-child(odd) td {
+        background-color: var(--cm-row-odd);
     }
 
-    .custom-table tr:hover td {
-        background-color: #dff9fb;
+    .cm-detail-table tr:nth-child(even) td {
+        background-color: var(--cm-row-even);
     }
 
-    h3 {
-        color: #2c3e50;
-        font-weight: bold;
-        margin-bottom: 20px;
+    .cm-detail-table tr:hover td {
+        background-color: var(--cm-row-hover);
     }
 
-    .btn-container {
-        margin-top: 20px;
+    .cm-card-footer {
+        padding: 0.75rem 1.25rem 1rem;
+        border-top: 1px solid var(--cm-border);
+        background: #f8fafc;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
     }
 
-    .btn {
-        padding: 10px 20px;
-        border-radius: 5px;
-        text-decoration: none;
-        font-weight: bold;
-        display: inline-block;
-        margin-right: 10px;
-    }
-
-    .btn-warning {
-        background-color: #f39c12;
-        color: white;
-    }
-
-    .btn-secondary {
-        background-color: #7f8c8d;
-        color: white;
-    }
-
-    .btn-warning:hover {
-        background-color: #e67e22;
-    }
-
-    .btn-secondary:hover {
-        background-color: #636e72;
+    .cm-card-footer .btn {
+        border-radius: 6px;
+        font-weight: 500;
     }
 </style>
 
-<div class="container-fluid">
-    <h3>Maintenance Customer Details</h3>
+<div class="container-fluid cm-detail-page">
+    <div class="cm-card">
+        <div class="cm-card-header">
+            <h3 class="cm-card-title">@Model.CustomerName</h3>
+            <span class="cm-badge-soft">ID @Model.Uid</span>
+        </div>
 
-    <table class="custom-table">
-        <tr>
-            <th>Customer No</th>
-            <td>@Model.CustomerNo</td>
-            <th>BT No</th>
-            <td>@Model.BTNo</td>
-        </tr>
-        <tr>
-            <th>Customer Name</th>
-            <td>@Model.CustomerName</td>
-            <th>Father Name</th>
-            <td>@Model.FatherName</td>
-        </tr>
-        <tr>
-            <th>CNIC No</th>
-            <td>@Model.CNICNo</td>
-            <th>Mobile No</th>
-            <td>@Model.MobileNo</td>
-        </tr>
-        <tr>
-            <th>Project</th>
-            <td>@Model.Project</td>
-            <th>SubProject</th>
-            <td>@Model.SubProject</td>
-        </tr>
-        <tr>
-            <th>Category</th>
-            <td>@Model.Category</td>
-            <th>Sector</th>
-            <td>@Model.Sector</td>
-        </tr>
-        <tr>
-            <th>Plot No</th>
-            <td>@Model.PloNo</td>
-            <th>Plot status</th>
-            <td>@Model.PlotStatus</td>
-        </tr>
-        <tr>
-            <th>Size</th>
-            <td>@Model.Size</td>
-            <th>Street number</th>
-            <td>@Model.StreetNumber</td>
-        </tr>
-        <tr>
-            <th>Unit type</th>
-            <td>@Model.UnitType</td>
-            <th>City</th>
-            <td>@Model.City</td>
-        </tr>
-        <tr>
-            <th>Bill generation status</th>
-            <td>@Model.BillGenerationStatus</td>
-            <th>Connection status</th>
-            <td>@Model.ConnectionStatus</td>
-        </tr>
-    </table>
+        <div class="cm-table-wrap">
+            <table class="cm-detail-table">
+                <tr>
+                    <th>Customer No</th>
+                    <td>@Model.CustomerNo</td>
+                    <th>BT No</th>
+                    <td>@Model.BTNo</td>
+                </tr>
+                <tr>
+                    <th>Father Name</th>
+                    <td>@Model.FatherName</td>
+                    <th>CNIC No</th>
+                    <td>@Model.CNICNo</td>
+                </tr>
+                <tr>
+                    <th>Mobile No</th>
+                    <td>@Model.MobileNo</td>
+                    <th>City</th>
+                    <td>@Model.City</td>
+                </tr>
+                <tr>
+                    <th>Project</th>
+                    <td>@Model.Project</td>
+                    <th>SubProject</th>
+                    <td>@Model.SubProject</td>
+                </tr>
+                <tr>
+                    <th>Category</th>
+                    <td>@Model.Category</td>
+                    <th>Sector</th>
+                    <td>@Model.Sector</td>
+                </tr>
+                <tr>
+                    <th>Plot No</th>
+                    <td>@Model.PloNo</td>
+                    <th>Plot Status</th>
+                    <td>@Model.PlotStatus</td>
+                </tr>
+                <tr>
+                    <th>Size</th>
+                    <td>@Model.Size</td>
+                    <th>Street Number</th>
+                    <td>@Model.StreetNumber</td>
+                </tr>
+                <tr>
+                    <th>Unit Type</th>
+                    <td>@Model.UnitType</td>
+                    <th>Connection Status</th>
+                    <td>@Model.ConnectionStatus</td>
+                </tr>
+                <tr>
+                    <th>Bill Generation Status</th>
+                    <td>@Model.BillGenerationStatus</td>
+                    <th></th>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
 
-    <div class="btn-container">
-        <a href="@Url.Action("Edit", "CustomersMaintenance", new { id = Model.Uid })" class="btn btn-warning">Edit</a>
-        <a href="@Url.Action("CustomersMaintenance", "MaintenanceNew")" class="btn btn-secondary">Back to Grid</a>
+        <div class="cm-card-footer">
+            <a href="@Url.Action("Edit", "CustomersMaintenance", new { id = Model.Uid })" class="btn btn-primary">Edit</a>
+            <a href="@Url.Action("CustomersMaintenance", "MaintenanceNew")" class="btn btn-secondary">Back to Grid</a>
+        </div>
     </div>
 </div>

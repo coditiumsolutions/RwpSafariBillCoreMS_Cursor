@@ -1,646 +1,745 @@
-Database: BMSSafariRwp
-
-Connection (from appsettings.json DefaultConnection, password redacted):
-  Server=172.20.229.2; Database=BMSSafariRwp; User Id=admin; Password=***; MultipleActiveResultSets=True; TrustServerCertificate=True;
-
-Generated: 2026-04-08 12:20:18
-Source: INFORMATION_SCHEMA (user base tables only)
+﻿Database: BMSSafariRwp
+Connection: Server=172.20.229.2;Database=BMSSafariRwp;User Id=admin;Password=***;MultipleActiveResultSets=True;TrustServerCertificate=True;
+(From appsettings: DefaultConnection)
+Generated: 2026-04-14 17:41:33
 
 ---
 
-Table: __EFMigrationsHistory  (schema: dbo)
-  - MigrationId  |  nvarchar (150)  |  nullable: NO
-  - ProductVersion  |  nvarchar (32)  |  nullable: NO
+Tables and columns (from INFORMATION_SCHEMA.COLUMNS):
 
-Table: AdditionalCharges  (schema: dbo)
-  - UID  |  int (10,0)  |  nullable: NO
-  - CustomerNo  |  nvarchar (50)  |  nullable: NO
-  - ServiceName  |  nvarchar (100)  |  nullable: NO
-  - ServiceType  |  nvarchar (50)  |  nullable: NO
-  - Month  |  nvarchar (20)  |  nullable: NO
-  - Year  |  nvarchar (10)  |  nullable: NO
+Table: __EFMigrationsHistory
+  - MigrationId (nvarchar 150)
+  - ProductVersion (nvarchar 32)
 
-Table: Adjustments  (schema: dbo)
-  - AdjustmentId  |  int (10,0)  |  nullable: NO
-  - BTNo  |  varchar (50)  |  nullable: NO
-  - BillingType  |  varchar (50)  |  nullable: NO
-  - AdjustmentName  |  varchar (50)  |  nullable: NO
-  - AdjustmentType  |  varchar (50)  |  nullable: NO
-  - AdjustmentValue  |  int (10,0)  |  nullable: NO
+Table: AdditionalCharges
+  - UID (int)
+  - CustomerNo (nvarchar 50)
+  - ServiceName (nvarchar 100)
+  - ServiceType (nvarchar 50)
+  - Month (nvarchar 20)
+  - Year (nvarchar 10)
 
-Table: AuditLogs  (schema: dbo)
-  - LogId  |  int (10,0)  |  nullable: NO
-  - TableName  |  nvarchar (128)  |  nullable: YES
-  - Operation  |  nvarchar (10)  |  nullable: YES
-  - RecordId  |  nvarchar (max)  |  nullable: YES
-  - OldData  |  nvarchar (max)  |  nullable: YES
-  - NewData  |  nvarchar (max)  |  nullable: YES
-  - ChangedBy  |  nvarchar (128)  |  nullable: YES
-  - ChangedAt  |  datetime  |  nullable: YES
-  - ModuleName  |  nvarchar (100)  |  nullable: YES
-  - IPAddress  |  nvarchar (50)  |  nullable: YES
+Table: Adjustments
+  - AdjustmentId (int)
+  - BTNo (varchar 50)
+  - BillingType (varchar 50)
+  - AdjustmentName (varchar 50)
+  - AdjustmentType (varchar 50)
+  - AdjustmentValue (int)
 
-Table: Categories  (schema: dbo)
-  - id  |  int (10,0)  |  nullable: NO
-  - name  |  nvarchar (100)  |  nullable: NO
-  - description  |  nvarchar (500)  |  nullable: YES
-  - is_active  |  bit  |  nullable: YES
-  - created_at  |  datetime2  |  nullable: YES
-  - updated_at  |  datetime2  |  nullable: YES
+Table: AuditLogs
+  - LogId (int)
+  - TableName (nvarchar 128)
+  - Operation (nvarchar 10)
+  - RecordId (nvarchar max)
+  - OldData (nvarchar max)
+  - NewData (nvarchar max)
+  - ChangedBy (nvarchar 128)
+  - ChangedAt (datetime)
+  - ModuleName (nvarchar 100)
+  - IPAddress (nvarchar 50)
 
-Table: Configuration  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - ConfigId  |  int (10,0)  |  nullable: YES
-  - ConfigKey  |  varchar (50)  |  nullable: YES
-  - ConfigValue  |  varchar (1000)  |  nullable: YES
+Table: Categories
+  - id (int)
+  - name (nvarchar 100)
+  - description (nvarchar 500)
+  - is_active (bit)
+  - created_at (datetime2)
+  - updated_at (datetime2)
 
-Table: Customers  (schema: dbo)
-  - id  |  int (10,0)  |  nullable: NO
-  - name  |  nvarchar (200)  |  nullable: NO
-  - email  |  nvarchar (200)  |  nullable: YES
-  - phone  |  nvarchar (20)  |  nullable: YES
-  - address  |  nvarchar (500)  |  nullable: YES
-  - city  |  nvarchar (100)  |  nullable: YES
-  - postal_code  |  nvarchar (20)  |  nullable: YES
-  - loyalty_points  |  int (10,0)  |  nullable: YES
-  - total_spent  |  decimal (12,2)  |  nullable: YES
-  - is_active  |  bit  |  nullable: YES
-  - created_at  |  datetime2  |  nullable: YES
-  - updated_at  |  datetime2  |  nullable: YES
+Table: Configuration
+  - uid (int)
+  - ConfigId (int)
+  - ConfigKey (varchar 50)
+  - ConfigValue (varchar 1000)
 
-Table: CustomersDetail  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - CustomerNo  |  varchar (100)  |  nullable: YES
-  - BTNo  |  varchar (100)  |  nullable: YES
-  - CustomerName  |  varchar (255)  |  nullable: YES
-  - GeneratedMonthYear  |  varchar (50)  |  nullable: YES
-  - LocationSeqNo  |  varchar (50)  |  nullable: YES
-  - CNICNo  |  varchar (250)  |  nullable: YES
-  - FatherName  |  varchar (255)  |  nullable: YES
-  - InstalledOn  |  varchar (20)  |  nullable: YES
-  - MobileNo  |  varchar (500)  |  nullable: YES
-  - TelephoneNo  |  varchar (500)  |  nullable: YES
-  - MeterType  |  varchar (50)  |  nullable: YES
-  - NTNNumber  |  varchar (50)  |  nullable: YES
-  - City  |  varchar (50)  |  nullable: YES
-  - Project  |  varchar (100)  |  nullable: YES
-  - SubProject  |  varchar (100)  |  nullable: YES
-  - TariffName  |  varchar (100)  |  nullable: YES
-  - BankNo  |  varchar (50)  |  nullable: YES
-  - BTNoMaintenance  |  varchar (30)  |  nullable: YES
-  - Category  |  varchar (150)  |  nullable: YES
-  - Block  |  varchar (150)  |  nullable: YES
-  - PlotType  |  nvarchar (50)  |  nullable: YES
-  - Size  |  nvarchar (50)  |  nullable: YES
-  - Sector  |  varchar (150)  |  nullable: YES
-  - PloNo  |  varchar (150)  |  nullable: YES
-  - BillStatusMaint  |  varchar (max)  |  nullable: YES
-  - BillStatus  |  varchar (max)  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
-  - MeterNo  |  varchar (150)  |  nullable: YES
-  - BillGenerationStatus  |  varchar (50)  |  nullable: YES
+Table: Customers
+  - id (int)
+  - name (nvarchar 200)
+  - email (nvarchar 200)
+  - phone (nvarchar 20)
+  - address (nvarchar 500)
+  - city (nvarchar 100)
+  - postal_code (nvarchar 20)
+  - loyalty_points (int)
+  - total_spent (decimal)
+  - is_active (bit)
+  - created_at (datetime2)
+  - updated_at (datetime2)
 
-Table: CustomersMaintenance  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - KuickPayNo  |  varchar (20)  |  nullable: NO
-  - BTNo  |  varchar (20)  |  nullable: YES
-  - CustomerName  |  varchar (200)  |  nullable: YES
-  - GeneratedMonthYear  |  varchar (50)  |  nullable: YES
-  - LocationSeqNo  |  varchar (50)  |  nullable: YES
-  - CNICNo  |  varchar (50)  |  nullable: YES
-  - FatherName  |  varchar (70)  |  nullable: YES
-  - MobileNo  |  varchar (50)  |  nullable: YES
-  - City  |  varchar (50)  |  nullable: YES
-  - Project  |  varchar (50)  |  nullable: NO
-  - PhaseName  |  varchar (50)  |  nullable: NO
-  - Category  |  varchar (100)  |  nullable: NO
-  - Size  |  nvarchar (50)  |  nullable: YES
-  - Sector  |  varchar (100)  |  nullable: NO
-  - PloNo  |  varchar (100)  |  nullable: NO
-  - History  |  varchar (max)  |  nullable: YES
-  - BillGenerationStatus  |  varchar (50)  |  nullable: YES
-  - ConnectionStatus  |  nchar (20)  |  nullable: YES
-  - PlotStatus  |  varchar (50)  |  nullable: YES
-  - StreetNumber  |  varchar (50)  |  nullable: YES
-  - UnitType  |  varchar (50)  |  nullable: YES
+Table: CustomersDetail
+  - uid (int)
+  - CustomerNo (varchar 100)
+  - BTNo (varchar 100)
+  - CustomerName (varchar 255)
+  - GeneratedMonthYear (varchar 50)
+  - LocationSeqNo (varchar 50)
+  - CNICNo (varchar 250)
+  - FatherName (varchar 255)
+  - InstalledOn (varchar 20)
+  - MobileNo (varchar 500)
+  - TelephoneNo (varchar 500)
+  - MeterType (varchar 50)
+  - NTNNumber (varchar 50)
+  - City (varchar 50)
+  - Project (varchar 100)
+  - SubProject (varchar 100)
+  - TariffName (varchar 100)
+  - BankNo (varchar 50)
+  - BTNoMaintenance (varchar 30)
+  - Category (varchar 150)
+  - Block (varchar 150)
+  - PlotType (nvarchar 50)
+  - Size (nvarchar 50)
+  - Sector (varchar 150)
+  - PloNo (varchar 150)
+  - BillStatusMaint (varchar max)
+  - BillStatus (varchar max)
+  - History (varchar max)
+  - MeterNo (varchar 150)
+  - BillGenerationStatus (varchar 50)
 
-Table: CustomersMaintenance_Backup  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - CustomerNo  |  varchar (20)  |  nullable: NO
-  - BTNo  |  varchar (20)  |  nullable: YES
-  - CustomerName  |  varchar (200)  |  nullable: YES
-  - GeneratedMonthYear  |  varchar (50)  |  nullable: YES
-  - LocationSeqNo  |  varchar (50)  |  nullable: YES
-  - CNICNo  |  varchar (50)  |  nullable: YES
-  - FatherName  |  varchar (70)  |  nullable: YES
-  - InstalledOn  |  varchar (20)  |  nullable: YES
-  - MobileNo  |  varchar (50)  |  nullable: YES
-  - TelephoneNo  |  varchar (50)  |  nullable: YES
-  - MeterType  |  varchar (50)  |  nullable: YES
-  - NTNNumber  |  varchar (50)  |  nullable: YES
-  - City  |  varchar (50)  |  nullable: YES
-  - Project  |  varchar (50)  |  nullable: NO
-  - SubProject  |  varchar (50)  |  nullable: NO
-  - TariffName  |  varchar (50)  |  nullable: NO
-  - BankNo  |  varchar (50)  |  nullable: YES
-  - BTNoMaintenance  |  varchar (30)  |  nullable: YES
-  - Category  |  varchar (100)  |  nullable: NO
-  - Block  |  varchar (100)  |  nullable: NO
-  - PlotType  |  nvarchar (50)  |  nullable: YES
-  - Size  |  nvarchar (50)  |  nullable: YES
-  - Sector  |  varchar (100)  |  nullable: NO
-  - PloNo  |  varchar (100)  |  nullable: NO
-  - BillStatusMaint  |  varchar (max)  |  nullable: YES
-  - BillStatus  |  varchar (max)  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
-  - BillGenerationStatus  |  varchar (50)  |  nullable: YES
-  - MeterNo  |  varchar (50)  |  nullable: YES
-  - ConnectionStatus  |  nchar (20)  |  nullable: YES
+Table: CustomersMaintenance
+  - uid (int)
+  - KuickPayNo (varchar 20)
+  - BTNo (varchar 20)
+  - CustomerName (varchar 200)
+  - GeneratedMonthYear (varchar 50)
+  - LocationSeqNo (varchar 50)
+  - CNICNo (varchar 50)
+  - FatherName (varchar 70)
+  - MobileNo (varchar 50)
+  - City (varchar 50)
+  - Project (varchar 50)
+  - Phase (varchar 50)
+  - Category (varchar 100)
+  - Size (nvarchar 50)
+  - Sector (varchar 100)
+  - PloNo (varchar 100)
+  - History (varchar max)
+  - BillGenerationStatus (varchar 50)
+  - ConnectionStatus (nchar 20)
+  - PlotStatus (varchar 50)
+  - StreetNumber (varchar 50)
+  - UnitType (varchar 50)
 
-Table: CustomersMaintenance_Backup_20260305  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - KuickPayNo  |  varchar (20)  |  nullable: NO
-  - BTNo  |  varchar (20)  |  nullable: YES
-  - CustomerName  |  varchar (200)  |  nullable: YES
-  - GeneratedMonthYear  |  varchar (50)  |  nullable: YES
-  - LocationSeqNo  |  varchar (50)  |  nullable: YES
-  - CNICNo  |  varchar (50)  |  nullable: YES
-  - FatherName  |  varchar (70)  |  nullable: YES
-  - InstalledOn  |  varchar (20)  |  nullable: YES
-  - MobileNo  |  varchar (50)  |  nullable: YES
-  - MeterType  |  varchar (50)  |  nullable: YES
-  - City  |  varchar (50)  |  nullable: YES
-  - Project  |  varchar (50)  |  nullable: NO
-  - PhaseNumber  |  varchar (50)  |  nullable: NO
-  - Category  |  varchar (100)  |  nullable: NO
-  - Block  |  varchar (100)  |  nullable: NO
-  - Size  |  nvarchar (50)  |  nullable: YES
-  - Sector  |  varchar (100)  |  nullable: NO
-  - PloNo  |  varchar (100)  |  nullable: NO
-  - History  |  varchar (max)  |  nullable: YES
-  - BillGenerationStatus  |  varchar (50)  |  nullable: YES
-  - ConnectionStatus  |  nchar (20)  |  nullable: YES
-  - PlotStatus  |  varchar (50)  |  nullable: YES
-  - StreetNumber  |  varchar (50)  |  nullable: YES
-  - SubCategory  |  varchar (100)  |  nullable: YES
-  - UnitType  |  varchar (50)  |  nullable: YES
+Table: CustomersMaintenance_Backup
+  - uid (int)
+  - CustomerNo (varchar 20)
+  - BTNo (varchar 20)
+  - CustomerName (varchar 200)
+  - GeneratedMonthYear (varchar 50)
+  - LocationSeqNo (varchar 50)
+  - CNICNo (varchar 50)
+  - FatherName (varchar 70)
+  - InstalledOn (varchar 20)
+  - MobileNo (varchar 50)
+  - TelephoneNo (varchar 50)
+  - MeterType (varchar 50)
+  - NTNNumber (varchar 50)
+  - City (varchar 50)
+  - Project (varchar 50)
+  - SubProject (varchar 50)
+  - TariffName (varchar 50)
+  - BankNo (varchar 50)
+  - BTNoMaintenance (varchar 30)
+  - Category (varchar 100)
+  - Block (varchar 100)
+  - PlotType (nvarchar 50)
+  - Size (nvarchar 50)
+  - Sector (varchar 100)
+  - PloNo (varchar 100)
+  - BillStatusMaint (varchar max)
+  - BillStatus (varchar max)
+  - History (varchar max)
+  - BillGenerationStatus (varchar 50)
+  - MeterNo (varchar 50)
+  - ConnectionStatus (nchar 20)
 
-Table: CustomersMaintenance_Backup_20260305_v2  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - KuickPayNo  |  varchar (20)  |  nullable: NO
-  - BTNo  |  varchar (20)  |  nullable: YES
-  - CustomerName  |  varchar (200)  |  nullable: YES
-  - GeneratedMonthYear  |  varchar (50)  |  nullable: YES
-  - LocationSeqNo  |  varchar (50)  |  nullable: YES
-  - CNICNo  |  varchar (50)  |  nullable: YES
-  - FatherName  |  varchar (70)  |  nullable: YES
-  - InstalledOn  |  varchar (20)  |  nullable: YES
-  - MobileNo  |  varchar (50)  |  nullable: YES
-  - MeterType  |  varchar (50)  |  nullable: YES
-  - City  |  varchar (50)  |  nullable: YES
-  - Project  |  varchar (50)  |  nullable: NO
-  - PhaseNumber  |  varchar (50)  |  nullable: NO
-  - Category  |  varchar (100)  |  nullable: NO
-  - Size  |  nvarchar (50)  |  nullable: YES
-  - Sector  |  varchar (100)  |  nullable: NO
-  - PloNo  |  varchar (100)  |  nullable: NO
-  - History  |  varchar (max)  |  nullable: YES
-  - BillGenerationStatus  |  varchar (50)  |  nullable: YES
-  - ConnectionStatus  |  nchar (20)  |  nullable: YES
-  - PlotStatus  |  varchar (50)  |  nullable: YES
-  - StreetNumber  |  varchar (50)  |  nullable: YES
-  - UnitType  |  varchar (50)  |  nullable: YES
+Table: CustomersMaintenance_Backup_20260305
+  - uid (int)
+  - KuickPayNo (varchar 20)
+  - BTNo (varchar 20)
+  - CustomerName (varchar 200)
+  - GeneratedMonthYear (varchar 50)
+  - LocationSeqNo (varchar 50)
+  - CNICNo (varchar 50)
+  - FatherName (varchar 70)
+  - InstalledOn (varchar 20)
+  - MobileNo (varchar 50)
+  - MeterType (varchar 50)
+  - City (varchar 50)
+  - Project (varchar 50)
+  - PhaseNumber (varchar 50)
+  - Category (varchar 100)
+  - Block (varchar 100)
+  - Size (nvarchar 50)
+  - Sector (varchar 100)
+  - PloNo (varchar 100)
+  - History (varchar max)
+  - BillGenerationStatus (varchar 50)
+  - ConnectionStatus (nchar 20)
+  - PlotStatus (varchar 50)
+  - StreetNumber (varchar 50)
+  - SubCategory (varchar 100)
+  - UnitType (varchar 50)
 
-Table: ElectricityBills  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - InvoiceNo  |  varchar (max)  |  nullable: YES
-  - CustomerNo  |  varchar (50)  |  nullable: YES
-  - CustomerName  |  varchar (100)  |  nullable: YES
-  - BTNo  |  varchar (50)  |  nullable: YES
-  - BillingMonth  |  varchar (50)  |  nullable: YES
-  - BillingYear  |  varchar (50)  |  nullable: YES
-  - BillingDate  |  date  |  nullable: YES
-  - DueDate  |  date  |  nullable: YES
-  - ReadingDate  |  date  |  nullable: YES
-  - IssueDate  |  date  |  nullable: YES
-  - ValidDate  |  date  |  nullable: YES
-  - MeterType  |  varchar (50)  |  nullable: YES
-  - MeterNo  |  varchar (50)  |  nullable: YES
-  - PaymentStatus  |  varchar (20)  |  nullable: YES
-  - PaymentDate  |  date  |  nullable: YES
-  - PaymentMethod  |  varchar (50)  |  nullable: YES
-  - BankDetail  |  varchar (50)  |  nullable: YES
-  - EnergyCoast  |  int (10,0)  |  nullable: YES
-  - CurrentBill  |  decimal (18,0)  |  nullable: YES
-  - BillAmount  |  decimal (18,0)  |  nullable: YES
-  - LastUpdated  |  varchar (100)  |  nullable: YES
-  - BillAmountInDueDate  |  int (10,0)  |  nullable: YES
-  - BillSurcharge  |  int (10,0)  |  nullable: YES
-  - BillAmountAfterDueDate  |  int (10,0)  |  nullable: YES
-  - PreviousReading1  |  int (10,0)  |  nullable: YES
-  - CurrentReading1  |  int (10,0)  |  nullable: YES
-  - Difference1  |  int (10,0)  |  nullable: YES
-  - PreviousReading2  |  int (10,0)  |  nullable: YES
-  - CurrentReading2  |  int (10,0)  |  nullable: YES
-  - Difference2  |  int (10,0)  |  nullable: YES
-  - PreviousSolarReading  |  int (10,0)  |  nullable: YES
-  - CurrentSolarReading  |  int (10,0)  |  nullable: YES
-  - DifferenceSolar  |  int (10,0)  |  nullable: YES
-  - TotalUnit  |  decimal (18,0)  |  nullable: YES
-  - OPC  |  decimal (18,0)  |  nullable: YES
-  - GST  |  decimal (18,0)  |  nullable: YES
-  - PTVFEE  |  decimal (18,0)  |  nullable: YES
-  - FURTHERTAX  |  decimal (18,0)  |  nullable: YES
-  - FPACHARGES  |  decimal (18,2)  |  nullable: YES
-  - CreatedBy  |  varchar (50)  |  nullable: YES
-  - CreateOn  |  varchar (50)  |  nullable: YES
-  - UpdateBy  |  varchar (50)  |  nullable: YES
-  - UpdateOn  |  varchar (50)  |  nullable: YES
-  - Arrears  |  decimal (18,1)  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
-  - AmountPaid  |  int (10,0)  |  nullable: YES
-  - Sector  |  varchar (max)  |  nullable: YES
-  - Block  |  varchar (max)  |  nullable: YES
-  - PushDate  |  date  |  nullable: YES
-  - PushedBy  |  varchar (max)  |  nullable: YES
-  - InstalledOn  |  varchar (50)  |  nullable: YES
-  - OPCRate  |  decimal (18,1)  |  nullable: YES
-  - UnitsAmount  |  int (10,0)  |  nullable: YES
-  - fpa1  |  decimal (18,1)  |  nullable: YES
-  - fpa2  |  decimal (18,1)  |  nullable: YES
-  - fpa3  |  decimal (18,1)  |  nullable: YES
-  - FPARate  |  varchar (100)  |  nullable: YES
-  - MeterStatus  |  varchar (50)  |  nullable: YES
-  - Fine  |  int (10,0)  |  nullable: YES
-  - SalesTax  |  int (10,0)  |  nullable: YES
-  - IncomeTax  |  int (10,0)  |  nullable: YES
-  - ExtraTax  |  int (10,0)  |  nullable: YES
-  - MF@  |  int (10,0)  |  nullable: YES
-  - UnitRate  |  decimal (18,2)  |  nullable: YES
-  - MDIReading  |  decimal (18,2)  |  nullable: YES
-  - DeferredAmount  |  int (10,0)  |  nullable: YES
+Table: CustomersMaintenance_Backup_20260305_v2
+  - uid (int)
+  - KuickPayNo (varchar 20)
+  - BTNo (varchar 20)
+  - CustomerName (varchar 200)
+  - GeneratedMonthYear (varchar 50)
+  - LocationSeqNo (varchar 50)
+  - CNICNo (varchar 50)
+  - FatherName (varchar 70)
+  - InstalledOn (varchar 20)
+  - MobileNo (varchar 50)
+  - MeterType (varchar 50)
+  - City (varchar 50)
+  - Project (varchar 50)
+  - PhaseNumber (varchar 50)
+  - Category (varchar 100)
+  - Size (nvarchar 50)
+  - Sector (varchar 100)
+  - PloNo (varchar 100)
+  - History (varchar max)
+  - BillGenerationStatus (varchar 50)
+  - ConnectionStatus (nchar 20)
+  - PlotStatus (varchar 50)
+  - StreetNumber (varchar 50)
+  - UnitType (varchar 50)
 
-Table: ElectricityBillsNetMeter  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - InvoiceNo  |  varchar (max)  |  nullable: YES
-  - CustomerNo  |  varchar (50)  |  nullable: YES
-  - CustomerName  |  varchar (100)  |  nullable: YES
-  - BTNo  |  varchar (50)  |  nullable: YES
-  - BillingMonth  |  varchar (50)  |  nullable: YES
-  - BillingYear  |  varchar (50)  |  nullable: YES
-  - BillingDate  |  date  |  nullable: YES
-  - DueDate  |  date  |  nullable: YES
-  - ReadingDate  |  date  |  nullable: YES
-  - IssueDate  |  date  |  nullable: YES
-  - ValidDate  |  date  |  nullable: YES
-  - MeterType  |  varchar (50)  |  nullable: YES
-  - MeterNo  |  varchar (50)  |  nullable: YES
-  - PaymentStatus  |  varchar (20)  |  nullable: YES
-  - PaymentDate  |  date  |  nullable: YES
-  - PaymentMethod  |  varchar (50)  |  nullable: YES
-  - BankDetail  |  varchar (50)  |  nullable: YES
-  - EnergyCoast  |  int (10,0)  |  nullable: YES
-  - CurrentBill  |  decimal (18,0)  |  nullable: YES
-  - BillAmount  |  decimal (18,0)  |  nullable: YES
-  - LastUpdated  |  varchar (100)  |  nullable: YES
-  - BillAmountInDueDate  |  int (10,0)  |  nullable: YES
-  - BillSurcharge  |  int (10,0)  |  nullable: YES
-  - BillAmountAfterDueDate  |  int (10,0)  |  nullable: YES
-  - PreviousReading1  |  int (10,0)  |  nullable: YES
-  - CurrentReading1  |  int (10,0)  |  nullable: YES
-  - Difference1  |  int (10,0)  |  nullable: YES
-  - PreviousReading2  |  int (10,0)  |  nullable: YES
-  - CurrentReading2  |  int (10,0)  |  nullable: YES
-  - Difference2  |  int (10,0)  |  nullable: YES
-  - PreviousSolarReading  |  int (10,0)  |  nullable: YES
-  - CurrentSolarReading  |  int (10,0)  |  nullable: YES
-  - DifferenceSolar  |  int (10,0)  |  nullable: YES
-  - TotalUnit  |  decimal (18,0)  |  nullable: YES
-  - OPC  |  decimal (18,1)  |  nullable: YES
-  - GST  |  decimal (18,0)  |  nullable: YES
-  - PTVFEE  |  decimal (18,0)  |  nullable: YES
-  - FURTHERTAX  |  decimal (18,0)  |  nullable: YES
-  - FPACHARGES  |  decimal (18,2)  |  nullable: YES
-  - CreatedBy  |  varchar (50)  |  nullable: YES
-  - CreateOn  |  varchar (50)  |  nullable: YES
-  - UpdateBy  |  varchar (50)  |  nullable: YES
-  - UpdateOn  |  varchar (50)  |  nullable: YES
-  - Arrears  |  decimal (18,1)  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
-  - AmountPaid  |  int (10,0)  |  nullable: YES
-  - Sector  |  varchar (max)  |  nullable: YES
-  - Block  |  varchar (max)  |  nullable: YES
-  - PushDate  |  date  |  nullable: YES
-  - PushedBy  |  varchar (max)  |  nullable: YES
-  - InstalledOn  |  varchar (50)  |  nullable: YES
-  - OPCRate  |  decimal (18,1)  |  nullable: YES
-  - UnitsAmount  |  int (10,0)  |  nullable: YES
-  - fpa1  |  decimal (18,1)  |  nullable: YES
-  - fpa2  |  decimal (18,1)  |  nullable: YES
-  - fpa3  |  decimal (18,1)  |  nullable: YES
-  - FPARate  |  varchar (100)  |  nullable: YES
-  - MeterStatus  |  varchar (50)  |  nullable: YES
-  - Fine  |  int (10,0)  |  nullable: YES
-  - SalesTax  |  int (10,0)  |  nullable: YES
-  - IncomeTax  |  int (10,0)  |  nullable: YES
-  - ExtraTax  |  int (10,0)  |  nullable: YES
-  - SumUnitsImport  |  int (10,0)  |  nullable: YES
-  - SumUnitsExport  |  int (10,0)  |  nullable: YES
-  - SumRateImport  |  decimal (18,1)  |  nullable: YES
-  - SumRateExport  |  decimal (18,1)  |  nullable: YES
-  - SumAmountImport  |  int (10,0)  |  nullable: YES
-  - SumAmountExport  |  int (10,0)  |  nullable: YES
-  - NMPreviousCredit  |  int (10,0)  |  nullable: YES
-  - NMCurrentCredit  |  int (10,0)  |  nullable: YES
-  - NMTotalCredit  |  int (10,0)  |  nullable: YES
-  - MF@  |  int (10,0)  |  nullable: YES
+Table: ElectricityBills
+  - uid (int)
+  - InvoiceNo (varchar max)
+  - CustomerNo (varchar 50)
+  - CustomerName (varchar 100)
+  - BTNo (varchar 50)
+  - BillingMonth (varchar 50)
+  - BillingYear (varchar 50)
+  - BillingDate (date)
+  - DueDate (date)
+  - ReadingDate (date)
+  - IssueDate (date)
+  - ValidDate (date)
+  - MeterType (varchar 50)
+  - MeterNo (varchar 50)
+  - PaymentStatus (varchar 20)
+  - PaymentDate (date)
+  - PaymentMethod (varchar 50)
+  - BankDetail (varchar 50)
+  - EnergyCoast (int)
+  - CurrentBill (decimal)
+  - BillAmount (decimal)
+  - LastUpdated (varchar 100)
+  - BillAmountInDueDate (int)
+  - BillSurcharge (int)
+  - BillAmountAfterDueDate (int)
+  - PreviousReading1 (int)
+  - CurrentReading1 (int)
+  - Difference1 (int)
+  - PreviousReading2 (int)
+  - CurrentReading2 (int)
+  - Difference2 (int)
+  - PreviousSolarReading (int)
+  - CurrentSolarReading (int)
+  - DifferenceSolar (int)
+  - TotalUnit (decimal)
+  - OPC (decimal)
+  - GST (decimal)
+  - PTVFEE (decimal)
+  - FURTHERTAX (decimal)
+  - FPACHARGES (decimal)
+  - CreatedBy (varchar 50)
+  - CreateOn (varchar 50)
+  - UpdateBy (varchar 50)
+  - UpdateOn (varchar 50)
+  - Arrears (decimal)
+  - History (varchar max)
+  - AmountPaid (int)
+  - Sector (varchar max)
+  - Block (varchar max)
+  - PushDate (date)
+  - PushedBy (varchar max)
+  - InstalledOn (varchar 50)
+  - OPCRate (decimal)
+  - UnitsAmount (int)
+  - fpa1 (decimal)
+  - fpa2 (decimal)
+  - fpa3 (decimal)
+  - FPARate (varchar 100)
+  - MeterStatus (varchar 50)
+  - Fine (int)
+  - SalesTax (int)
+  - IncomeTax (int)
+  - ExtraTax (int)
+  - MF@ (int)
+  - UnitRate (decimal)
+  - MDIReading (decimal)
+  - DeferredAmount (int)
 
-Table: Fine  (schema: dbo)
-  - FineID  |  int (10,0)  |  nullable: NO
-  - BTNo  |  nvarchar (50)  |  nullable: YES
-  - ProjectName  |  nvarchar (100)  |  nullable: YES
-  - CustomerName  |  nvarchar (100)  |  nullable: YES
-  - Block  |  nvarchar (50)  |  nullable: YES
-  - Sector  |  nvarchar (50)  |  nullable: YES
-  - FineMonth  |  nvarchar (20)  |  nullable: YES
-  - FineYear  |  int (10,0)  |  nullable: YES
-  - DateFine  |  date  |  nullable: YES
-  - Department  |  nvarchar (100)  |  nullable: YES
-  - FineType  |  nvarchar (100)  |  nullable: YES
-  - FineService  |  nvarchar (100)  |  nullable: YES
-  - FineAmount  |  int (10,0)  |  nullable: YES
-  - WaivedAmount  |  int (10,0)  |  nullable: YES
-  - AdjustmentAmount  |  int (10,0)  |  nullable: YES
-  - FineToCharge  |  int (10,0)  |  nullable: YES
-  - Comments  |  nvarchar (500)  |  nullable: YES
-  - FineEnteredBy  |  nvarchar (100)  |  nullable: YES
-  - FineEnterDate  |  date  |  nullable: YES
-  - History  |  nvarchar (max)  |  nullable: YES
-  - FineCategory  |  nvarchar (50)  |  nullable: YES
+Table: ElectricityBillsNetMeter
+  - uid (int)
+  - InvoiceNo (varchar max)
+  - CustomerNo (varchar 50)
+  - CustomerName (varchar 100)
+  - BTNo (varchar 50)
+  - BillingMonth (varchar 50)
+  - BillingYear (varchar 50)
+  - BillingDate (date)
+  - DueDate (date)
+  - ReadingDate (date)
+  - IssueDate (date)
+  - ValidDate (date)
+  - MeterType (varchar 50)
+  - MeterNo (varchar 50)
+  - PaymentStatus (varchar 20)
+  - PaymentDate (date)
+  - PaymentMethod (varchar 50)
+  - BankDetail (varchar 50)
+  - EnergyCoast (int)
+  - CurrentBill (decimal)
+  - BillAmount (decimal)
+  - LastUpdated (varchar 100)
+  - BillAmountInDueDate (int)
+  - BillSurcharge (int)
+  - BillAmountAfterDueDate (int)
+  - PreviousReading1 (int)
+  - CurrentReading1 (int)
+  - Difference1 (int)
+  - PreviousReading2 (int)
+  - CurrentReading2 (int)
+  - Difference2 (int)
+  - PreviousSolarReading (int)
+  - CurrentSolarReading (int)
+  - DifferenceSolar (int)
+  - TotalUnit (decimal)
+  - OPC (decimal)
+  - GST (decimal)
+  - PTVFEE (decimal)
+  - FURTHERTAX (decimal)
+  - FPACHARGES (decimal)
+  - CreatedBy (varchar 50)
+  - CreateOn (varchar 50)
+  - UpdateBy (varchar 50)
+  - UpdateOn (varchar 50)
+  - Arrears (decimal)
+  - History (varchar max)
+  - AmountPaid (int)
+  - Sector (varchar max)
+  - Block (varchar max)
+  - PushDate (date)
+  - PushedBy (varchar max)
+  - InstalledOn (varchar 50)
+  - OPCRate (decimal)
+  - UnitsAmount (int)
+  - fpa1 (decimal)
+  - fpa2 (decimal)
+  - fpa3 (decimal)
+  - FPARate (varchar 100)
+  - MeterStatus (varchar 50)
+  - Fine (int)
+  - SalesTax (int)
+  - IncomeTax (int)
+  - ExtraTax (int)
+  - SumUnitsImport (int)
+  - SumUnitsExport (int)
+  - SumRateImport (decimal)
+  - SumRateExport (decimal)
+  - SumAmountImport (int)
+  - SumAmountExport (int)
+  - NMPreviousCredit (int)
+  - NMCurrentCredit (int)
+  - NMTotalCredit (int)
+  - MF@ (int)
 
-Table: FpaCharges  (schema: dbo)
-  - Id  |  int (10,0)  |  nullable: NO
-  - FPAMonth  |  nchar (10)  |  nullable: YES
-  - FPAYear  |  nvarchar (50)  |  nullable: YES
-  - FPARate  |  decimal (18,0)  |  nullable: YES
-  - Status  |  bit  |  nullable: YES
+Table: Fine
+  - FineID (int)
+  - BTNo (nvarchar 50)
+  - ProjectName (nvarchar 100)
+  - CustomerName (nvarchar 100)
+  - Block (nvarchar 50)
+  - Sector (nvarchar 50)
+  - FineMonth (nvarchar 20)
+  - FineYear (int)
+  - DateFine (date)
+  - Department (nvarchar 100)
+  - FineType (nvarchar 100)
+  - FineService (nvarchar 100)
+  - FineAmount (int)
+  - WaivedAmount (int)
+  - AdjustmentAmount (int)
+  - FineToCharge (int)
+  - Comments (nvarchar 500)
+  - FineEnteredBy (nvarchar 100)
+  - FineEnterDate (date)
+  - History (nvarchar max)
+  - FineCategory (nvarchar 50)
 
-Table: Inventory  (schema: dbo)
-  - id  |  int (10,0)  |  nullable: NO
-  - product_id  |  int (10,0)  |  nullable: NO
-  - quantity_on_hand  |  int (10,0)  |  nullable: NO
-  - quantity_reserved  |  int (10,0)  |  nullable: YES
-  - quantity_available  |  int (10,0)  |  nullable: YES
-  - minimum_stock_level  |  int (10,0)  |  nullable: YES
-  - maximum_stock_level  |  int (10,0)  |  nullable: YES
-  - last_restocked_at  |  datetime2  |  nullable: YES
-  - last_counted_at  |  datetime2  |  nullable: YES
-  - updated_at  |  datetime2  |  nullable: YES
+Table: FpaCharges
+  - Id (int)
+  - FPAMonth (nchar 10)
+  - FPAYear (nvarchar 50)
+  - FPARate (decimal)
+  - Status (bit)
 
-Table: MaintenanceBills  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - KuickPayNo  |  varchar (50)  |  nullable: YES
-  - CustomerName  |  varchar (250)  |  nullable: YES
-  - BTNo  |  varchar (50)  |  nullable: YES
-  - Plot_Number  |  varchar (50)  |  nullable: YES
-  - Street_Number  |  varchar (50)  |  nullable: YES
-  - PhaseName  |  varchar (50)  |  nullable: YES
-  - Category  |  varchar (50)  |  nullable: YES
-  - Project  |  varchar (100)  |  nullable: YES
-  - PlotStatus  |  varchar (50)  |  nullable: YES
-  - BillingMonth  |  varchar (50)  |  nullable: YES
-  - BillingYear  |  varchar (50)  |  nullable: YES
-  - DueDate  |  date  |  nullable: YES
-  - IssueDate  |  date  |  nullable: YES
-  - PaymentStatus  |  varchar (50)  |  nullable: YES
-  - PaymentDate  |  date  |  nullable: YES
-  - PaymentMethod  |  varchar (50)  |  nullable: YES
-  - BankDetail  |  varchar (50)  |  nullable: YES
-  - PAIDBYOPERATOR  |  varchar (100)  |  nullable: YES
-  - AMOUNTPAID  |  int (10,0)  |  nullable: YES
-  - MaintCharges  |  int (10,0)  |  nullable: YES
-  - WaterCharges  |  int (10,0)  |  nullable: YES
-  - OtherCharges  |  int (10,0)  |  nullable: YES
-  - MiscCharges  |  int (10,0)  |  nullable: YES
-  - installamount  |  int (10,0)  |  nullable: YES
-  - current_gst  |  int (10,0)  |  nullable: YES
-  - Arrears  |  int (10,0)  |  nullable: YES
-  - PreviousArrears  |  int (10,0)  |  nullable: YES
-  - advance_payment  |  int (10,0)  |  nullable: YES
-  - AdvanceAmount  |  int (10,0)  |  nullable: YES
-  - BillAmountInDueDate  |  int (10,0)  |  nullable: YES
-  - BillSurcharge  |  int (10,0)  |  nullable: YES
-  - BillAmountAfterDueDate  |  int (10,0)  |  nullable: YES
-  - GTotal  |  int (10,0)  |  nullable: YES
-  - compute  |  varchar (255)  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
-  - conndate  |  date  |  nullable: YES
-  - UpdateBy  |  varchar (100)  |  nullable: YES
-  - UpdateOn  |  date  |  nullable: YES
-  - PushedBy  |  varchar (100)  |  nullable: YES
-  - PushedOn  |  date  |  nullable: YES
-  - RentAmount  |  int (10,0)  |  nullable: YES
-  - FoodSafety  |  int (10,0)  |  nullable: YES
-  - TrollyTrip  |  int (10,0)  |  nullable: YES
-  - ExtraWork  |  int (10,0)  |  nullable: YES
-  - DieselCost  |  int (10,0)  |  nullable: YES
+Table: Inventory
+  - id (int)
+  - product_id (int)
+  - quantity_on_hand (int)
+  - quantity_reserved (int)
+  - quantity_available (int)
+  - minimum_stock_level (int)
+  - maximum_stock_level (int)
+  - last_restocked_at (datetime2)
+  - last_counted_at (datetime2)
+  - updated_at (datetime2)
 
-Table: MaintenanceBills_Backup  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - KuickPayNo  |  varchar (50)  |  nullable: YES
-  - CustomerName  |  varchar (250)  |  nullable: YES
-  - BTNo  |  varchar (50)  |  nullable: YES
-  - Plot_Number  |  varchar (50)  |  nullable: YES
-  - Street_Number  |  varchar (50)  |  nullable: YES
-  - Phase_Number  |  varchar (50)  |  nullable: YES
-  - Plot_Category  |  varchar (50)  |  nullable: YES
-  - PROJECTNAME  |  varchar (100)  |  nullable: YES
-  - PlotStatus  |  varchar (50)  |  nullable: YES
-  - BillingMonth  |  varchar (50)  |  nullable: YES
-  - BillingYear  |  varchar (50)  |  nullable: YES
-  - DueDate  |  date  |  nullable: YES
-  - IssueDate  |  date  |  nullable: YES
-  - PaymentStatus  |  varchar (50)  |  nullable: YES
-  - PaymentDate  |  date  |  nullable: YES
-  - PaymentMethod  |  varchar (50)  |  nullable: YES
-  - BankDetail  |  varchar (50)  |  nullable: YES
-  - PAIDBYOPERATOR  |  varchar (100)  |  nullable: YES
-  - AMOUNTPAID  |  int (10,0)  |  nullable: YES
-  - MaintCharges  |  int (10,0)  |  nullable: YES
-  - WaterCharges  |  int (10,0)  |  nullable: YES
-  - OtherCharges  |  int (10,0)  |  nullable: YES
-  - MiscCharges  |  int (10,0)  |  nullable: YES
-  - installamount  |  int (10,0)  |  nullable: YES
-  - current_gst  |  int (10,0)  |  nullable: YES
-  - Arrears  |  int (10,0)  |  nullable: YES
-  - PreviousArrears  |  int (10,0)  |  nullable: YES
-  - advance_payment  |  int (10,0)  |  nullable: YES
-  - AdvanceAmount  |  int (10,0)  |  nullable: YES
-  - BillAmountInDueDate  |  int (10,0)  |  nullable: YES
-  - BillSurcharge  |  int (10,0)  |  nullable: YES
-  - BillAmountAfterDueDate  |  int (10,0)  |  nullable: YES
-  - GTotal  |  int (10,0)  |  nullable: YES
-  - compute  |  varchar (255)  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
-  - PushedOn  |  date  |  nullable: YES
-  - conndate  |  date  |  nullable: YES
-  - UpdateBy  |  varchar (100)  |  nullable: YES
-  - UpdateOn  |  date  |  nullable: YES
-  - PushedBy  |  varchar (100)  |  nullable: YES
+Table: MaintenanceBills
+  - uid (int)
+  - KuickPayNo (varchar 50)
+  - CustomerName (varchar 250)
+  - BTNo (varchar 50)
+  - Plot_Number (varchar 50)
+  - Street_Number (varchar 50)
+  - PhaseName (varchar 50)
+  - Category (varchar 50)
+  - Project (varchar 100)
+  - PlotStatus (varchar 50)
+  - BillingMonth (varchar 50)
+  - BillingYear (varchar 50)
+  - DueDate (date)
+  - IssueDate (date)
+  - PaymentStatus (varchar 50)
+  - PaymentDate (date)
+  - PaymentMethod (varchar 50)
+  - BankDetail (varchar 50)
+  - PAIDBYOPERATOR (varchar 100)
+  - AMOUNTPAID (int)
+  - MaintCharges (int)
+  - WaterCharges (int)
+  - OtherCharges (int)
+  - MiscCharges (int)
+  - installamount (int)
+  - current_gst (int)
+  - Arrears (int)
+  - PreviousArrears (int)
+  - advance_payment (int)
+  - AdvanceAmount (int)
+  - BillAmountInDueDate (int)
+  - BillSurcharge (int)
+  - BillAmountAfterDueDate (int)
+  - GTotal (int)
+  - compute (varchar 255)
+  - History (varchar max)
+  - conndate (date)
+  - UpdateBy (varchar 100)
+  - UpdateOn (date)
+  - PushedBy (varchar 100)
+  - PushedOn (date)
+  - RentAmount (int)
+  - FoodSafety (int)
+  - TrollyTrip (int)
+  - ExtraWork (int)
+  - DieselCost (int)
 
-Table: MaintenanceTarrif  (schema: dbo)
-  - UID  |  int (10,0)  |  nullable: NO
-  - Project  |  varchar (50)  |  nullable: NO
-  - Category  |  varchar (50)  |  nullable: NO
-  - Size  |  nvarchar (100)  |  nullable: NO
-  - Charges  |  float  |  nullable: NO
-  - Tax  |  nchar (10)  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
+Table: MaintenanceBills_Backup
+  - uid (int)
+  - KuickPayNo (varchar 50)
+  - CustomerName (varchar 250)
+  - BTNo (varchar 50)
+  - Plot_Number (varchar 50)
+  - Street_Number (varchar 50)
+  - Phase_Number (varchar 50)
+  - Plot_Category (varchar 50)
+  - PROJECTNAME (varchar 100)
+  - PlotStatus (varchar 50)
+  - BillingMonth (varchar 50)
+  - BillingYear (varchar 50)
+  - DueDate (date)
+  - IssueDate (date)
+  - PaymentStatus (varchar 50)
+  - PaymentDate (date)
+  - PaymentMethod (varchar 50)
+  - BankDetail (varchar 50)
+  - PAIDBYOPERATOR (varchar 100)
+  - AMOUNTPAID (int)
+  - MaintCharges (int)
+  - WaterCharges (int)
+  - OtherCharges (int)
+  - MiscCharges (int)
+  - installamount (int)
+  - current_gst (int)
+  - Arrears (int)
+  - PreviousArrears (int)
+  - advance_payment (int)
+  - AdvanceAmount (int)
+  - BillAmountInDueDate (int)
+  - BillSurcharge (int)
+  - BillAmountAfterDueDate (int)
+  - GTotal (int)
+  - compute (varchar 255)
+  - History (varchar max)
+  - PushedOn (date)
+  - conndate (date)
+  - UpdateBy (varchar 100)
+  - UpdateOn (date)
+  - PushedBy (varchar 100)
 
-Table: ManualRates  (schema: dbo)
-  - SNo  |  int (10,0)  |  nullable: NO
-  - CustomerNo  |  nvarchar (50)  |  nullable: NO
-  - Phase  |  nvarchar (100)  |  nullable: NO
-  - Size  |  nvarchar (50)  |  nullable: YES
-  - Category  |  nvarchar (100)  |  nullable: NO
-  - UnitType  |  nvarchar (50)  |  nullable: NO
-  - Misc  |  int (10,0)  |  nullable: NO
-  - Tax  |  int (10,0)  |  nullable: NO
-  - MaintCharges  |  int (10,0)  |  nullable: NO
-  - Total  |  int (10,0)  |  nullable: YES
+Table: MaintenanceTarrif
+  - UID (int)
+  - Project (varchar 50)
+  - Category (varchar 50)
+  - Size (nvarchar 100)
+  - Charges (float)
+  - Tax (nchar 10)
+  - History (varchar max)
 
-Table: MeterType  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - MeterId  |  int (10,0)  |  nullable: NO
-  - MeterType  |  varchar (50)  |  nullable: NO
-  - MeterNo  |  varchar (50)  |  nullable: NO
-  - BTNo  |  varchar (20)  |  nullable: NO
-  - MultiplyFactor  |  decimal (18,0)  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
+Table: ManualRates
+  - SNo (int)
+  - CustomerNo (nvarchar 50)
+  - Phase (nvarchar 100)
+  - Size (nvarchar 50)
+  - Category (nvarchar 100)
+  - UnitType (nvarchar 50)
+  - Misc (int)
+  - Tax (int)
+  - MaintCharges (int)
+  - Total (int)
 
-Table: OperatorsSetup  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - OperatorID  |  varchar (50)  |  nullable: NO
-  - OperatorName  |  varchar (50)  |  nullable: YES
-  - BillingMonth  |  varchar (50)  |  nullable: YES
-  - BillingYear  |  varchar (50)  |  nullable: YES
-  - BankName  |  varchar (50)  |  nullable: YES
-  - ReadingDate  |  date  |  nullable: YES
-  - IssueDate  |  date  |  nullable: YES
-  - DueDate  |  date  |  nullable: YES
-  - PaidDate  |  date  |  nullable: YES
-  - ValidDate  |  date  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
-  - FPAMonth1  |  varchar (50)  |  nullable: YES
-  - FPAYEAR1  |  varchar (50)  |  nullable: YES
-  - FPARate1  |  decimal (18,3)  |  nullable: YES
-  - FPAMonth2  |  varchar (max)  |  nullable: YES
-  - FPAYear2  |  varchar (50)  |  nullable: YES
-  - FPARate2  |  decimal (18,3)  |  nullable: YES
-  - CreatedBy  |  varchar (50)  |  nullable: YES
-  - CreatedOn  |  datetime  |  nullable: YES
+Table: MeterType
+  - uid (int)
+  - MeterId (int)
+  - MeterType (varchar 50)
+  - MeterNo (varchar 50)
+  - BTNo (varchar 20)
+  - MultiplyFactor (decimal)
+  - History (varchar max)
 
-Table: Products  (schema: dbo)
-  - id  |  int (10,0)  |  nullable: NO
-  - name  |  nvarchar (200)  |  nullable: NO
-  - description  |  nvarchar (1000)  |  nullable: YES
-  - price  |  decimal (10,2)  |  nullable: NO
-  - cost  |  decimal (10,2)  |  nullable: YES
-  - category_id  |  int (10,0)  |  nullable: YES
-  - sku  |  nvarchar (50)  |  nullable: YES
-  - barcode  |  nvarchar (100)  |  nullable: YES
-  - image_url  |  nvarchar (500)  |  nullable: YES
-  - is_active  |  bit  |  nullable: YES
-  - created_at  |  datetime2  |  nullable: YES
-  - updated_at  |  datetime2  |  nullable: YES
+Table: OperatorsSetup
+  - uid (int)
+  - OperatorID (varchar 50)
+  - OperatorName (varchar 50)
+  - BillingMonth (varchar 50)
+  - BillingYear (varchar 50)
+  - BankName (varchar 50)
+  - ReadingDate (date)
+  - IssueDate (date)
+  - DueDate (date)
+  - PaidDate (date)
+  - ValidDate (date)
+  - History (varchar max)
+  - FPAMonth1 (varchar 50)
+  - FPAYEAR1 (varchar 50)
+  - FPARate1 (decimal)
+  - FPAMonth2 (varchar max)
+  - FPAYear2 (varchar 50)
+  - FPARate2 (decimal)
+  - CreatedBy (varchar 50)
+  - CreatedOn (datetime)
 
-Table: QueryHistory  (schema: dbo)
-  - id  |  uniqueidentifier  |  nullable: NO
-  - question  |  nvarchar (max)  |  nullable: NO
-  - sql_query  |  nvarchar (max)  |  nullable: YES
-  - result_count  |  int (10,0)  |  nullable: YES
-  - execution_time_ms  |  int (10,0)  |  nullable: YES
-  - model_used  |  nvarchar (100)  |  nullable: YES
-  - created_at  |  datetime  |  nullable: NO
+Table: Products
+  - id (int)
+  - name (nvarchar 200)
+  - description (nvarchar 1000)
+  - price (decimal)
+  - cost (decimal)
+  - category_id (int)
+  - sku (nvarchar 50)
+  - barcode (nvarchar 100)
+  - image_url (nvarchar 500)
+  - is_active (bit)
+  - created_at (datetime2)
+  - updated_at (datetime2)
 
-Table: Rates  (schema: dbo)
-  - SNo  |  int (10,0)  |  nullable: NO
-  - Phase  |  nvarchar (100)  |  nullable: NO
-  - Size  |  nvarchar (50)  |  nullable: YES
-  - Category  |  nvarchar (100)  |  nullable: NO
-  - UnitType  |  nvarchar (50)  |  nullable: NO
-  - Misc  |  int (10,0)  |  nullable: NO
-  - Tax  |  int (10,0)  |  nullable: NO
-  - MaintCharges  |  int (10,0)  |  nullable: NO
-  - Total  |  int (10,0)  |  nullable: YES
+Table: QueryHistory
+  - id (uniqueidentifier)
+  - question (nvarchar max)
+  - sql_query (nvarchar max)
+  - result_count (int)
+  - execution_time_ms (int)
+  - model_used (nvarchar 100)
+  - created_at (datetime)
 
-Table: ReadingSheet  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - BTNo  |  varchar (50)  |  nullable: NO
-  - Year  |  varchar (50)  |  nullable: NO
-  - Month  |  varchar (50)  |  nullable: NO
-  - CustomerNo  |  varchar (50)  |  nullable: YES
-  - TarrifName  |  varchar (50)  |  nullable: YES
-  - MeterType  |  varchar (50)  |  nullable: YES
-  - Previous1  |  int (10,0)  |  nullable: YES
-  - Present1  |  int (10,0)  |  nullable: YES
-  - Difference1  |  int (10,0)  |  nullable: YES
-  - Previous2  |  int (10,0)  |  nullable: YES
-  - Present2  |  int (10,0)  |  nullable: YES
-  - Difference2  |  int (10,0)  |  nullable: YES
-  - Previous3  |  int (10,0)  |  nullable: YES
-  - Present3  |  int (10,0)  |  nullable: YES
-  - Difference3  |  int (10,0)  |  nullable: YES
-  - CreatedBy  |  varchar (50)  |  nullable: YES
-  - CreatedOn  |  datetime  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
+Table: Rates
+  - SNo (int)
+  - Phase (nvarchar 100)
+  - Size (nvarchar 50)
+  - Category (nvarchar 100)
+  - UnitType (nvarchar 50)
+  - Misc (int)
+  - Tax (int)
+  - MaintCharges (int)
+  - Total (int)
 
-Table: TariffMaint  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - TariffPrefix  |  varchar (50)  |  nullable: YES
-  - TariffType  |  varchar (50)  |  nullable: YES
-  - TariffSize  |  varchar (50)  |  nullable: YES
-  - Amount  |  int (10,0)  |  nullable: YES
-  - Tax  |  int (10,0)  |  nullable: YES
-  - CreatedBy  |  varchar (max)  |  nullable: YES
-  - CreatedOn  |  varchar (max)  |  nullable: YES
-  - Histroy  |  varchar (max)  |  nullable: YES
+Table: ReadingSheet
+  - uid (int)
+  - BTNo (varchar 50)
+  - Year (varchar 50)
+  - Month (varchar 50)
+  - CustomerNo (varchar 50)
+  - TarrifName (varchar 50)
+  - MeterType (varchar 50)
+  - Previous1 (int)
+  - Present1 (int)
+  - Difference1 (int)
+  - Previous2 (int)
+  - Present2 (int)
+  - Difference2 (int)
+  - Previous3 (int)
+  - Present3 (int)
+  - Difference3 (int)
+  - CreatedBy (varchar 50)
+  - CreatedOn (datetime)
+  - History (varchar max)
 
-Table: Tarrif  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - TarrifName  |  varchar (50)  |  nullable: NO
-  - TarrifType  |  varchar (50)  |  nullable: NO
-  - MeterType  |  varchar (50)  |  nullable: NO
-  - Slab  |  varchar (50)  |  nullable: NO
-  - Status  |  varchar (50)  |  nullable: NO
-  - Sequence  |  nvarchar (50)  |  nullable: YES
-  - Range  |  varchar (50)  |  nullable: NO
-  - Rate1  |  decimal (18,2)  |  nullable: NO
-  - Rate2  |  float  |  nullable: NO
-  - NM  |  float  |  nullable: NO
-  - Min Charges  |  float  |  nullable: YES
-  - Details  |  varchar (50)  |  nullable: NO
-  - CreatedBy  |  varchar (max)  |  nullable: YES
-  - CreatedOn  |  varchar (max)  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
+Table: TariffMaint
+  - uid (int)
+  - TariffPrefix (varchar 50)
+  - TariffType (varchar 50)
+  - TariffSize (varchar 50)
+  - Amount (int)
+  - Tax (int)
+  - CreatedBy (varchar max)
+  - CreatedOn (varchar max)
+  - Histroy (varchar max)
 
-Table: TaxInformation  (schema: dbo)
-  - TaxId  |  int (10,0)  |  nullable: NO
-  - TaxName  |  varchar (100)  |  nullable: YES
-  - TaxRate  |  decimal (18,1)  |  nullable: YES
-  - ApplicableFor  |  varchar (50)  |  nullable: YES
-  - IsActive  |  varchar (10)  |  nullable: YES
-  - Range  |  varchar (50)  |  nullable: YES
-  - CreatedBy  |  varchar (max)  |  nullable: YES
-  - CreatedOn  |  varchar (max)  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
+Table: Tarrif
+  - uid (int)
+  - TarrifName (varchar 50)
+  - TarrifType (varchar 50)
+  - MeterType (varchar 50)
+  - Slab (varchar 50)
+  - Status (varchar 50)
+  - Sequence (nvarchar 50)
+  - Range (varchar 50)
+  - Rate1 (decimal)
+  - Rate2 (float)
+  - NM (float)
+  - Min Charges (float)
+  - Details (varchar 50)
+  - CreatedBy (varchar max)
+  - CreatedOn (varchar max)
+  - History (varchar max)
 
-Table: Users  (schema: dbo)
-  - uid  |  int (10,0)  |  nullable: NO
-  - EmployeeId  |  varchar (50)  |  nullable: YES
-  - Username  |  nvarchar (100)  |  nullable: NO
-  - PasswordHash  |  nvarchar (255)  |  nullable: NO
-  - Role  |  nvarchar (max)  |  nullable: YES
-  - CreatedBy  |  varchar (max)  |  nullable: YES
-  - CreatedOn  |  varchar (max)  |  nullable: YES
-  - History  |  varchar (max)  |  nullable: YES
+Table: TaxInformation
+  - TaxId (int)
+  - TaxName (varchar 100)
+  - TaxRate (decimal)
+  - ApplicableFor (varchar 50)
+  - IsActive (varchar 10)
+  - Range (varchar 50)
+  - CreatedBy (varchar max)
+  - CreatedOn (varchar max)
+  - History (varchar max)
+
+Table: Users
+  - uid (int)
+  - EmployeeId (varchar 50)
+  - Username (nvarchar 100)
+  - PasswordHash (nvarchar 255)
+  - Role (nvarchar max)
+  - CreatedBy (varchar max)
+  - CreatedOn (varchar max)
+  - History (varchar max)
+
+View: vw_EBillCount
+  - uid (int)
+  - InvoiceNo (varchar max)
+  - CustomerNo (varchar 50)
+  - CustomerName (varchar 100)
+  - BTNo (varchar 50)
+  - BillingMonth (varchar 50)
+  - BillingYear (varchar 50)
+  - BillingDate (date)
+  - DueDate (date)
+  - ReadingDate (date)
+  - IssueDate (date)
+  - ValidDate (date)
+  - MeterType (varchar 50)
+  - MeterNo (varchar 50)
+  - PaymentStatus (varchar 20)
+  - PaymentDate (date)
+  - PaymentMethod (varchar 50)
+  - BankDetail (varchar 50)
+  - EnergyCoast (int)
+  - CurrentBill (decimal)
+  - BillAmount (decimal)
+  - LastUpdated (varchar 100)
+  - BillAmountInDueDate (int)
+  - BillSurcharge (int)
+  - BillAmountAfterDueDate (int)
+  - PreviousReading1 (int)
+  - CurrentReading1 (int)
+  - Difference1 (int)
+  - PreviousReading2 (int)
+  - CurrentReading2 (int)
+  - Difference2 (int)
+  - PreviousSolarReading (int)
+  - CurrentSolarReading (int)
+  - DifferenceSolar (int)
+  - TotalUnit (decimal)
+  - OPC (decimal)
+  - GST (decimal)
+  - PTVFEE (decimal)
+  - FURTHERTAX (decimal)
+  - FPACHARGES (decimal)
+  - CreatedBy (varchar 50)
+  - CreateOn (varchar 50)
+  - UpdateBy (varchar 50)
+  - UpdateOn (varchar 50)
+  - Arrears (decimal)
+  - History (varchar max)
+  - AmountPaid (int)
+  - Sector (varchar max)
+  - Block (varchar max)
+  - PushDate (date)
+  - PushedBy (varchar max)
+  - InstalledOn (varchar 50)
+  - OPCRate (decimal)
+  - UnitsAmount (int)
+  - fpa1 (decimal)
+  - fpa2 (decimal)
+  - fpa3 (decimal)
+  - FPARate (varchar 100)
+  - MeterStatus (varchar 50)
+  - Fine (int)
+  - SalesTax (int)
+  - IncomeTax (int)
+  - ExtraTax (int)
+  - MF@ (int)
+  - UnitRate (decimal)
+  - MDIReading (decimal)
+  - DeferredAmount (int)
+  - Customer_Uid (int)
+  - Customer_CustomerNo (varchar 100)
+  - Customer_BTNo (varchar 100)
+  - Customer_Name (varchar 255)
+  - GeneratedMonthYear (varchar 50)
+  - LocationSeqNo (varchar 50)
+  - CNICNo (varchar 250)
+  - FatherName (varchar 255)
+  - Customer_InstalledOn (varchar 20)
+  - MobileNo (varchar 500)
+  - TelephoneNo (varchar 500)
+  - Customer_MeterType (varchar 50)
+  - NTNNumber (varchar 50)
+  - City (varchar 50)
+  - Customer_Project (varchar 100)
+  - SubProject (varchar 100)
+  - TariffName (varchar 100)
+  - BankNo (varchar 50)
+  - BTNoMaintenance (varchar 30)
+  - Customer_Category (varchar 150)
+  - Customer_Block (varchar 150)
+  - PlotType (nvarchar 50)
+  - Size (nvarchar 50)
+  - Customer_Sector (varchar 150)
+  - PloNo (varchar 150)
+  - BillStatusMaint (varchar max)
+  - Customer_BillStatus (varchar max)
+  - Customer_History (varchar max)
+
+---
+Total tables/views: 32

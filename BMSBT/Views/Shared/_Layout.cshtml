@@ -106,34 +106,20 @@
                     <li>
                         <a asp-controller="MaintenanceNew" asp-action="CustomersMaintenance">
                             <i class="fas fa-user-cog" style="color: yellowgreen; font-size: 14px;"></i>
-                            M-Customers
+                            Customers
                         </a>
                     </li>
 
                     <li>
                         <a asp-controller="MaintenanceNew" asp-action="Index">
                             <i class='fas fa-money-bill' style="color: yellowgreen; font-size: 14px;"></i>
-                            M-Bills
+                            All Bills
                         </a>
                     </li>
 
-                    <li>
-                        <span class="nav-link" style="cursor: not-allowed; color: #0056b3;">
-                            <i class="fas fa-user-friends" style="color: yellowgreen; font-size: 14px;"></i>
-                            E-Customers
-                        </span>
+                    <li class="mt-4">
+                        <h4>Modules</h4>
                     </li>
-
-                    <li><hr class="my-2 sidebar-divider" /></li>
-
-                    <li>
-                        <span class="nav-link" style="cursor: not-allowed; color: #0056b3;">
-                            <i class='fas fa-bolt' style="color: yellowgreen; font-size: 14px;"></i>
-                            E-Bills
-                        </span>
-                    </li>
-
-                    <li><hr class="my-2 sidebar-divider" /></li>
 
                     <!-- Twistee with collapsible internal links (BMS Home) -->
                     <li class="nav-item">
@@ -176,6 +162,13 @@
                                     </a>
                                 </li>
 
+                                <li>
+                                    <a asp-controller="Configs" asp-action="AllConfigs">
+                                        <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
+                                        Configurations
+                                    </a>
+                                </li>
+
 
 
                                 <li>
@@ -184,14 +177,6 @@
                                         Reports
                                     </a>
                                 </li>
-
-                                <li>
-                                    <a asp-controller="Audit" asp-action="Index">
-                                        <i class='fas fa-balance-scale' style="color: yellowgreen; font-size: 14px;"></i>
-                                        Audit
-                                    </a>
-                                </li>
-
 
                             </ul>
                         </div>
@@ -223,35 +208,6 @@
                         <div class="collapse" id="billOperationSubMenu">
                             <ul class="nav flex-column ml-3">
 
-                                <li>
-                                    <a asp-controller="SSQCustomers" asp-action="Index">
-                                        <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
-                                        Customers
-                                    </a>
-                                </li>
-
-
-                                <li>
-                                    <a asp-controller="Fine" asp-action="Index">
-                                        <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
-                                        Electricity Bills
-                                    </a>
-                                </li>
-
-
-                                <li>
-                                    <a asp-controller="Fine" asp-action="Index">
-                                        <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
-                                        Maintenance Bills
-                                    </a>
-                                </li>
-
-                                <li class="nav-item">
-                                    <a class="nav-link" asp-controller="ReadingSheet" asp-action="ReadingDetails">
-                                        <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
-                                        Readings
-                                    </a>
-                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link" asp-controller="Tariff" asp-action="Index">
                                         <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
@@ -259,16 +215,16 @@
                                     </a>
                                 </li>
 
-
-                                <li class="nav-item">
-                                    <a class="nav-link" asp-controller="Tax" asp-action="Index">
-                                        <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
-                                        Taxes
-                                    </a>
-                                </li>
-
                             </ul>
                         </div>
+                    </li>
+
+                    <li>
+                        <a asp-controller="Login" asp-action="Logout"
+                           onclick="return confirm('Are you sure you want to log out?');">
+                            <i class="fas fa-sign-out-alt" style="color: yellowgreen; font-size: 14px;"></i>
+                            Exit
+                        </a>
                     </li>
 
 
@@ -285,6 +241,7 @@
         </div>
     </div>
 
+    @RenderSection("Scripts", required: false)
   </body>
 </html>
 <!-- jQuery (required for Bootstrap 4 JS) -->

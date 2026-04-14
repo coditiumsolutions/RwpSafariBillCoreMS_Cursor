@@ -98,7 +98,7 @@ public partial class BmsbtContext : DbContext
         {
             entity.ToTable("CustomersMaintenance");
             entity.Property(e => e.CustomerNo).HasColumnName("KuickPayNo").HasMaxLength(20);
-            entity.Property(e => e.SubProject).HasColumnName("PhaseName").HasMaxLength(50);
+            entity.Property(e => e.SubProject).HasColumnName("Phase").HasMaxLength(50);
             entity.Property(e => e.CNICNo).HasColumnName("CNICNo").HasMaxLength(50);
             entity.Property(e => e.PloNo).HasColumnName("PloNo").HasMaxLength(100);
             entity.Property(e => e.StreetNumber).HasColumnName("StreetNumber").HasMaxLength(50);
