@@ -1,0 +1,267 @@
+@model BMSBT.ViewModels.MaintenanceCustomerFilterViewModel
+
+@{
+    ViewData["Title"] = "Customer";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var initialTotal = Model.Customers?.TotalItemCount ?? 0;
+}
+
+<style>
+    .cm-detail-page {
+        color: #2c3e50;
+    }
+
+    .cm-card {
+        background: #ffffff;
+        border: 1px solid #d9d9d9;
+        border-radius: 10px;
+        box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+    }
+
+    .cm-card-header {
+        background-color: #00bfff;
+        border-bottom: 1px solid #d9d9d9;
+        padding: 0.9rem 1.25rem;
+    }
+
+    .cm-card-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #000000;
+    }
+
+    .cm-badge-soft {
+        background: #fffbe6;
+        color: #2c3e50;
+        font-size: 0.78rem;
+        border-radius: 5px;
+        padding: 0.25rem 0.55rem;
+        font-weight: 700;
+        border: 1px solid #f5e7a0;
+    }
+
+    .cm-filter-body {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #e1e1e1;
+        background-color: #ffffff;
+    }
+
+    .cm-filter-body .form-control,
+    .cm-filter-body .btn {
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+
+    .cm-filter-body .btn {
+        font-weight: 500;
+    }
+
+    .cm-filter-body label {
+        letter-spacing: 0.02em;
+        color: #2c3e50 !important;
+    }
+
+    .cm-grid-container {
+        padding: 1rem 1.25rem;
+        background-color: #ffffff;
+    }
+
+    .cm-grid-note {
+        font-size: 0.8rem;
+        color: #5f6b7a;
+        margin-bottom: 0.7rem;
+    }
+
+    .cm-detail-page h3 {
+        color: #2c3e50;
+        font-weight: 700;
+    }
+
+    .cm-create-btn {
+        background-color: #f39c12;
+        border-color: #f39c12;
+        color: #ffffff;
+        font-weight: 700;
+    }
+
+    .cm-create-btn:hover {
+        background-color: #e67e22;
+        border-color: #e67e22;
+        color: #ffffff;
+    }
+</style>
+
+<div class="cm-detail-page">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+        <h3 class="mb-2 mb-md-0">
+            <i class="fas fa-users text-primary mr-1"></i> Maintenance Customers
+        </h3>
+        <a asp-action="CreateCustomer" asp-controller="MaintenanceNew" class="btn cm-create-btn">
+            <i class="fa fa-plus mr-1"></i> Create New
+        </a>
+    </div>
+
+    <div class="cm-card">
+        <div class="cm-card-header d-flex align-items-center justify-content-between flex-wrap">
+            <h5 class="cm-card-title"><i class="fas fa-users mr-1"></i> Customers</h5>
+            <span class="cm-badge-soft">Total: <span id="customersTotalCount">@initialTotal</span></span>
+        </div>
+
+        <div class="cm-filter-body">
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="projectFilter" class="font-weight-bold text-secondary small text-uppercase mb-1">Project</label>
+                    <select id="projectFilter" class="form-control">
+                        <option value="">-- All Projects --</option>
+                        @foreach (var project in Model.Projects)
+                        {
+                            <option value="@project">@project</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="phaseFilter" class="font-weight-bold text-secondary small text-uppercase mb-1">Phase</label>
+                    <select id="phaseFilter" class="form-control">
+                        <option value="">-- All Phases --</option>
+                        @foreach (var phase in Model.Phases)
+                        {
+                            <option value="@phase">@phase</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="btnoSearch" class="font-weight-bold text-secondary small text-uppercase mb-1">BT No / Plot No</label>
+                    <input type="text" id="btnoSearch" class="form-control" placeholder="Search by BT No or Plot No" />
+                </div>
+                <div class="form-group col-md-1 d-flex align-items-end">
+                    <button type="button" id="btnSearch" class="btn btn-primary btn-block" title="Search">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="cm-grid-container">
+            <div class="cm-grid-note">Double-click any row to open customer details.</div>
+            <div id="gridContainer">
+                @await Html.PartialAsync("~/Views/MaintenanceNew/_MaintenanceCustomersGrid.cshtml", Model.Customers)
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            function updateTotalCount() {
+                var total = $('#maintCustomerTotalMeta').val() || '0';
+                $('#customersTotalCount').text(total);
+            }
+
+            function loadPhases(project, selectedPhase) {
+                var $phase = $('#phaseFilter');
+                $phase.empty();
+                $phase.append($('<option>').val('').text('-- All Phases --'));
+
+                if (!project) {
+                    return $.Deferred().resolve().promise();
+                }
+
+                return $.get('@Url.Action("GetPhasesByProject", "MaintenanceNew")',
+                    { project: project },
+                    function (data) {
+                        $.each(data, function (i, p) {
+                            $phase.append($('<option>').val(p).text(p));
+                        });
+                        if (selectedPhase) {
+                            $phase.val(selectedPhase);
+                        }
+                    });
+            }
+
+            function loadCustomers(page) {
+                var project = $('#projectFilter').val();
+                var phase = $('#phaseFilter').val();
+                var btno = $('#btnoSearch').val();
+
+                var searchState = {
+                    project: project,
+                    phase: phase,
+                    btno: btno,
+                    page: page
+                };
+                sessionStorage.setItem('homeCustomerSearchState', JSON.stringify(searchState));
+
+                $.get('@Url.Action("FilterCustomers", "MaintenanceNew")',
+                    { project: project, phase: phase, btNo: btno, page: page },
+                    function (html) {
+                        $('#gridContainer').html(html);
+                        updateTotalCount();
+                    });
+            }
+
+            $('#projectFilter').change(function () {
+                var selectedProject = $(this).val();
+                loadPhases(selectedProject).then(function () {
+                    loadCustomers(1);
+                });
+            });
+
+            $('#phaseFilter').change(function () {
+                loadCustomers(1);
+            });
+
+            $('#btnSearch').click(function () {
+                loadCustomers(1);
+            });
+
+            $(document).on('click', '.pagination a', function (e) {
+                e.preventDefault();
+                var href = $(this).attr('href');
+                if (href) {
+                    var url = new URL(href, window.location.origin);
+                    var page = url.searchParams.get('page');
+                    loadCustomers(page);
+                }
+            });
+
+            $(document).on('dblclick', '#customersTable tbody tr', function () {
+                var customerId = $(this).data('id');
+                if (customerId) {
+                    window.location.href = '@Url.Action("Details", "CustomersMaintenance")/' + customerId;
+                }
+            });
+
+            var savedState = sessionStorage.getItem('homeCustomerSearchState');
+            if (savedState) {
+                var state = JSON.parse(savedState);
+                $('#projectFilter').val(state.project);
+                $('#btnoSearch').val(state.btno);
+
+                var savedPhase = state.phase || state.block || state.category || '';
+                if (state.project) {
+                    loadPhases(state.project, savedPhase).then(function () {
+                        loadCustomers(state.page || 1);
+                    });
+                } else if (state.btno || savedPhase) {
+                    loadCustomers(state.page || 1);
+                }
+            }
+
+            updateTotalCount();
+        });
+    </script>
+}

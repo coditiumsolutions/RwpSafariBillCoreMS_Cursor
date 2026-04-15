@@ -1,0 +1,194 @@
+@model List<BMSBT.ViewModels.BillsSummaryCombinedViewModel>
+@{
+    ViewData["Title"] = "Bill Summary";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var months = ViewBag.Months as List<string> ?? new List<string>();
+    var years = ViewBag.Years as List<string> ?? new List<string>();
+    var selectedMonth = ViewBag.SelectedMonth as string ?? "";
+    var selectedYear = ViewBag.SelectedYear as string ?? "";
+}
+
+<style>
+    .filter-section {
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+    .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        margin-top: 20px;
+    }
+    .summary-table th,
+    .summary-table td {
+        border: 1px solid #dee2e6;
+        padding: 12px 15px;
+        text-align: left;
+    }
+    .summary-table th {
+        background-color: #4a90c2;
+        color: white;
+        font-weight: 600;
+    }
+    .summary-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+    .summary-table tbody tr:hover {
+        background-color: #e9ecef;
+    }
+    .summary-table tfoot td {
+        font-weight: bold;
+        background-color: #e3f2fd;
+        border: 1px solid #dee2e6;
+        padding: 12px 15px;
+    }
+    .form-label { font-weight: 500; }
+    .no-data { color: #6c757d; font-style: italic; padding: 20px; }
+</style>
+
+<div class="container-fluid mt-3">
+    <form id="billsSummaryForm" asp-controller="Home" asp-action="BillSummary" method="get" class="filter-section">
+        <div class="form-row row align-items-end g-3">
+            <div class="form-group col-auto">
+                <label class="form-label">Month</label>
+                <select name="month" id="monthDropdown" class="form-control" style="min-width: 160px;">
+                    <option value="">-- Select Month --</option>
+                    @foreach (var m in months)
+                    {
+                        if (m == selectedMonth)
+                        {
+                            <option value="@m" selected>@m</option>
+                        }
+                        else
+                        {
+                            <option value="@m">@m</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="form-group col-auto">
+                <label class="form-label">Year</label>
+                <select name="year" id="yearDropdown" class="form-control" style="min-width: 100px;">
+                    <option value="">-- Select Year --</option>
+                    @foreach (var y in years)
+                    {
+                        if (y == selectedYear)
+                        {
+                            <option value="@y" selected>@y</option>
+                        }
+                        else
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="form-group col-auto">
+                <button type="submit" class="btn btn-primary">Show</button>
+            </div>
+        </div>
+    </form>
+
+    <h4 class="mt-4">Bills Summary by Project</h4>
+    <div class="table-responsive">
+        <table class="summary-table table">
+            <thead>
+                <tr>
+                    <th>Project</th>
+                    <th style="text-align: right;">Customers</th>
+                    <th style="text-align: right;">Bills Generated</th>
+                </tr>
+            </thead>
+            <tbody id="summaryTableBody">
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var row in Model)
+                    {
+                        <tr>
+                            <td>@row.Project</td>
+                            <td style="text-align: right;">@row.Customers</td>
+                            <td style="text-align: right;">@row.BillsGenerated</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="3" class="no-data">@(string.IsNullOrEmpty(selectedMonth) || string.IsNullOrEmpty(selectedYear) ? "Select a month and year, then click Show." : "No customer data.")</td>
+                    </tr>
+                }
+            </tbody>
+            @if (Model != null && Model.Any())
+            {
+                <tfoot>
+                    <tr>
+                        <td>Total</td>
+                        <td style="text-align: right;">@Model.Sum(x => x.Customers)</td>
+                        <td style="text-align: right;">@Model.Sum(x => x.BillsGenerated)</td>
+                    </tr>
+                </tfoot>
+            }
+        </table>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var form = document.getElementById('billsSummaryForm');
+        var monthDropdown = document.getElementById('monthDropdown');
+        var yearDropdown = document.getElementById('yearDropdown');
+        var useAjax = false;
+
+        function hasSelection() {
+            return monthDropdown.value && yearDropdown.value;
+        }
+
+        function submitForm() {
+            if (hasSelection()) form.submit();
+        }
+
+        monthDropdown.addEventListener('change', function () {
+            if (useAjax) {
+                fetchSummaryData();
+            } else {
+                submitForm();
+            }
+        });
+        yearDropdown.addEventListener('change', function () {
+            if (useAjax) {
+                fetchSummaryData();
+            } else {
+                submitForm();
+            }
+        });
+
+        function fetchSummaryData() {
+            if (!hasSelection()) return;
+            var month = monthDropdown.value;
+            var year = yearDropdown.value;
+            var url = '@Url.Action("GetBillSummaryData", "Home")?month=' + encodeURIComponent(month) + '&year=' + encodeURIComponent(year);
+            fetch(url)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var tbody = document.getElementById('summaryTableBody');
+                    tbody.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(function (row) {
+                            var tr = document.createElement('tr');
+                            tr.innerHTML = '<td>' + (row.project || '') + '</td><td style="text-align: right;">' + (row.customers || 0) + '</td><td style="text-align: right;">' + (row.billsGenerated || 0) + '</td>';
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '<td colspan="3" class="no-data">No records for the selected month and year.</td>';
+                        tbody.appendChild(tr);
+                    }
+                })
+                .catch(function () {
+                    submitForm();
+                });
+        }
+    })();
+</script>

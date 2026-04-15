@@ -106,51 +106,52 @@
                     @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Home")
                     {
                         <li>
-                            <a asp-controller="MaintenanceNew" asp-action="Index">
+                            <a asp-controller="Home" asp-action="Dashboard">
                                 <i class="fas fa-chart-line" style="color: yellowgreen; font-size: 14px;"></i>
-                                Home
+                                Dashboard
                             </a>
                         </li>
 
                         <li>
-                            <a asp-controller="MaintenanceNew" asp-action="CustomersMaintenance">
-                                <i class="fas fa-user-cog" style="color: yellowgreen; font-size: 14px;"></i>
-                                Customers
+                            <a asp-controller="Home" asp-action="Customer">
+                                <i class="fas fa-user" style="color: yellowgreen; font-size: 14px;"></i>
+                                Customer
                             </a>
                         </li>
 
                         <li>
-                            <a asp-controller="MaintenanceNew" asp-action="AllBills">
-                                <i class='fas fa-money-bill' style="color: yellowgreen; font-size: 14px;"></i>
-                                All Bills
+                            <a asp-controller="Home" asp-action="AllBill">
+                                <i class='fas fa-file-invoice-dollar' style="color: yellowgreen; font-size: 14px;"></i>
+                                All Bill
                             </a>
                         </li>
 
                         <li>
-                            <a asp-controller="MaintenanceNew" asp-action="GenerateBill">
-                                <i class='fas fa-users' style="color: yellowgreen; font-size: 14px;"></i>
-                                Generate Bills
+                            <a asp-controller="Home" asp-action="GenerateBill">
+                                <i class='fas fa-bolt' style="color: yellowgreen; font-size: 14px;"></i>
+                                Generate Bill
                             </a>
                         </li>
 
                         <li>
-                            <a href="@Url.Action("PrintMMultiBills", "MaintenanceNew")">
+                            <a asp-controller="Home" asp-action="PrintBills">
                                 <i class="fas fa-print" style="color: yellowgreen; font-size: 14px;"></i>
-                                Print Bill
+                                Print Bills
                             </a>
                         </li>
 
+                    }
+
+                    <li class="mt-4">
+                        <h4>Modules</h4>
+                    </li>
+
+                    @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Home")
+                    {
                         <li>
-                            <a asp-controller="MaintenanceNew" asp-action="BillsSummary">
+                            <a asp-controller="Home" asp-action="BillSummary">
                                 <i class="fas fa-chart-bar" style="color: yellowgreen; font-size: 14px;"></i>
-                                Bills-Summary
-                            </a>
-                        </li>
-
-                        <li>
-                            <a asp-controller="OperatorSetup" asp-action="Index">
-                                <i class="fas fa-user-cog" style="color: yellowgreen; font-size: 14px;"></i>
-                                Operators Setup
+                                Bill Summary
                             </a>
                         </li>
 
@@ -169,6 +170,42 @@
                             </a>
                             <div class="collapse" id="maintenanceOtherLinksSubMenu">
                                 <ul class="nav flex-column ml-3">
+                                    <li>
+                                        <a asp-controller="MaintenanceNew" asp-action="Index">
+                                            <i class="fas fa-chart-line" style="color: yellowgreen; font-size: 14px;"></i>
+                                            Home
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a asp-controller="MaintenanceNew" asp-action="CustomersMaintenance">
+                                            <i class="fas fa-user-cog" style="color: yellowgreen; font-size: 14px;"></i>
+                                            Customers
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a asp-controller="MaintenanceNew" asp-action="AllBills">
+                                            <i class='fas fa-money-bill' style="color: yellowgreen; font-size: 14px;"></i>
+                                            All Bills
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a asp-controller="MaintenanceNew" asp-action="GenerateBill">
+                                            <i class='fas fa-users' style="color: yellowgreen; font-size: 14px;"></i>
+                                            Generate Bills
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="@Url.Action("PrintMMultiBills", "MaintenanceNew")">
+                                            <i class="fas fa-print" style="color: yellowgreen; font-size: 14px;"></i>
+                                            Print Bill
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a asp-controller="MaintenanceNew" asp-action="BillsSummary">
+                                            <i class="fas fa-chart-bar" style="color: yellowgreen; font-size: 14px;"></i>
+                                            Bills-Summary
+                                        </a>
+                                    </li>
                                     <li>
                                         <a asp-controller="MaintenanceBill" asp-action="PaymentForm">
                                             <i class='fas fa-edit' style="color: yellowgreen; font-size: 14px;"></i>
@@ -197,10 +234,6 @@
                             </div>
                         </li>
                     }
-
-                    <li class="mt-4">
-                        <h4>Modules</h4>
-                    </li>
 
                     <!-- Twistee with collapsible internal links (BMS Home) -->
                     <li class="nav-item">
@@ -259,6 +292,20 @@
                                     </a>
                                 </li>
 
+                                <li>
+                                    <a asp-controller="OperatorSetup" asp-action="Index">
+                                        <i class="fas fa-user-cog" style="color: yellowgreen; font-size: 14px;"></i>
+                                        Operators Setup
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Tariff" asp-action="Index">
+                                        <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
+                                        Tariff
+                                    </a>
+                                </li>
+
                             </ul>
                         </div>
                     </li>
@@ -288,13 +335,6 @@
                         </a>
                         <div class="collapse" id="billOperationSubMenu">
                             <ul class="nav flex-column ml-3">
-
-                                <li class="nav-item">
-                                    <a class="nav-link" asp-controller="Tariff" asp-action="Index">
-                                        <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
-                                        Tariff
-                                    </a>
-                                </li>
 
                             </ul>
                         </div>

@@ -1,0 +1,368 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var extCols = ViewBag.ExternalBillColumns as List<string>;
+    var extRows = ViewBag.ExternalBillRows as List<Dictionary<string, string>>;
+}
+
+<style>
+    .cm-detail-page {
+        --cm-surface: #ffffff;
+        --cm-heading: #0f172a;
+        --cm-border: #e2e8f0;
+        --cm-row-odd: #fafbfc;
+        --cm-row-even: #ffffff;
+        --cm-row-hover: #eef6ff;
+        font-size: 0.9375rem;
+        line-height: 1.45;
+        color: #334155;
+    }
+
+    .cm-card {
+        background: var(--cm-surface);
+        border: 1px solid var(--cm-border);
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .cm-card-header {
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        border-bottom: 1px solid var(--cm-border);
+        padding: 0.9rem 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .cm-card-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--cm-heading);
+    }
+
+    .cm-filter-body {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid var(--cm-border);
+        background-color: #ffffff;
+    }
+
+    .cm-filter-form .form-group {
+        margin-bottom: 0;
+    }
+
+    .cm-filter-form label {
+        display: block;
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.02em;
+        color: #475569;
+        font-size: 0.74rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .cm-filter-form .form-select,
+    .cm-filter-form .form-control,
+    .cm-filter-form .btn {
+        min-height: 35px;
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+
+    .cm-filter-form .btn {
+        font-weight: 600;
+    }
+
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        margin-top: 20px;
+    }
+
+    .report-table th,
+    .report-table td {
+        border: 1px solid #ccc;
+        padding: 12px 15px;
+        text-align: left;
+    }
+
+    .section-header {
+        background-color: #e8e8e8;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .metric-row {
+        background-color: #f9f9f9;
+    }
+
+    .metric-name {
+        font-weight: 500;
+        color: #555;
+        width: 25%;
+    }
+
+    .metric-value {
+        font-weight: bold;
+        color: #1976d2;
+        text-align: right;
+        width: 25%;
+    }
+
+    .header-section {
+        background-color: #4a90c2;
+        color: white;
+        padding: 10px 15px;
+        margin-bottom: 0;
+        border-radius: 5px 5px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .metric-note {
+        color: #666;
+        font-style: italic;
+        width: 25%;
+    }
+
+    .metric-secondary {
+        font-weight: bold;
+        color: #1976d2;
+        text-align: right;
+        width: 25%;
+    }
+
+    .important-note {
+        color: #e53935 !important;
+        font-weight: 500;
+    }
+
+    .amount {
+        color: #2e7d32;
+        font-weight: bold;
+    }
+</style>
+
+<div class="cm-detail-page">
+    <div class="cm-card">
+        <div class="cm-card-header">
+            <h4 class="cm-card-title">Dashboard</h4>
+        </div>
+        <div class="cm-filter-body">
+            <form method="get" asp-controller="Home" asp-action="Dashboard" class="cm-filter-form">
+                <div class="form-row">
+                    <div class="form-group col-md-2">
+                        <label>Billing month</label>
+                        <select name="selectedMonth" class="form-control">
+                            @foreach (var m in new[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" })
+                            {
+                                if (m == (ViewBag.SelectedMonth as string))
+                                {
+                                    <option value="@m" selected>@m</option>
+                                }
+                                else
+                                {
+                                    <option value="@m">@m</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label>Billing year</label>
+                        <select name="selectedYear" class="form-control">
+                            @foreach (var y in new[] { "2024", "2025", "2026" })
+                            {
+                                if (y == (ViewBag.SelectedYear as string))
+                                {
+                                    <option value="@y" selected>@y</option>
+                                }
+                                else
+                                {
+                                    <option value="@y">@y</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Project</label>
+                        <select name="apiProject" class="form-control">
+                            <option value="">-- Select Project --</option>
+                            @if (ViewBag.Projects != null)
+                            {
+                                foreach (var p in ViewBag.Projects)
+                                {
+                                    if (p == (ViewBag.ApiProject as string))
+                                    {
+                                        <option value="@p" selected>@p</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@p">@p</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Phase</label>
+                        <select name="phaseNumber" class="form-control">
+                            <option value="">-- Select Phase --</option>
+                            @if (ViewBag.Phases != null)
+                            {
+                                foreach (var ph in ViewBag.Phases)
+                                {
+                                    if (ph == (ViewBag.PhaseNumber as string))
+                                    {
+                                        <option value="@ph" selected>@ph</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@ph">@ph</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Apply</button>
+                    </div>
+                </div>
+                @if (ViewBag.ExternalBillsRequestUrl != null)
+                {
+                    <p class="small text-muted mb-0 mt-2" style="word-break: break-all;"><strong>Request:</strong> @ViewBag.ExternalBillsRequestUrl</p>
+                }
+            </form>
+        </div>
+    </div>
+
+@if (ViewBag.ExternalBillsError != null)
+{
+    <div class="alert alert-warning mt-2" role="alert">@ViewBag.ExternalBillsError</div>
+}
+else if (extCols != null && extRows != null && extRows.Any())
+{
+    <div style="overflow-x: auto; margin-top: 12px;">
+        <table class="report-table">
+            <thead>
+                <tr class="section-header">
+                    @foreach (var col in extCols)
+                    {
+                        <th>@col</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in extRows)
+                {
+                    <tr class="metric-row">
+                        @foreach (var col in extCols)
+                        {
+                            <td>@(row.TryGetValue(col, out var cell) ? cell : "")</td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (extCols != null && extRows != null)
+{
+    <p class="text-muted mt-2">API returned no rows for the selected filters.</p>
+}
+
+<div class="row-container">
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-header">All Projects</div>
+                <div class="card-body">
+                    <h5 class="card-title">@((ViewBag.TotalCustomerCount as int?)?.ToString("N0") ?? "0")</h5>
+                    <p class="card-text">Total Customers</p>
+                </div>
+            </div>
+        </div>
+
+        @if (ViewBag.ProjectCustomerCounts != null)
+        {
+            @foreach (var item in ViewBag.ProjectCustomerCounts)
+            {
+                <div class="col-md-3">
+                    <div class="card text-white bg-info mb-3">
+                        <div class="card-header">@item.Project</div>
+                        <div class="card-body">
+                            <h5 class="card-title">@item.Count</h5>
+                            <p class="card-text">Total Customers</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<div style="margin-top:20px;">
+    @if (!string.IsNullOrEmpty(ViewBag.SelectedYear as string) && !string.IsNullOrEmpty(ViewBag.SelectedMonth as string))
+    {
+        <div class="header-section">
+            <div>
+                <h4 style="margin: 0;">Maintenance Billing Summary - @ViewBag.SelectedMonth @ViewBag.SelectedYear</h4>
+                @if (ViewBag.BillsSummarySource as string == "api")
+                {
+                    <small style="display: block; opacity: 0.95; margin-top: 6px;">Totals are calculated from the external API table (same filters as above).</small>
+                }
+            </div>
+        </div>
+        <table class="report-table" style="margin-top: 0;">
+            <tr class="section-header">
+                <td colspan="4"><strong>Generated Detail</strong></td>
+            </tr>
+            <tr class="metric-row">
+                <td class="metric-name">Bills Generated</td>
+                <td class="metric-value">@((ViewBag.TotalBills as int?)?.ToString("N0") ?? "0")</td>
+                <td class="metric-note"></td>
+                <td class="metric-secondary"></td>
+            </tr>
+            <tr class="metric-row">
+                <td class="metric-name">Total Current Billing (Rs)</td>
+                <td class="metric-value amount">@((ViewBag.TotalAmountGenerated as decimal?)?.ToString("N0") ?? "0")</td>
+                <td class="metric-note"></td>
+                <td class="metric-secondary"></td>
+            </tr>
+
+            <tr class="section-header">
+                <td colspan="4"><strong>Payments Detail</strong></td>
+            </tr>
+            <tr class="metric-row">
+                <td class="metric-name">Paid (Amount)</td>
+                <td class="metric-value amount">@((ViewBag.PaidAmount as decimal?)?.ToString("N0") ?? "0")</td>
+                <td class="metric-note">Paid (No Of Bills)</td>
+                <td class="metric-secondary">@((ViewBag.PaidCount as int?)?.ToString("N0") ?? "0")</td>
+            </tr>
+            <tr class="metric-row">
+                <td class="metric-name">Paid with Surcharge (Amount)</td>
+                <td class="metric-value amount">@((ViewBag.SurchargeAmount as decimal?)?.ToString("N0") ?? "0")</td>
+                <td class="metric-note">Surcharge (No Of Bills)</td>
+                <td class="metric-secondary">@((ViewBag.SurchargeCount as int?)?.ToString("N0") ?? "0")</td>
+            </tr>
+            <tr class="metric-row">
+                <td class="metric-name">Partially Paid (Amount)</td>
+                <td class="metric-value amount">@((ViewBag.PartialAmount as decimal?)?.ToString("N0") ?? "0")</td>
+                <td class="metric-note">Partial (No Of Bills)</td>
+                <td class="metric-secondary">@((ViewBag.PartialCount as int?)?.ToString("N0") ?? "0")</td>
+            </tr>
+            <tr class="metric-row">
+                <td class="metric-name important-note">Unpaid Amount (Rs)</td>
+                <td class="metric-value amount important-note">@((ViewBag.BillUnpaidAmount as decimal?)?.ToString("N0") ?? "0")</td>
+                <td class="metric-note important-note">Unpaid Bills (Number)</td>
+                <td class="metric-secondary important-note">@((ViewBag.UnpaidBillsCount as int?)?.ToString("N0") ?? "0")</td>
+            </tr>
+        </table>
+    }
+</div>
+</div>
