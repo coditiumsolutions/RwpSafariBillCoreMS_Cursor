@@ -140,24 +140,54 @@ public sealed class BillingService : IBillingService
                 return result;
             }
 
-            var tariff = getTariff(customer.Project, customer.Category, customer.Size ?? string.Empty);
-            result.BillAmount = tariff.BillAmount;
-            result.TaxAmount = tariff.TaxAmount;
+            var maintCharges = Convert.ToInt32(Math.Round(customer.Maint ?? 0m, MidpointRounding.AwayFromZero));
+            var miscCharges = Convert.ToInt32(Math.Round(customer.Misc ?? 0m, MidpointRounding.AwayFromZero));
+            var waterCharges = Convert.ToInt32(Math.Round(customer.Water ?? 0m, MidpointRounding.AwayFromZero));
+            var rentCharges = Convert.ToInt32(Math.Round(customer.Rent ?? 0m, MidpointRounding.AwayFromZero));
+            var generatorCharges = Convert.ToInt32(Math.Round(customer.Generator ?? 0m, MidpointRounding.AwayFromZero));
+            var otherCharges = Convert.ToInt32(Math.Round(customer.Other ?? 0m, MidpointRounding.AwayFromZero));
+            var foodSafetyCharges = Convert.ToInt32(Math.Round(customer.FoodSafety ?? 0m, MidpointRounding.AwayFromZero));
+            var trollyTripCharges = Convert.ToInt32(Math.Round(customer.TrollyTrip ?? 0m, MidpointRounding.AwayFromZero));
+            var extraWorkCharges = Convert.ToInt32(Math.Round(customer.ExtraWork ?? 0m, MidpointRounding.AwayFromZero));
+            var otherChargesTotal = rentCharges + generatorCharges + otherCharges + foodSafetyCharges + trollyTripCharges + extraWorkCharges;
 
-            // Rule M-02: TotalBill = BillAmount + TaxAmount
-            var totalBill = Convert.ToInt32(Math.Round((double)(tariff.BillAmount + tariff.TaxAmount), MidpointRounding.AwayFromZero));
-            result.TotalBill = totalBill;
+            // ServiceTaxGovt = Round( (maint * 40 / 100) * 16 / 100 )
+            var serviceTaxGovt = Convert.ToInt32(Math.Round((double)maintCharges * 40.0 / 100.0 * 16.0 / 100.0, MidpointRounding.AwayFromZero));
 
-            // Rule M-03: Surcharge = TotalBill * 10 / 100
-            var surcharge = Convert.ToInt32(Math.Round(totalBill * 10.0 / 100.0, MidpointRounding.AwayFromZero));
+            result.BillAmount = maintCharges;
+            result.TaxAmount = serviceTaxGovt;
+
+            // Current Bill = maint + misc + tax + additional charges from CustomersMaintenance.
+            var currentBill = maintCharges + miscCharges + serviceTaxGovt + waterCharges + otherChargesTotal;
+            result.TotalBill = currentBill;
+
+            var arrears = 0;
+            var (previousMonth, previousYear) = GetPreviousMonthYear(targetMonth, targetYear);
+            if (!string.IsNullOrWhiteSpace(previousMonth) && !string.IsNullOrWhiteSpace(previousYear))
+            {
+                var previousBill = _dbContext.MaintenanceBills
+                    .Where(b => b.Btno == btNo && b.BillingMonth == previousMonth && b.BillingYear == previousYear)
+                    .OrderByDescending(b => b.Uid)
+                    .FirstOrDefault();
+
+                if (previousBill != null &&
+                    (string.IsNullOrWhiteSpace(previousBill.PaymentStatus) ||
+                     previousBill.PaymentStatus.Equals("unpaid", StringComparison.OrdinalIgnoreCase)))
+                {
+                    arrears = previousBill.BillAmountAfterDueDate ?? 0;
+                }
+            }
+
+            // Surcharge = MaintCharges * 10 / 100 (no tax/misc included)
+            var surcharge = Convert.ToInt32(Math.Round(maintCharges * 10.0 / 100.0, MidpointRounding.AwayFromZero));
             result.Surcharge = surcharge;
 
-            // Rule M-04: BillInDueDate = TotalBill
-            var billInDueDate = totalBill;
+            // BillInDueDate (Current Bill field) = current bill + unpaid previous arrears.
+            var billInDueDate = currentBill + arrears;
             result.BillInDueDate = billInDueDate;
 
-            // Rule M-04: BillAfterDate = TotalBill + Surcharge
-            var billAfterDate = Convert.ToInt32(Math.Round((double)(totalBill + surcharge), MidpointRounding.AwayFromZero));
+            // BillAfterDate = BillInDueDate + Surcharge
+            var billAfterDate = billInDueDate + surcharge;
             result.BillAfterDate = billAfterDate;
 
             var month = targetMonth;
@@ -165,8 +195,8 @@ public sealed class BillingService : IBillingService
 
             // Step 2 logging requirement
             _logger.LogInformation(
-                "Tariff found for customer {Uid}: Project={Project}, Category={Category}, Size={Size}, BillAmount={BillAmount}, TaxAmount={TaxAmount}, TotalBill={TotalBill}, Surcharge={Surcharge}, BillInDueDate={BillInDueDate}, BillAfterDate={BillAfterDate}",
-                customer.Uid, customer.Project, customer.Category, customer.Size, tariff.BillAmount, tariff.TaxAmount, totalBill, surcharge, billInDueDate, billAfterDate);
+                "Customer-maint rates used for {Uid}: Project={Project}, Category={Category}, Size={Size}, Maint={Maint}, Misc={Misc}, Water={Water}, Rent={Rent}, Generator={Generator}, Other={Other}, FoodSafety={FoodSafety}, TrollyTrip={TrollyTrip}, ExtraWork={ExtraWork}, ServiceTaxGovt={ServiceTaxGovt}, CurrentBill={CurrentBill}, Arrears={Arrears}, Surcharge={Surcharge}, BillInDueDate={BillInDueDate}, BillAfterDate={BillAfterDate}",
+                customer.Uid, customer.Project, customer.Category, customer.Size, maintCharges, miscCharges, waterCharges, rentCharges, generatorCharges, otherCharges, foodSafetyCharges, trollyTripCharges, extraWorkCharges, serviceTaxGovt, currentBill, arrears, surcharge, billInDueDate, billAfterDate);
 
             if (dryRun)
             {
@@ -189,16 +219,15 @@ public sealed class BillingService : IBillingService
                 DueDate = new DateOnly(now.Year, now.Month, 15),
                 PaymentStatus = "unpaid",
 
-                // Rounded integer values only.
-                MaintCharges = tariff.BillAmount,
-                TaxAmount = tariff.TaxAmount,
+                MaintCharges = maintCharges,
+                TaxAmount = serviceTaxGovt,
                 BillAmountInDueDate = billInDueDate,
                 BillSurcharge = surcharge,
                 BillAmountAfterDueDate = billAfterDate,
-                Arrears = 0,
-                WaterCharges = 0,
-                OtherCharges = 0,
-                MiscCharges = 0,
+                Arrears = arrears,
+                WaterCharges = waterCharges,
+                OtherCharges = otherChargesTotal,
+                MiscCharges = miscCharges,
                 History = $"RulesVersion:{RulesVersionStamp}"
             };
 
@@ -209,8 +238,8 @@ public sealed class BillingService : IBillingService
 
             result.Status = "Generated";
             result.Reason = "Bill generated successfully";
-            _logger.LogInformation("Generated bill for customer {Uid}/{BTNo}. Total={Total}, Surcharge={Surcharge}, AfterDue={AfterDue}.",
-                customer.Uid, btNo, totalBill, surcharge, billAfterDate);
+            _logger.LogInformation("Generated bill for customer {Uid}/{BTNo}. CurrentBill={CurrentBill}, Arrears={Arrears}, Surcharge={Surcharge}, AfterDue={AfterDue}.",
+                customer.Uid, btNo, currentBill, arrears, surcharge, billAfterDate);
 
             return result;
         }
@@ -292,6 +321,25 @@ public sealed class BillingService : IBillingService
         {
             return "unknown";
         }
+    }
+
+    private static (string? month, string? year) GetPreviousMonthYear(string currentMonth, string currentYear)
+    {
+        var months = new[]
+        {
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        };
+
+        var monthIdx = Array.FindIndex(months, m => string.Equals(m, currentMonth, StringComparison.OrdinalIgnoreCase));
+        if (monthIdx < 0 || !int.TryParse(currentYear, out var year))
+        {
+            return (null, null);
+        }
+
+        var previousMonthIdx = monthIdx == 0 ? 11 : monthIdx - 1;
+        var previousYear = monthIdx == 0 ? year - 1 : year;
+        return (months[previousMonthIdx], previousYear.ToString());
     }
 }
 

@@ -402,7 +402,11 @@ namespace BMSBT.Controllers
 
             if (!string.IsNullOrWhiteSpace(btNo))
             {
-                query = query.Where(c => c.BTNo != null && c.BTNo.Contains(btNo));
+                // UI searches by "BT No / Plot No". In DB this is BTNo and PloNo columns.
+                var search = btNo.Trim();
+                query = query.Where(c =>
+                    (c.BTNo != null && c.BTNo.Contains(search)) ||
+                    (c.PloNo != null && c.PloNo.Contains(search)));
             }
 
             int pageSize = 20;

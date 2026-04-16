@@ -168,7 +168,7 @@ namespace BMSBT.Controllers
                     _context.Update(customer);
                     await _context.SaveChangesAsync();
                     TempData["SuccessMessage"] = $"Customer '{customer.CustomerName}' updated successfully.";
-                    return RedirectToAction("CustomersMaintenance", "MaintenanceNew");
+                    return RedirectToAction("Customer", "Home");
                 }
                 catch (DbUpdateConcurrencyException)
                 {

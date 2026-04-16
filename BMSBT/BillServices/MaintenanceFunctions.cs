@@ -260,9 +260,8 @@ namespace BMSBT.BillServices
             // 1) Bill due on‑time: BillAmountInDueDate = MaintCharges + TaxAmount + Arrears + Fine + WaterCharges + OtherCharges + MiscCharges
             decimal billInDueDate = Math.Round(amountDec + taxDec + actualArrearDec + fineTotalDec + waterCharges + otherCharges + miscDec, 0);
 
-            // 2) 10% surcharge on (Charges + Tax)
-            decimal baseChargesAndTax = amountDec + taxDec;
-            decimal surcharge = Math.Round(baseChargesAndTax * 0.10m, 0);
+            // 2) 10% surcharge on MaintCharges only
+            decimal surcharge = Math.Round(amountDec * 0.10m, 0);
 
             // 3) Bill after due date: BillAmountAfterDueDate = BillAmountInDueDate + BillSurcharge
             decimal billAfterDue = Math.Round(billInDueDate + surcharge, 0);

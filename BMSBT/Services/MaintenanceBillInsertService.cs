@@ -133,7 +133,7 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
     /// Calculates billing amounts based on maintenance charges, tax amount, arrears, fine, and additional charges.
     /// Per Requirement:
     /// BillAmountInDueDate = Charges + Tax + Arrears + Fine + Water + Other
-    /// BillSurcharge = (Charges + Tax) * 10 / 100
+    /// BillSurcharge = Charges * 10 / 100
     /// BillAmountAfterDueDate = BillAmountInDueDate + BillSurcharge
     /// </summary>
     private static BillingCalculations CalculateBillingAmounts(decimal maintCharges, decimal taxAmount, decimal arrears = 0, decimal fine = 0, decimal water = 0, decimal other = 0)
@@ -142,9 +142,8 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
         decimal inDueDateDecimal = maintCharges + taxAmount + arrears + fine + water + other;
         decimal billAmountInDueDate = Math.Round(inDueDateDecimal, MidpointRounding.AwayFromZero);
 
-        // Step 2: Calculate Bill Surcharge = 10% of (Charges + Tax) -- Surcharge is usually on the base charges+tax
-        decimal baseChargesAndTax = maintCharges + taxAmount;
-        decimal surchargeDecimal = baseChargesAndTax * SURCHARGE_PERCENTAGE;
+        // Step 2: Calculate Bill Surcharge = 10% of MaintCharges only
+        decimal surchargeDecimal = maintCharges * SURCHARGE_PERCENTAGE;
         decimal billSurcharge = Math.Round(surchargeDecimal, MidpointRounding.AwayFromZero);
 
         // Step 3: Calculate BillAmountAfterDueDate = BillAmountInDueDate + BillSurcharge

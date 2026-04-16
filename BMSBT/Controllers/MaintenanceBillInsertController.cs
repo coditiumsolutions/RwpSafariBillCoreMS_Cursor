@@ -1,4 +1,3 @@
-using BMSBT.BillServices;
 using BMSBT.DTO;
 using BMSBT.Models;
 using BMSBT.Services;
@@ -218,41 +217,16 @@ public class MaintenanceBillInsertController : ControllerBase
 
                 if (shouldGenerate)
                 {
-                    // MaintenanceTarrif: Project + Category + Size
-                    var tariff = MaintenanceTariffLookup.FindTariff(_dbContext, customer.Project, customer.Category, customer.Size);
-                    if (tariff == null)
+                    // Rates are taken from CustomersMaintenance table (maint + misc), not MaintenanceTarrif.
+                    if (customer.Maint == null && customer.Misc == null)
                     {
-                        statusValue = "Rates Undefined";
+                        statusValue = "Rates Undefined (maint/misc missing in CustomersMaintenance)";
                         customer.BillGenerationStatus = statusValue;
                         detailedLogs.Add(BaseLog("Failed", statusValue));
                         updates.Add(new { uid = customer.Uid, status = statusValue });
                         AddReason(statusValue);
                         continue;
                     }
-
-                    var dto = new MaintenanceBillCreateDto
-                    {
-                        CustomerNo = customer.CustomerNo ?? string.Empty,
-                        CustomerName = customer.CustomerName ?? string.Empty,
-                        BTNo = btNoForLookup,
-                        PlotStatus = customer.PlotStatus,
-                        MeterNo = null,
-
-                        // Rate matching: SubProject (PhaseNumber) = Rates.Phase for MaintCharges
-                        Project = customer.Project,
-                        SubProject = customer.SubProject,
-                        PlotType = customer.PlotStatus,
-                        Size = customer.Size,
-                        Category = customer.Category,
-
-                        // Billing period and dates
-                        BillingMonth = billingMonth,
-                        BillingYear = billingYear,
-                        BillingDate = billingDate,
-                        IssueDate = issueDate,
-                        DueDate = dueDate,
-                        ValidDate = validDate
-                    };
 
                     // Step 1-3: Billing rules service with optional dry-run
                     var result = _billingService.generateMaintenanceBill(customer, dryRun, billingMonth, billingYear);

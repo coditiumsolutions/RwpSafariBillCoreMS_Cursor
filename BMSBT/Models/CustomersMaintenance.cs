@@ -79,6 +79,33 @@ namespace BMSBT.Models
         [StringLength(50)]
         public string? PlotStatus { get; set; }
 
+        [Column("maint")]
+        public decimal? Maint { get; set; }
+
+        [Column("misc")]
+        public decimal? Misc { get; set; }
+
+        [Column("water")]
+        public decimal? Water { get; set; }
+
+        [Column("rent")]
+        public decimal? Rent { get; set; }
+
+        [Column("generator")]
+        public decimal? Generator { get; set; }
+
+        [Column("other")]
+        public decimal? Other { get; set; }
+
+        [Column("foodsafety")]
+        public decimal? FoodSafety { get; set; }
+
+        [Column("trollytrip")]
+        public decimal? TrollyTrip { get; set; }
+
+        [Column("extrawork")]
+        public decimal? ExtraWork { get; set; }
+
         [StringLength(50)]
         [Column("StreetNumber")]
         public string? StreetNumber { get; set; }

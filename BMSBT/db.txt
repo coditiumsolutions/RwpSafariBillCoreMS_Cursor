@@ -1,7 +1,7 @@
 ﻿Database: BMSSafariRwp
 Connection: Server=172.20.229.2;Database=BMSSafariRwp;User Id=admin;Password=***;MultipleActiveResultSets=True;TrustServerCertificate=True;
 (From appsettings: DefaultConnection)
-Generated: 2026-04-14 17:41:33
+Generated: 2026-04-16 12:18:52
 
 ---
 
@@ -122,6 +122,15 @@ Table: CustomersMaintenance
   - PlotStatus (varchar 50)
   - StreetNumber (varchar 50)
   - UnitType (varchar 50)
+  - maint (decimal)
+  - misc (decimal)
+  - water (decimal)
+  - rent (decimal)
+  - generator (decimal)
+  - other (decimal)
+  - foodsafety (decimal)
+  - trollytrip (decimal)
+  - extrawork (decimal)
 
 Table: CustomersMaintenance_Backup
   - uid (int)

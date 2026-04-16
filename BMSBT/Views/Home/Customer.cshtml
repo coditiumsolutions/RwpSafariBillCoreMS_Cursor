@@ -228,6 +228,14 @@
                 loadCustomers(1);
             });
 
+            // Allow pressing Enter to trigger search
+            $('#btnoSearch').on('keypress', function (e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    loadCustomers(1);
+                }
+            });
+
             $(document).on('click', '.pagination a', function (e) {
                 e.preventDefault();
                 var href = $(this).attr('href');

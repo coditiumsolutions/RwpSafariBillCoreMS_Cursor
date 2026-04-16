@@ -10,16 +10,16 @@
 
 <style>
     .filter-section {
-        padding: 20px;
+        padding: 12px 16px;
         background-color: #f8f9fa;
         border-radius: 6px;
-        margin-bottom: 20px;
+        margin-bottom: 8px;
     }
     .summary-table {
         width: 100%;
         border-collapse: collapse;
         background-color: white;
-        margin-top: 20px;
+        margin-top: 8px;
     }
     .summary-table th,
     .summary-table td {
@@ -50,7 +50,7 @@
 
 <div class="container-fluid mt-3">
     <form id="billsSummaryForm" asp-controller="Home" asp-action="BillSummary" method="get" class="filter-section">
-        <div class="form-row row align-items-end g-3">
+        <div class="form-row row align-items-end g-2">
             <div class="form-group col-auto">
                 <label class="form-label">Month</label>
                 <select name="month" id="monthDropdown" class="form-control" style="min-width: 160px;">
@@ -91,7 +91,7 @@
         </div>
     </form>
 
-    <h4 class="mt-4">Bills Summary by Project</h4>
+    <h4 class="mt-2 mb-2">Bills Summary by Project</h4>
     <div class="table-responsive">
         <table class="summary-table table">
             <thead>

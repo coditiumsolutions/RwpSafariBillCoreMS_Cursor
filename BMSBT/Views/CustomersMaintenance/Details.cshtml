@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "Maintenance Customer Details";
-    Layout = "~/Views/Shared/_LayoutMaintBills.cshtml";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <style>
@@ -160,6 +160,36 @@
                     <td>@Model.PloNo</td>
                     <th>Plot Status</th>
                     <td>@Model.PlotStatus</td>
+                </tr>
+                <tr>
+                    <th>Maint</th>
+                    <td>@(Model.Maint?.ToString("N2") ?? "0.00")</td>
+                    <th>Misc</th>
+                    <td>@(Model.Misc?.ToString("N2") ?? "0.00")</td>
+                </tr>
+                <tr>
+                    <th>Water</th>
+                    <td>@(Model.Water?.ToString("N2") ?? "0.00")</td>
+                    <th>Rent</th>
+                    <td>@(Model.Rent?.ToString("N2") ?? "0.00")</td>
+                </tr>
+                <tr>
+                    <th>Generator</th>
+                    <td>@(Model.Generator?.ToString("N2") ?? "0.00")</td>
+                    <th>Other</th>
+                    <td>@(Model.Other?.ToString("N2") ?? "0.00")</td>
+                </tr>
+                <tr>
+                    <th>Food Safety</th>
+                    <td>@(Model.FoodSafety?.ToString("N2") ?? "0.00")</td>
+                    <th>Trolly Trip</th>
+                    <td>@(Model.TrollyTrip?.ToString("N2") ?? "0.00")</td>
+                </tr>
+                <tr>
+                    <th>Extra Work</th>
+                    <td>@(Model.ExtraWork?.ToString("N2") ?? "0.00")</td>
+                    <th></th>
+                    <td></td>
                 </tr>
                 <tr>
                     <th>Size</th>

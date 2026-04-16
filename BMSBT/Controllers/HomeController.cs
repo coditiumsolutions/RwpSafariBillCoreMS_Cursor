@@ -515,7 +515,8 @@ namespace BMSBT.Controllers
                 {
                     { "Safari-1", ("Safari-1", "Safari-1", "Safari Villas") },
                     { "Safari-2", ("Safari-2", "Safari-2", "Safari II") },
-                    { "Bahria Spring", ("Safari-3", "Safari-3", "Bahria Springs Commercial Close") },
+                    { "Bahria Spring", ("BahriaSpring", "bahria spring", "bahria springs") },
+                    { "BahriaSpring", ("BahriaSpring", "bahria spring", "bahria springs") },
                     { "Bahria Heights-1", ("SafariHeights", "Bahria Heights-1", "Bahria Heights Ext.1") }
                 };
 
@@ -525,12 +526,16 @@ namespace BMSBT.Controllers
                 }
 
                 var phaseName = string.IsNullOrWhiteSpace(selectedPhaseName) ? map.defaultPhase : selectedPhaseName;
+                var billingMonthValue = string.Equals(selectedProject, "Bahria Spring", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(selectedProject, "BahriaSpring", StringComparison.OrdinalIgnoreCase)
+                    ? billingMonth.ToLowerInvariant()
+                    : billingMonth;
                 var baseUrl = $"http://172.20.229.2:84/api/MaintenanceBills/{Uri.EscapeDataString(map.pathSegment)}";
 
                 var url =
                     $"{baseUrl}?project={Uri.EscapeDataString(map.apiProject)}" +
                     $"&phaseName={Uri.EscapeDataString(phaseName)}" +
-                    $"&billingMonth={Uri.EscapeDataString(billingMonth)}" +
+                    $"&billingMonth={Uri.EscapeDataString(billingMonthValue)}" +
                     $"&billingYear={Uri.EscapeDataString(billingYear)}";
 
                 var response = await client.GetAsync(url);
