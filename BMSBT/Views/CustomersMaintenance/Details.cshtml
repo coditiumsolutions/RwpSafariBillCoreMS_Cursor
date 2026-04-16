@@ -54,6 +54,28 @@
         letter-spacing: 0.02em;
     }
 
+    .cm-customer-no {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        line-height: 1.2;
+        flex-wrap: wrap;
+    }
+
+    .cm-customer-no-label {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .cm-customer-no-value {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--cm-heading);
+    }
+
     .cm-table-wrap {
         width: 100%;
         border: 1px solid var(--cm-border);
@@ -120,7 +142,10 @@
     <div class="cm-card">
         <div class="cm-card-header">
             <h3 class="cm-card-title">@Model.CustomerName</h3>
-            <span class="cm-badge-soft">ID @Model.Uid</span>
+            <div class="cm-customer-no">
+                <span class="cm-customer-no-label">BTNo</span>
+                <span class="cm-customer-no-value">@Model.BTNo</span>
+            </div>
         </div>
 
         <div class="cm-table-wrap">
