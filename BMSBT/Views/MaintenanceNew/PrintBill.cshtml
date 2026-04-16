@@ -2,9 +2,21 @@
 @{
     Layout = null;
     var project = ViewBag.Project as string ?? "";
+    var projectTitle = !string.IsNullOrWhiteSpace(project)
+        ? project.Trim().ToUpperInvariant()
+        : (Model.Project ?? "").Trim().ToUpperInvariant();
     var total = Model.BillAmountInDueDate ?? 0;
     var lpSurcharge = Model.BillSurcharge ?? 0;
     var payAfterDue = Model.BillAmountAfterDueDate ?? (total + lpSurcharge);
+    var arrears = Model.Arrears ?? 0;
+    var dueDateStr = Model.DueDate?.ToString("dd-MM-yyyy") ?? "";
+    var issueDateStr = Model.IssueDate?.ToString("dd-MM-yyyy") ?? "";
+    var phaseNameStr = !string.IsNullOrWhiteSpace(Model.PhaseName)
+        ? Model.PhaseName!.Trim()
+        : (!string.IsNullOrWhiteSpace(project) ? project.Trim() : "—");
+    var plotNoStr = !string.IsNullOrWhiteSpace(Model.MeterNo)
+        ? Model.MeterNo!.Trim()
+        : (!string.IsNullOrWhiteSpace(Model.PlotStatus) ? Model.PlotStatus!.Trim() : "");
 }
 
 <!DOCTYPE html>
@@ -15,81 +27,181 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 40px;
+            margin: 0;
+            padding: 0;
+            font-size: 12px;
         }
 
         .bill-container {
-            width: 800px;
-            margin: auto;
-            border: 1px solid #000;
-            padding: 20px;
+            width: 820px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            padding: 0;
         }
 
-        .header {
+        table { border-collapse: collapse; }
+
+        .bill-title {
+            background: #0b4f8a;
+            color: #fff;
+            font-weight: 800;
+            text-transform: uppercase;
             text-align: center;
+            padding: 4px 6px;
+            border-bottom: 2px solid #000;
+            font-size: 12px;
         }
 
-        .bill-info {
-            margin-top: 20px;
+        .meta-table th {
+            background: #0b4f8a;
+            color: #fff;
+            font-weight: 700;
+            font-size: 10px;
+            padding: 3px 4px;
+            border: 1px solid #000;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
         }
 
-        .bill-info-table {
+        .meta-table td {
+            border: 1px solid #000;
+            padding: 3px 4px;
+            font-size: 11px;
+        }
+
+        .meta-project {
+            font-weight: 800;
+        }
+
+        .btno-row td {
+            border-left: 0;
+            border-right: 0;
+        }
+
+        .keep-clean {
+            color: #1f4e79;
+            font-weight: 800;
+            text-align: center;
+            padding: 4px 0;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            background: #f7fbff;
+        }
+
+        .subline {
+            padding: 4px 6px;
+            border-bottom: 1px solid #000;
+            font-size: 10px;
+            font-weight: 700;
+            color: #1f4e79;
+        }
+
+        .grid {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
         }
 
-        .bill-info-table td {
-            padding: 6px 10px;
-            border: none;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        .bill-info-table td.caption {
-            font-weight: bold;
-            width: 22%;
-        }
-
-        .bill-info-table td.value {
-            width: 28%;
-        }
-
-        .charges-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        .charges-table td {
-            border: 1px solid black;
-            padding: 8px 10px;
-            text-align: left;
+        .charges-table td,
+        .charges-table th,
+        .totals-table td,
+        .totals-table th {
+            border: 1px solid #000;
+            padding: 4px 6px;
         }
 
         .charges-table td.caption {
-            font-weight: bold;
-            width: 22%;
+            width: 45%;
+            font-weight: 800;
+            font-size: 10px;
         }
 
-        .charges-table td.value {
-            width: 28%;
+        .charges-table td.amount {
+            width: 15%;
+            text-align: right;
+            font-weight: 700;
+            font-size: 10px;
         }
 
-        .amounts-table {
+        .charges-table td.caption-right {
+            width: 25%;
+            font-weight: 800;
+            font-size: 10px;
+        }
+
+        .charges-table td.amount-right {
+            width: 15%;
+            text-align: right;
+            font-weight: 700;
+            font-size: 10px;
+        }
+
+        .totals-table {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
         }
 
-        .amounts-table th, .amounts-table td {
-            border: 1px solid black;
-            padding: 8px;
+        .totals-table .box-title {
+            background: #e7f1ff;
+            font-weight: 900;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .totals-table td.label {
+            font-weight: 900;
+            font-size: 10px;
+            width: 55%;
+        }
+
+        .totals-table td.value {
+            text-align: right;
+            font-weight: 800;
+            width: 45%;
+            font-size: 10px;
+        }
+
+        .payment-box {
+            margin-top: 6px;
+        }
+
+        .payment-box td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            font-size: 10px;
+        }
+
+        .payment-box td.label {
+            font-weight: 900;
+            width: 70%;
+        }
+
+        .payment-box td.amount {
+            font-weight: 900;
+            text-align: right;
+            width: 30%;
+        }
+
+        .instructions {
+            padding: 6px 8px;
+            font-size: 9.5px;
+            line-height: 1.2;
+        }
+
+        .instructions .head {
+            font-weight: 900;
+            margin-bottom: 2px;
+            color: #0b4f8a;
+            text-transform: uppercase;
+        }
+
+        .important {
             text-align: center;
-        }
-
-        .total-row {
-            font-weight: bold;
+            font-weight: 900;
+            padding: 3px 0;
+            color: #0b4f8a;
+            font-size: 10px;
+            border-top: 2px solid #000;
+            background: #f7fbff;
         }
 
         @@media print {
@@ -103,82 +215,150 @@
 <body>
 
 <div class="bill-container">
+    <table class="grid" style="width:100%;">
+        <tr>
+            <td class="bill-title" colspan="5">
+                @(string.IsNullOrWhiteSpace(projectTitle) ? "SAFARI VILLAS 1" : projectTitle) PROJECT MAINTENANCE BILL
+            </td>
+        </tr>
 
-    <div class="header">
-        <h2>Safari Maintenance Services</h2>
-        <h4>Maintenance Bill</h4>
-    </div>
+        <tr>
+            <td colspan="5" style="padding:0;">
+                <table class="meta-table" style="width:100%; table-layout:fixed;">
+                    <tr>
+                        <th>Project Detail</th>
+                        <th>BILLING MONTH</th>
+                        <th>CONDATE</th>
+                        <th>ISSUE DATE</th>
+                        <th>DUE DATE</th>
+                    </tr>
+                    <tr>
+                        <td class="meta-project">@phaseNameStr</td>
+                        <td>
+                            @(Model.BillingMonth ?? "—") @(string.IsNullOrWhiteSpace(Model.BillingYear) ? "" : "- " + Model.BillingYear)
+                        </td>
+                        <td>@dueDateStr</td>
+                        <td>@issueDateStr</td>
+                        <td>@dueDateStr</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
 
-    <div class="bill-info">
-        <table class="bill-info-table">
-            <tr>
-                <td class="caption">Customer No:</td>
-                <td class="value">@(Model.CustomerNo ?? "—")</td>
-                <td class="caption">Customer Name:</td>
-                <td class="value">@(Model.CustomerName ?? "—")</td>
-            </tr>
-            <tr>
-                <td class="caption">Phase / Project:</td>
-                <td class="value">@(string.IsNullOrEmpty(project) ? "—" : project)</td>
-                <td class="caption">Month:</td>
-                <td class="value">@(Model.BillingMonth ?? "—")</td>
-            </tr>
-            <tr>
-                <td class="caption">Year:</td>
-                <td class="value">@(Model.BillingYear ?? "—")</td>
-                <td class="caption">Invoice No:</td>
-                <td class="value">@(Model.InvoiceNo ?? "—")</td>
-            </tr>
-        </table>
-    </div>
+        <tr>
+            <td colspan="5" class="subline">
+                Customer (BTNo): <span style="color:#000;">@(Model.Btno ?? "—")</span> &nbsp; | &nbsp;
+                Customer Name: <span style="color:#000;">@(Model.CustomerName ?? "—")</span> &nbsp; | &nbsp;
+                @(string.IsNullOrWhiteSpace(plotNoStr) ? "" : ("Plot No: " + plotNoStr + " &nbsp; | &nbsp; "))
+                Phase: <span style="color:#000;">@phaseNameStr</span>
+            </td>
+        </tr>
 
-    <table class="charges-table">
-        <tbody>
-            <tr>
-                <td class="caption">Maint Charges</td>
-                <td class="value">@((Model.MaintCharges ?? 0).ToString("N0"))</td>
-                <td class="caption">Sales Tax</td>
-                <td class="value">@((Model.TaxAmount ?? 0).ToString("N0"))</td>
-            </tr>
-            <tr>
-                <td class="caption">Other Charges</td>
-                <td class="value">@((Model.OtherCharges ?? 0).ToString("N0"))</td>
-                <td class="caption">Water Charges</td>
-                <td class="value">@((Model.WaterCharges ?? 0).ToString("N0"))</td>
-            </tr>
-            <tr>
-                <td class="caption">Adv. Payment</td>
-                <td class="value">0</td>
-                <td class="caption">Trolley Trip</td>
-                <td class="value">0</td>
-            </tr>
-            <tr>
-                <td class="caption">Food Safety</td>
-                <td class="value">0</td>
-                <td class="caption">Misc. Charges</td>
-                <td class="value">@((Model.MiscCharges ?? 0).ToString("N0"))</td>
-            </tr>
-        </tbody>
+        <tr>
+            <td colspan="5" class="keep-clean">
+                KEEP BAHRIA TOWN CLEAN &amp; GREEN
+            </td>
+        </tr>
+
+        <tr>
+            <td colspan="5" style="padding:0;">
+                <table style="width:100%;">
+                    <tr>
+                        <td style="width:58%; vertical-align:top; padding:6px 4px;">
+                            <table class="charges-table" style="width:100%;">
+                                <tr>
+                                    <td class="caption">Main Charges</td>
+                                    <td class="amount">@((Model.MaintCharges ?? 0).ToString("N0"))</td>
+                                    <td class="caption-right">Sales Tax</td>
+                                    <td class="amount-right">@((Model.TaxAmount ?? 0).ToString("N0"))</td>
+                                </tr>
+                                <tr>
+                                    <td class="caption">Other Charges</td>
+                                    <td class="amount">@((Model.OtherCharges ?? 0).ToString("N0"))</td>
+                                    <td class="caption-right">Water Charges</td>
+                                    <td class="amount-right">@((Model.WaterCharges ?? 0).ToString("N0"))</td>
+                                </tr>
+                                <tr>
+                                    <td class="caption">Adv. Payment</td>
+                                    <td class="amount">0</td>
+                                    <td class="caption-right">Install Amount</td>
+                                    <td class="amount-right">0</td>
+                                </tr>
+                                <tr>
+                                    <td class="caption">Misc. Charges</td>
+                                    <td class="amount">@((Model.MiscCharges ?? 0).ToString("N0"))</td>
+                                    <td class="caption-right">Food Safety</td>
+                                    <td class="amount-right">0</td>
+                                </tr>
+                            </table>
+                        </td>
+
+                        <td style="width:42%; vertical-align:top; padding:6px 6px;">
+                            <table class="totals-table" style="width:100%;">
+                                <tr>
+                                    <td class="box-title" colspan="2">CURRENT BILL</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">ARREARS</td>
+                                    <td class="value">@arrears.ToString("N0")</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">CURRENT BILL</td>
+                                    <td class="value">@((Model.BillAmountInDueDate ?? 0).ToString("N0"))</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">INSTALL AMOUNT</td>
+                                    <td class="value">0</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Total</td>
+                                    <td class="value">@((arrears + (Model.BillAmountInDueDate ?? 0)).ToString("N0"))</td>
+                                </tr>
+                            </table>
+
+                            <table class="payment-box" style="width:100%;">
+                                <tr>
+                                    <td class="label">PAY WITHIN DUE DATE</td>
+                                    <td class="amount">@dueDateStr</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">AMOUNT</td>
+                                    <td class="amount">@((Model.BillAmountInDueDate ?? 0).ToString("N0"))</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">PAY AFTER DUE DATE</td>
+                                    <td class="amount">@dueDateStr</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">AMOUNT</td>
+                                    <td class="amount">@((Model.BillAmountAfterDueDate ?? payAfterDue).ToString("N0"))</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <tr>
+            <td colspan="5" style="border-top:1px solid #000; padding:0;">
+                <div class="instructions">
+                    <div class="head">INSTRUCTIONS</div>
+                    <div>
+                        1. Pay within due date to avoid surcharge.
+                        <br />
+                        2. Use BTNo (Customer No) while depositing.
+                        <br />
+                        3. For any query contact your billing office.
+                    </div>
+                </div>
+            </td>
+        </tr>
+
+        <tr>
+            <td colspan="5" class="important">IMPORTANT</td>
+        </tr>
     </table>
-
-    <table class="amounts-table">
-        <tbody>
-            <tr class="total-row">
-                <td style="text-align: left; width: 70%;">Total (Amount in Due Date)</td>
-                <td>@total.ToString("N2")</td>
-            </tr>
-            <tr>
-                <td style="text-align: left;">L.P. SURCHARGE (10 Percent)</td>
-                <td>@lpSurcharge.ToString("N2")</td>
-            </tr>
-            <tr class="total-row">
-                <td style="text-align: left;">PAY AFTER DUE DATE</td>
-                <td>@payAfterDue.ToString("N2")</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <br />
 
     <button type="button" onclick="window.print();" class="no-print">Print</button>
 
