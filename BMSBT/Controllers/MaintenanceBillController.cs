@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pag
 using System.Data.Entity;
 using System.Net.Http.Headers;
 using System.Security.Policy;
+using System.Text.Json;
 using X.PagedList.Extensions;
 
 namespace BMSBT.Controllers
@@ -740,21 +741,31 @@ namespace BMSBT.Controllers
 
         public async Task<IActionResult> PaymentForm()
         {
-            string operatorId = HttpContext.Session.GetString("OperatorId");
-
+            var operatorId = ResolveOperatorIdForBilling();
             if (string.IsNullOrEmpty(operatorId))
             {
-                return new JsonResult(new { success = false, message = "Operator ID not found in session" });
+                TempData["ErrorMessage"] = "Operator ID not found in session. Please log out and log in again.";
+                return RedirectToAction("Index", "Login");
             }
 
-           await _operatorService.InitializeAsync(operatorId);
+            try
+            {
+                await _operatorService.InitializeAsync(operatorId);
+            }
+            catch (KeyNotFoundException)
+            {
+                TempData["ErrorMessage"] = $"No operator setup found for ID '{operatorId}'. Check Operators Setup.";
+                return RedirectToAction("Index", "Home");
+            }
+
             var currentOperator = _operatorService.GetCurrentOperator();
 
             var model = new BillViewModel
             {
                 BillingMonth = currentOperator.BillingMonth,
-                BillingYear = currentOperator.BillingYear
-
+                BillingYear = currentOperator.BillingYear,
+                PaymentType = "Paid",
+                PaidOn = DateTime.Today
             };
 
             return View(model);
@@ -780,22 +791,25 @@ namespace BMSBT.Controllers
                 return View("PaymentForm", model);
             }
 
-            // Query the database for a matching bill
             var bill = _dbContext.MaintenanceBills
                 .FirstOrDefault(e =>
                     e.BillingMonth == model.BillingMonth &&
                     e.BillingYear == model.BillingYear &&
-                     e.PaymentStatus == "Unpaid" &&
-                    e.Btno == model.Btno);
+                    e.Btno == model.Btno.Trim());
 
             if (bill == null)
             {
-                TempData["ErrorMessage"] = "No unpaid bill found for selected month.";
+                TempData["ErrorMessage"] = "No bill found for selected month, year, and tracking number.";
                 return View("PaymentForm", model);
             }
-            // Update the model with values from the database
+
             model.ReferenceNumber = bill.CustomerNo;
             model.CustomerName = bill.CustomerName;
+            model.CurrentPaymentStatus = bill.PaymentStatus;
+            model.BillUid = bill.Uid;
+            model.BillAmountInDueDate = bill.BillAmountInDueDate;
+            model.BillSurcharge = bill.BillSurcharge;
+            model.BillAmountAfterDueDate = bill.BillAmountAfterDueDate;
 
             ModelState.Clear();
             return View("PaymentForm", model);
@@ -812,29 +826,199 @@ namespace BMSBT.Controllers
         [HttpPost]
         public IActionResult MarkPaid(BillViewModel model)
         {
-            var bill = _dbContext.MaintenanceBills
-               .FirstOrDefault(e => e.BillingMonth == model.BillingMonth &&
-                                    e.BillingYear == model.BillingYear &&
-                                    e.Btno == model.Btno &&
-                                    e.PaymentStatus == "Unpaid"
-
-                                    );
-            if (bill == null)
+            if (string.IsNullOrEmpty(model.BillingMonth) ||
+                string.IsNullOrEmpty(model.BillingYear) ||
+                string.IsNullOrEmpty(model.Btno))
             {
-                TempData["ErrorMessage"] = "No unpaid bill found for selected month.";
+                ModelState.AddModelError("", "Please provide Billing Month, Billing Year, and tracking number.");
                 return View("PaymentForm", model);
             }
 
-            // Update bill payment details
-            bill.PaymentStatus = string.IsNullOrEmpty(model.PaymentType) ? "Paid" : model.PaymentType;
-            bill.PaymentDate = DateOnly.FromDateTime(DateTime.Now);
+            var bill = _dbContext.MaintenanceBills
+                .FirstOrDefault(e => e.BillingMonth == model.BillingMonth &&
+                                     e.BillingYear == model.BillingYear &&
+                                     e.Btno == model.Btno.Trim());
+            if (bill == null)
+            {
+                TempData["ErrorMessage"] = "No bill found for selected month, year, and tracking number.";
+                return View("PaymentForm", model);
+            }
+
+            var newStatus = NormalizeStoredPaymentStatus(model.PaymentType);
+            bill.PaymentStatus = newStatus;
+            if (newStatus.Equals("Unpaid", StringComparison.OrdinalIgnoreCase))
+            {
+                bill.PaymentDate = null;
+            }
+            else
+            {
+                bill.PaymentDate = model.PaidOn.HasValue
+                    ? DateOnly.FromDateTime(model.PaidOn.Value)
+                    : DateOnly.FromDateTime(DateTime.Now);
+            }
+
             bill.BankDetail = model.BankBranch;
 
             _dbContext.SaveChanges();
 
-            TempData["SuccessMessage"] = "Bill marked as paid successfully!";
+            model.CurrentPaymentStatus = bill.PaymentStatus;
+            model.BillUid = bill.Uid;
+            model.BillAmountInDueDate = bill.BillAmountInDueDate;
+            model.BillSurcharge = bill.BillSurcharge;
+            model.BillAmountAfterDueDate = bill.BillAmountAfterDueDate;
+
+            TempData["SuccessMessage"] = $"Bill status saved as {bill.PaymentStatus}.";
             ModelState.Clear();
             return View("PaymentForm", model);
+        }
+
+        /// <summary>Fast lookup for high-volume cashiers (JSON).</summary>
+        [HttpGet]
+        public async Task<IActionResult> QuickPaymentLookup(string btno, string? billingMonth, string? billingYear)
+        {
+            var operatorId = ResolveOperatorIdForBilling();
+            if (string.IsNullOrEmpty(operatorId))
+                return Json(new { success = false, message = "Operator ID not found in session." });
+
+            try
+            {
+                await _operatorService.InitializeAsync(operatorId);
+            }
+            catch (KeyNotFoundException)
+            {
+                return Json(new { success = false, message = "Operator setup not found." });
+            }
+
+            var currentOperator = _operatorService.GetCurrentOperator();
+            var month = string.IsNullOrWhiteSpace(billingMonth) ? currentOperator.BillingMonth : billingMonth;
+            var year = string.IsNullOrWhiteSpace(billingYear) ? currentOperator.BillingYear : billingYear;
+
+            if (string.IsNullOrWhiteSpace(btno) || string.IsNullOrWhiteSpace(month) || string.IsNullOrWhiteSpace(year))
+                return Json(new { success = false, message = "Enter tracking number (and ensure billing period is set)." });
+
+            var trimmedBtno = btno.Trim();
+            var bill = await _dbContext.MaintenanceBills
+                .FirstOrDefaultAsync(e =>
+                    e.BillingMonth == month &&
+                    e.BillingYear == year &&
+                    e.Btno == trimmedBtno);
+
+            if (bill == null)
+                return Json(new { success = false, message = "No bill found for this tracking number and period." });
+
+            return Json(new
+            {
+                success = true,
+                btno = bill.Btno,
+                billingMonth = bill.BillingMonth,
+                billingYear = bill.BillingYear,
+                referenceNumber = bill.CustomerNo,
+                customerName = bill.CustomerName,
+                paymentStatus = bill.PaymentStatus,
+                billUid = bill.Uid,
+                billAmountInDueDate = bill.BillAmountInDueDate,
+                billSurcharge = bill.BillSurcharge,
+                billAmountAfterDueDate = bill.BillAmountAfterDueDate
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> QuickPaymentApply([FromForm] BillViewModel model)
+        {
+            var operatorId = ResolveOperatorIdForBilling();
+            if (string.IsNullOrEmpty(operatorId))
+                return Json(new { success = false, message = "Operator ID not found in session." });
+
+            if (string.IsNullOrWhiteSpace(model.Btno) ||
+                string.IsNullOrWhiteSpace(model.BillingMonth) ||
+                string.IsNullOrWhiteSpace(model.BillingYear))
+                return Json(new { success = false, message = "Tracking number and billing period are required." });
+
+            var trimmedBtno = model.Btno.Trim();
+            var bill = await _dbContext.MaintenanceBills
+                .FirstOrDefaultAsync(e =>
+                    e.BillingMonth == model.BillingMonth &&
+                    e.BillingYear == model.BillingYear &&
+                    e.Btno == trimmedBtno);
+
+            if (bill == null)
+                return Json(new { success = false, message = "Bill not found." });
+
+            var newStatus = NormalizeStoredPaymentStatus(model.PaymentType);
+            bill.PaymentStatus = newStatus;
+            if (newStatus.Equals("Unpaid", StringComparison.OrdinalIgnoreCase))
+                bill.PaymentDate = null;
+            else
+                bill.PaymentDate = model.PaidOn.HasValue
+                    ? DateOnly.FromDateTime(model.PaidOn.Value)
+                    : DateOnly.FromDateTime(DateTime.Now);
+
+            bill.BankDetail = model.BankBranch;
+
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new
+            {
+                success = true,
+                message = $"Saved: {bill.PaymentStatus}",
+                paymentStatus = bill.PaymentStatus
+            });
+        }
+
+        private string? ResolveOperatorIdForBilling()
+        {
+            var op = HttpContext.Session.GetString("OperatorId");
+            if (!string.IsNullOrWhiteSpace(op))
+                return op.Trim();
+
+            var detailJson = HttpContext.Session.GetString("OperatorSetupDetail");
+            if (!string.IsNullOrEmpty(detailJson))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(detailJson);
+                    if (doc.RootElement.TryGetProperty("OperatorId", out var el))
+                    {
+                        var s = el.GetString();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            return s.Trim();
+                    }
+                }
+                catch
+                {
+                    // ignore malformed session JSON
+                }
+            }
+
+            var userName = HttpContext.Session.GetString("UserName");
+            if (!string.IsNullOrEmpty(userName))
+            {
+                var setup = _dbContext.OperatorsSetups
+                    .FirstOrDefault(o => o.OperatorName == userName);
+                if (!string.IsNullOrWhiteSpace(setup?.OperatorID))
+                    return setup.OperatorID!.Trim();
+            }
+
+            return null;
+        }
+
+        private static string NormalizeStoredPaymentStatus(string? requested)
+        {
+            if (string.IsNullOrWhiteSpace(requested))
+                return "Paid";
+
+            var t = requested.Trim();
+            if (t.Equals("unpaid", StringComparison.OrdinalIgnoreCase))
+                return "Unpaid";
+            if (t.Equals("paid", StringComparison.OrdinalIgnoreCase))
+                return "Paid";
+            if (t.Equals("Paid with surcharge", StringComparison.OrdinalIgnoreCase))
+                return "Paid with surcharge";
+            if (t.Equals("paidwithsurcharge", StringComparison.OrdinalIgnoreCase))
+                return "Paid with surcharge";
+
+            return t;
         }
 
 

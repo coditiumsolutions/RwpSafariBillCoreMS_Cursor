@@ -1,89 +1,270 @@
 ﻿@model BMSBT.DTO.BillViewModel
+@using System.Text.Json
 
 @{
-    ViewData["Title"] = "Open Bill By Reference Number";
+    ViewData["Title"] = "Pay maintenance bill";
     Layout = "~/Views/Shared/_LayoutMaintBills.cshtml";
+    var tdSuccess = TempData["SuccessMessage"] as string;
+    var tdError = TempData["ErrorMessage"] as string;
+    var statusDisplay = Model.CurrentPaymentStatus;
+    if (string.IsNullOrWhiteSpace(statusDisplay))
+    {
+        statusDisplay = "—";
+    }
+    var statusKey = (Model.CurrentPaymentStatus ?? "").Trim().ToLowerInvariant();
+    string badgeClass = "badge-secondary";
+    if (statusKey == "paid") { badgeClass = "badge-success"; }
+    else if (statusKey == "unpaid" || statusKey == "partially paid") { badgeClass = "badge-warning"; }
+    else if (statusKey.Contains("surcharge")) { badgeClass = "badge-info"; }
 }
 
-<div class="card shadow-lg">
+<div class="card shadow-lg payment-workbench">
     <div style="background-color:#101f63; color:white; height:45px;">
-        <h3 class="mb-0" style="margin-left:15px; margin-top:5px;">Pay Bill</h3>
+        <h3 class="mb-0" style="margin-left:15px; margin-top:5px;">Pay bill — quick entry</h3>
     </div>
     <div class="card-body">
-        <form asp-action="OpenBill" asp-controller="MaintenanceBill" method="post">
-            <div class="row">
-                <div class="col-md-3">
-                    <label asp-for="BillingMonth">Billing Month</label>
-                    <input asp-for="BillingMonth" class="form-control" readonly />
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="BillingYear">Billing Year</label>
-                    <input asp-for="BillingYear" class="form-control" readonly />
-                </div>
+        @Html.AntiForgeryToken()
 
-                <div class="col-md-3">
-                    <label asp-for="PaidOn">Paid On</label>
-                    <input asp-for="PaidOn" type="date" class="form-control" />
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="PaymentType">Payment Type</label>
-                    <select asp-for="PaymentType" class="form-control">
-                        <option value="Paid">Paid</option>
-                        <option value="Unpaid">Unpaid</option>
-                    </select>
-                </div>
+        <p class="text-muted small mb-3 mb-md-2">
+            <strong>Shortcuts:</strong> Enter = look up bill · Ctrl+Enter = save status · Esc = clear tracking no.
+ Default billing period comes from operator setup (fields below are editable if needed).
+        </p>
+
+        <div class="form-row">
+            <div class="form-group col-md-2 col-6">
+                <label asp-for="BillingMonth">Billing month</label>
+                <input asp-for="BillingMonth" class="form-control form-control-sm" id="pfBillingMonth" autocomplete="off" />
             </div>
-
-            
-
-            <div class="row mt-3">
-                <div class="col-md-3">
-                    <label asp-for="BankBranch">Bank Branch</label>
-                    <select asp-for="BankBranch" class="form-control">
-                        <option value="Allied Bank">Allied Bank</option>
-                        <option value="XYZ Bank">XYZ Bank</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="Btno">Enter Tracking No.</label>
-                    <input asp-for="Btno" class="form-control" placeholder="BTO-10790" />
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="ReferenceNumber">Reference Number</label>
-                    <input asp-for="ReferenceNumber" class="form-control" readonly />
-                </div>
-                <div class="col-md-3">
-                    <label asp-for="CustomerName">Customer Name</label>
-                    <input asp-for="CustomerName" class="form-control" readonly />
-                </div>
+            <div class="form-group col-md-2 col-6">
+                <label asp-for="BillingYear">Billing year</label>
+                <input asp-for="BillingYear" class="form-control form-control-sm" id="pfBillingYear" autocomplete="off" />
             </div>
-
-            
-
-            <div class="mt-4">
-                <button type="submit" name="submitAction" value="SearchBill" class="btn btn-success">Search Bill</button>
-                <button type="submit" name="submitAction" value="MarkPaid" class="btn btn-primary">Mark Paid</button>
+            <div class="form-group col-md-2 col-6">
+                <label asp-for="PaidOn">Paid on</label>
+                <input asp-for="PaidOn" type="date" class="form-control form-control-sm" id="pfPaidOn" />
             </div>
-        </form>
+            <div class="form-group col-md-3 col-6">
+                <label asp-for="BankBranch">Bank / branch</label>
+                <select asp-for="BankBranch" class="form-control form-control-sm" id="pfBankBranch">
+                    <option value="Allied Bank">Allied Bank</option>
+                    <option value="XYZ Bank">XYZ Bank</option>
+                </select>
+            </div>
+            <div class="form-group col-md-3 col-12">
+                <label asp-for="PaymentType"><strong>Set status to</strong></label>
+                <select asp-for="PaymentType" class="form-control form-control-sm" id="pfPaymentType">
+                    <option value="Paid">Paid</option>
+                    <option value="Paid with surcharge">Paid with surcharge</option>
+                    <option value="Unpaid">Unpaid</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row align-items-end">
+            <div class="form-group col-md-4 col-12">
+                <label asp-for="Btno"><strong>Tracking no. (BTNo)</strong></label>
+                <input asp-for="Btno" class="form-control form-control-lg" id="pfBtno" placeholder="Scan or type, then Enter" autocomplete="off" />
+            </div>
+            <div class="form-group col-md-8 col-12 mb-md-3">
+                <button type="button" class="btn btn-success mr-2" id="btnLookup">Look up</button>
+                <button type="button" class="btn btn-primary" id="btnApply">Save status</button>
+                <span id="pfBusy" class="ml-2 small text-muted" style="display:none;">Working…</span>
+            </div>
+        </div>
+
+        <div class="card border-info mb-3" id="pfSummaryCard">
+            <div class="card-body py-3">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="small text-muted">Current bill status</div>
+                        <div class="mt-1">
+                            <span id="pfStatusBadge" class="badge @badgeClass badge-pill" style="font-size:0.95rem;">@statusDisplay</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted">Customer</div>
+                        <div id="pfCustomerName" class="font-weight-bold">@(Model.CustomerName ?? "—")</div>
+                        <div class="small"><span class="text-muted">Ref:</span> <span id="pfRef">@(Model.ReferenceNumber ?? "—")</span></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted">Amounts (PKR)</div>
+                        <div class="small">In due date: <strong id="pfAmtDue">@(Model.BillAmountInDueDate?.ToString() ?? "—")</strong></div>
+                        <div class="small">Surcharge: <strong id="pfSurcharge">@(Model.BillSurcharge?.ToString() ?? "—")</strong></div>
+                        <div class="small">After due: <strong id="pfAmtAfter">@(Model.BillAmountAfterDueDate?.ToString() ?? "—")</strong></div>
+                    </div>
+                </div>
+                <div id="pfFlash" class="small mt-2 font-weight-bold" aria-live="polite"></div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        var successMessage = '@TempData["SuccessMessage"]';
-        var errorMessage = '@TempData["ErrorMessage"]';
-        if (successMessage && successMessage.trim() !== "") {
-            Swal.fire({ icon: 'success', title: successMessage, showConfirmButton: true, timer: 3000 });
-        } else if (errorMessage && errorMessage.trim() !== "") {
-            Swal.fire({ icon: 'error', title: errorMessage, showConfirmButton: true, timer: 3000 });
-        }
-    });
+    (function () {
+        var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        var token = tokenInput ? tokenInput.value : '';
 
-    document.querySelectorAll("button[name='submitAction']").forEach(button => {
-        button.addEventListener("click", function () {
-            var form = document.querySelector("form");
-            form.action = this.value === "MarkPaid" ? "/MaintenanceBill/MarkPaid" : "/MaintenanceBill/OpenBill";
+        function $(id) { return document.getElementById(id); }
+
+        function isApiSuccess(data) {
+            return data && (data.success === true || data.Success === true);
+        }
+
+        function apiMessage(data) {
+            if (!data) return '';
+            return data.message || data.Message || '';
+        }
+
+        function paymentStatusFromApi(data) {
+            return data.paymentStatus || data.PaymentStatus || '';
+        }
+
+        function setBusy(on) {
+            var el = $('pfBusy');
+            if (el) el.style.display = on ? 'inline' : 'none';
+        }
+
+        function flash(msg, isError) {
+            var el = $('pfFlash');
+            if (!el) return;
+            el.textContent = msg || '';
+            el.style.color = isError ? '#c0392b' : '#1e8449';
+        }
+
+        function updateSummary(data) {
+            var badge = $('pfStatusBadge');
+            var st = (data.paymentStatus || '—').toString();
+            badge.textContent = st;
+            badge.className = 'badge badge-pill';
+            var k = st.toLowerCase();
+            if (k === 'paid') badge.classList.add('badge-success');
+            else if (k === 'unpaid' || k.indexOf('partial') >= 0) badge.classList.add('badge-warning');
+            else if (k.indexOf('surcharge') >= 0) badge.classList.add('badge-info');
+            else badge.classList.add('badge-secondary');
+
+            $('pfCustomerName').textContent = data.customerName || '—';
+            $('pfRef').textContent = data.referenceNumber || '—';
+            $('pfAmtDue').textContent = data.billAmountInDueDate != null ? data.billAmountInDueDate : '—';
+            $('pfSurcharge').textContent = data.billSurcharge != null ? data.billSurcharge : '—';
+            $('pfAmtAfter').textContent = data.billAmountAfterDueDate != null ? data.billAmountAfterDueDate : '—';
+        }
+
+        function getFormState() {
+            return {
+                btno: ($('pfBtno').value || '').trim(),
+                billingMonth: ($('pfBillingMonth').value || '').trim(),
+                billingYear: ($('pfBillingYear').value || '').trim(),
+                paidOn: $('pfPaidOn').value || '',
+                bankBranch: $('pfBankBranch').value || '',
+                paymentType: $('pfPaymentType').value || 'Paid'
+            };
+        }
+
+        function doLookup() {
+            var s = getFormState();
+            if (!s.btno) {
+                flash('Enter a tracking number first.', true);
+                $('pfBtno').focus();
+                return;
+            }
+            setBusy(true);
+            flash('');
+            var url = '@Url.Action("QuickPaymentLookup", "MaintenanceBill")'
+                + '?btno=' + encodeURIComponent(s.btno)
+                + '&billingMonth=' + encodeURIComponent(s.billingMonth)
+                + '&billingYear=' + encodeURIComponent(s.billingYear);
+            fetch(url, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    setBusy(false);
+                    if (!isApiSuccess(data)) {
+                        flash(apiMessage(data) || 'Lookup failed.', true);
+                        return;
+                    }
+                    updateSummary(data);
+                    flash('Bill loaded. Adjust status and press Save (Ctrl+Enter) if needed.', false);
+                })
+                .catch(function () {
+                    setBusy(false);
+                    flash('Network error during lookup.', true);
+                });
+        }
+
+        function doApply() {
+            var s = getFormState();
+            if (!s.btno || !s.billingMonth || !s.billingYear) {
+                flash('Look up a bill first (Enter).', true);
+                return;
+            }
+            setBusy(true);
+            flash('');
+            var body = new URLSearchParams();
+            body.append('Btno', s.btno);
+            body.append('BillingMonth', s.billingMonth);
+            body.append('BillingYear', s.billingYear);
+            body.append('PaymentType', s.paymentType);
+            body.append('BankBranch', s.bankBranch);
+            if (s.paidOn) body.append('PaidOn', s.paidOn);
+            body.append('__RequestVerificationToken', token);
+
+            fetch('@Url.Action("QuickPaymentApply", "MaintenanceBill")', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: body.toString()
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    setBusy(false);
+                    if (!isApiSuccess(data)) {
+                        var m = apiMessage(data) || 'Save failed.';
+                        flash(m, true);
+                        Swal.fire({ icon: 'error', title: m, timer: 2500, showConfirmButton: false });
+                        return;
+                    }
+                    updateSummary({ paymentStatus: paymentStatusFromApi(data) });
+                    var okMsg = apiMessage(data) || 'Saved.';
+                    flash(okMsg, false);
+                    Swal.fire({ icon: 'success', title: okMsg, timer: 1200, showConfirmButton: false });
+                    $('pfBtno').value = '';
+                    $('pfBtno').focus();
+                })
+                .catch(function () {
+                    setBusy(false);
+                    flash('Network error during save.', true);
+                });
+        }
+
+        $('btnLookup').addEventListener('click', doLookup);
+        $('btnApply').addEventListener('click', doApply);
+
+        $('pfBtno').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                doLookup();
+            }
         });
-    });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                var b = $('pfBtno');
+                if (b) { b.value = ''; b.focus(); }
+            }
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                doApply();
+            }
+        });
+
+        var successMessage = @Html.Raw(JsonSerializer.Serialize(tdSuccess));
+        var errorMessage = @Html.Raw(JsonSerializer.Serialize(tdError));
+        var btnoEl = $('pfBtno');
+        if (btnoEl) btnoEl.focus();
+        if (successMessage && successMessage.trim() !== '') {
+            Swal.fire({ icon: 'success', title: successMessage, showConfirmButton: true, timer: 3000 });
+        } else if (errorMessage && errorMessage.trim() !== '') {
+            Swal.fire({ icon: 'error', title: errorMessage, showConfirmButton: true, timer: 4000 });
+        }
+    })();
 </script>

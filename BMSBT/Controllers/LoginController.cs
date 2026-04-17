@@ -56,13 +56,20 @@ namespace BMSBT.Controllers
                 // Create session
                 HttpContext.Session.SetString("UserName", user.Username);
                 HttpContext.Session.SetString("Role", user.Role ?? "");
-                HttpContext.Session.SetString("OperatorId", user.EmployeeId ?? "");
                 HttpContext.Session.SetString("LoginTime", DateTime.Now.ToString("hh:mm tt"));
-
 
                 // Fetch operator setup using OperatorName matched with UserName
                 var operatorSetup = _context.OperatorsSetups
                     .FirstOrDefault(o => o.OperatorName == user.Username);
+
+                // Billing screens use OperatorsSetup.OperatorID with ICurrentOperatorService — prefer it when present
+                var sessionOperatorId = user.EmployeeId ?? "";
+                if (operatorSetup != null && !string.IsNullOrWhiteSpace(operatorSetup.OperatorID))
+                    sessionOperatorId = operatorSetup.OperatorID.Trim();
+                else if (string.IsNullOrWhiteSpace(sessionOperatorId) && operatorSetup != null)
+                    sessionOperatorId = operatorSetup.OperatorID?.Trim() ?? "";
+
+                HttpContext.Session.SetString("OperatorId", sessionOperatorId);
 
                 if (operatorSetup != null)
                 {
@@ -176,11 +183,32 @@ namespace BMSBT.Controllers
             //  if (user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             if (user != null && user.PasswordHash == password)
             {
+                var operatorSetup = await _context.OperatorsSetups
+                    .FirstOrDefaultAsync(o => o.OperatorName == user.Username);
+
+                var sessionOperatorId = user.EmployeeId ?? "";
+                if (operatorSetup != null && !string.IsNullOrWhiteSpace(operatorSetup.OperatorID))
+                    sessionOperatorId = operatorSetup.OperatorID.Trim();
+                else if (string.IsNullOrWhiteSpace(sessionOperatorId) && operatorSetup != null)
+                    sessionOperatorId = operatorSetup.OperatorID?.Trim() ?? "";
+
                 // Create session
                 HttpContext.Session.SetString("UserName", user.Username);
                 HttpContext.Session.SetString("Role", user.Role ?? "");
-                HttpContext.Session.SetString("OperatorId", user.EmployeeId ?? "");
+                HttpContext.Session.SetString("OperatorId", sessionOperatorId);
                 HttpContext.Session.SetString("LoginTime", DateTime.Now.ToString("hh:mm tt"));
+
+                if (operatorSetup != null)
+                {
+                    var operatorSetupDetail = new Dictionary<string, string>
+                    {
+                        { "OperatorId", operatorSetup.OperatorID ?? "" },
+                        { "OperatorName", operatorSetup.OperatorName ?? "" },
+                        { "BillingMonth", operatorSetup.BillingMonth ?? "" },
+                        { "BillingYear", operatorSetup.BillingYear ?? "" }
+                    };
+                    HttpContext.Session.SetString("OperatorSetupDetail", JsonSerializer.Serialize(operatorSetupDetail));
+                }
 
                 var claims = new List<Claim>
             {

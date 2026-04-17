@@ -319,15 +319,15 @@
                             <table class="payment-box" style="width:100%;">
                                 <tr>
                                     <td class="label">PAY WITHIN DUE DATE</td>
-                                    <td class="amount">@dueDateStr</td>
+                                    <td class="amount">@total.ToString("N0")</td>
                                 </tr>
                                 <tr>
-                                    <td class="label">AMOUNT</td>
-                                    <td class="amount">@((Model.BillAmountInDueDate ?? 0).ToString("N0"))</td>
+                                    <td class="label">SURCHARGE</td>
+                                    <td class="amount">@lpSurcharge.ToString("N0")</td>
                                 </tr>
                                 <tr>
                                     <td class="label">PAY AFTER DUE DATE</td>
-                                    <td class="amount">@dueDateStr</td>
+                                    <td class="amount">@((Model.BillAmountAfterDueDate ?? payAfterDue).ToString("N0"))</td>
                                 </tr>
                                 <tr>
                                     <td class="label">AMOUNT</td>
