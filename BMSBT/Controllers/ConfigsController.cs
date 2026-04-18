@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using BMSBT.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -14,6 +15,14 @@ namespace BMSBT.Controllers
         {
             _context = context;
         }
+
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            ViewBag.UserName = HttpContext.Session.GetString("UserName");
+            ViewBag.LoginTime = HttpContext.Session.GetString("LoginTime");
+            base.OnActionExecuting(context);
+        }
+
         public IActionResult Index()
         {
             return View();

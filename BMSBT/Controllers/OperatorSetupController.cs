@@ -141,12 +141,6 @@ namespace BMSBT.Controllers
                     existing.BankName = model.BankName;
                     existing.IssueDate = model.IssueDate;
                     existing.DueDate = model.DueDate;
-                    existing.FPARate1 = model.FPARate1;
-                    existing.FPAMonth1 = model.FPAMonth1;
-                    existing.FPAYEAR1 = model.FPAYEAR1;
-                    existing.FPARate2 = model.FPARate2;
-                    existing.FPAMonth2 = model.FPAMonth2;
-                    existing.FPAYEAR2 = model.FPAYEAR2;
 
                     await _context.SaveChangesAsync();
 

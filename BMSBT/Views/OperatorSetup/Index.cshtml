@@ -20,7 +20,6 @@
             <th>Bank Name</th>
             <th>Issue Date</th>
             <th>Due Date</th>
-            <th>FPA Rate</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -35,7 +34,6 @@
                 <td>@item.BankName</td>
                 <td>@item.IssueDate?.ToString("yyyy-MM-dd")</td>
                 <td>@item.DueDate?.ToString("yyyy-MM-dd")</td>
-                <td>@item.FPARate1</td>
                 <td>
                     <a asp-action="Details" asp-route-id="@item.Uid" class="btn btn-sm btn-info">Details</a>
                     <a asp-action="Edit" asp-route-id="@item.Uid" class="btn btn-sm btn-warning">Edit</a>

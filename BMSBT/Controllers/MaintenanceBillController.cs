@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages;
-using System.Data.Entity;
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Security.Policy;
 using System.Text.Json;
@@ -768,6 +768,7 @@ namespace BMSBT.Controllers
                 PaidOn = DateTime.Today
             };
 
+            LoadBankBranchesForPaymentForm();
             return View(model);
         }
 
@@ -783,6 +784,7 @@ namespace BMSBT.Controllers
         [HttpPost]
         public IActionResult OpenBill(BillViewModel model)
         {
+            LoadBankBranchesForPaymentForm();
             if (string.IsNullOrEmpty(model.BillingMonth) ||
                 string.IsNullOrEmpty(model.BillingYear) ||
                 string.IsNullOrEmpty(model.Btno))
@@ -826,6 +828,7 @@ namespace BMSBT.Controllers
         [HttpPost]
         public IActionResult MarkPaid(BillViewModel model)
         {
+            LoadBankBranchesForPaymentForm();
             if (string.IsNullOrEmpty(model.BillingMonth) ||
                 string.IsNullOrEmpty(model.BillingYear) ||
                 string.IsNullOrEmpty(model.Btno))
@@ -896,15 +899,10 @@ namespace BMSBT.Controllers
             if (string.IsNullOrWhiteSpace(btno) || string.IsNullOrWhiteSpace(month) || string.IsNullOrWhiteSpace(year))
                 return Json(new { success = false, message = "Enter tracking number (and ensure billing period is set)." });
 
-            var trimmedBtno = btno.Trim();
-            var bill = await _dbContext.MaintenanceBills
-                .FirstOrDefaultAsync(e =>
-                    e.BillingMonth == month &&
-                    e.BillingYear == year &&
-                    e.Btno == trimmedBtno);
+            var bill = await FindMaintenanceBillForQuickPaymentAsync(btno, month, year, asNoTracking: true);
 
             if (bill == null)
-                return Json(new { success = false, message = "No bill found for this tracking number and period." });
+                return Json(new { success = false, message = "No bill found for this tracking number, billing month, and billing year." });
 
             return Json(new
             {
@@ -935,15 +933,10 @@ namespace BMSBT.Controllers
                 string.IsNullOrWhiteSpace(model.BillingYear))
                 return Json(new { success = false, message = "Tracking number and billing period are required." });
 
-            var trimmedBtno = model.Btno.Trim();
-            var bill = await _dbContext.MaintenanceBills
-                .FirstOrDefaultAsync(e =>
-                    e.BillingMonth == model.BillingMonth &&
-                    e.BillingYear == model.BillingYear &&
-                    e.Btno == trimmedBtno);
+            var bill = await FindMaintenanceBillForQuickPaymentAsync(model.Btno, model.BillingMonth, model.BillingYear, asNoTracking: false);
 
             if (bill == null)
-                return Json(new { success = false, message = "Bill not found." });
+                return Json(new { success = false, message = "Bill not found for this tracking number, billing month, and billing year." });
 
             var newStatus = NormalizeStoredPaymentStatus(model.PaymentType);
             bill.PaymentStatus = newStatus;
@@ -962,8 +955,53 @@ namespace BMSBT.Controllers
             {
                 success = true,
                 message = $"Saved: {bill.PaymentStatus}",
-                paymentStatus = bill.PaymentStatus
+                btno = bill.Btno,
+                billingMonth = bill.BillingMonth,
+                billingYear = bill.BillingYear,
+                referenceNumber = bill.CustomerNo,
+                customerName = bill.CustomerName,
+                paymentStatus = bill.PaymentStatus,
+                billUid = bill.Uid,
+                billAmountInDueDate = bill.BillAmountInDueDate,
+                billSurcharge = bill.BillSurcharge,
+                billAmountAfterDueDate = bill.BillAmountAfterDueDate
             });
+        }
+
+        /// <summary>
+        /// Matches MaintenanceBills by trimmed BTNo, year, and month (exact, case-insensitive month, or numeric month → English name).
+        /// </summary>
+        private async Task<MaintenanceBill?> FindMaintenanceBillForQuickPaymentAsync(string? btno, string? billingMonth, string? billingYear, bool asNoTracking)
+        {
+            var bt = (btno ?? "").Trim();
+            var monthRaw = (billingMonth ?? "").Trim();
+            var yearRaw = (billingYear ?? "").Trim();
+            if (string.IsNullOrEmpty(bt) || string.IsNullOrEmpty(monthRaw) || string.IsNullOrEmpty(yearRaw))
+                return null;
+
+            var query = asNoTracking ? _dbContext.MaintenanceBills.AsNoTracking() : _dbContext.MaintenanceBills;
+
+            var narrowed = query
+                .Where(e => e.Btno != null && e.BillingMonth != null && e.BillingYear != null)
+                .Where(e => e.Btno!.Trim() == bt)
+                .Where(e => e.BillingYear!.Trim() == yearRaw);
+
+            var bill = await narrowed.FirstOrDefaultAsync(e => e.BillingMonth!.Trim() == monthRaw);
+            if (bill != null)
+                return bill;
+
+            var monthLower = monthRaw.ToLowerInvariant();
+            bill = await narrowed.FirstOrDefaultAsync(e => e.BillingMonth!.Trim().ToLower() == monthLower);
+            if (bill != null)
+                return bill;
+
+            if (int.TryParse(monthRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var monthNum) && monthNum >= 1 && monthNum <= 12)
+            {
+                var englishName = CultureInfo.GetCultureInfo("en-US").DateTimeFormat.GetMonthName(monthNum);
+                bill = await narrowed.FirstOrDefaultAsync(e => e.BillingMonth!.Trim() == englishName);
+            }
+
+            return bill;
         }
 
         private string? ResolveOperatorIdForBilling()
@@ -1019,6 +1057,34 @@ namespace BMSBT.Controllers
                 return "Paid with surcharge";
 
             return t;
+        }
+
+        /// <summary>Populates ViewBag.BankBranches from Configurations where ConfigKey is <c>Banks</c> (comma-separated ConfigValue).</summary>
+        private void LoadBankBranchesForPaymentForm()
+        {
+            const string banksKey = "banks";
+            var raw = _dbContext.Configurations
+                .AsNoTracking()
+                .Where(c => c.ConfigKey != null &&
+                            c.ConfigKey.Trim().ToLower() == banksKey &&
+                            !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .FirstOrDefault();
+
+            ViewBag.BankBranches = ParseCommaSeparatedConfigValues(raw);
+        }
+
+        private static List<string> ParseCommaSeparatedConfigValues(string? configValue)
+        {
+            if (string.IsNullOrWhiteSpace(configValue))
+                return new List<string>();
+
+            return configValue
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
 

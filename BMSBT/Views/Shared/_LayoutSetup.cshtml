@@ -119,26 +119,23 @@
                 <ul class="nav flex-column">
 
                     <li>
-                        <a asp-controller="Setup" asp-action="Index">
-                            <i class='fas fa-users' style="color: yellowgreen; font-size: 14px;"></i>
+                        <a asp-controller="Home" asp-action="Index">
+                            <i class="fas fa-home" style="color: yellowgreen; font-size: 14px;"></i>
                             Home
                         </a>
                     </li>
 
+                    <li>
+                        <a asp-controller="Configs" asp-action="AllConfigs">
+                            <i class='fas fa-table' style="color: yellowgreen; font-size: 14px;"></i>
+                            Configurations
+                        </a>
+                    </li>
 
                     <li>
                         <a asp-controller="OperatorSetup" asp-action="index">
                             <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
                             Operator Setup
-                        </a>
-                    </li>
-
-
-
-                    <li>
-                        <a asp-controller="Reading" asp-action="Index">
-                            <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
-                            Reading Sheet
                         </a>
                     </li>
 
@@ -149,60 +146,10 @@
                         </a>
                     </li>
 
-
-
-
-
-
-
-
-
-                    <li>
-                        <a asp-controller="Configs" asp-action="AllConfigs">
-                            <i class='fas fa-table' style="color: yellowgreen; font-size: 14px;"></i>
-                            Configurations
-                        </a>
-                    </li>
-
-                    <li>
-                        <a asp-controller="Tariff" asp-action="Index">
-                            <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
-                            Tariff
-                        </a>
-                    </li>
-
-                    <li>
-                        <a asp-controller="Fine" asp-action="Index">
-                            <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
-                            Fine
-                        </a>
-                    </li>
-
                     <li>
                         <a asp-controller="Maintenance" asp-action="MaintTariff">
                             <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
-                            Setup Rates
-                        </a>
-                    </li>
-
-                    <li>
-                        <a asp-controller="Rates" asp-action="Index">
-                            <i class='fas fa-percent' style="color: yellowgreen; font-size: 14px;"></i>
-                            Rates
-                        </a>
-                    </li>
-
-                    <li>
-                        <a asp-controller="ManualRates" asp-action="Index">
-                            <i class='fas fa-list-alt' style="color: yellowgreen; font-size: 14px;"></i>
-                            Manual Rates
-                        </a>
-                    </li>
-
-                    <li>
-                        <a asp-controller="AdditionalCharges" asp-action="Index">
-                            <i class='fas fa-plus-circle' style="color: yellowgreen; font-size: 14px;"></i>
-                            Additional Charges
+                            Tariff Rates
                         </a>
                     </li>
 

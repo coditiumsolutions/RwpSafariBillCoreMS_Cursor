@@ -1,11 +1,11 @@
 ﻿@model BMSBT.DTO.BillViewModel
-@using System.Text.Json
+@using System.Collections.Generic
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Pay maintenance bill";
-    Layout = "~/Views/Shared/_LayoutMaintBills.cshtml";
-    var tdSuccess = TempData["SuccessMessage"] as string;
-    var tdError = TempData["ErrorMessage"] as string;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var bankBranches = ViewBag.BankBranches as List<string> ?? new List<string>();
     var statusDisplay = Model.CurrentPaymentStatus;
     if (string.IsNullOrWhiteSpace(statusDisplay))
     {
@@ -20,7 +20,7 @@
 
 <div class="card shadow-lg payment-workbench">
     <div style="background-color:#101f63; color:white; height:45px;">
-        <h3 class="mb-0" style="margin-left:15px; margin-top:5px;">Pay bill — quick entry</h3>
+        <h3 class="mb-0" style="margin-left:15px; margin-top:5px;">Payment Bill(s)</h3>
     </div>
     <div class="card-body">
         @Html.AntiForgeryToken()
@@ -33,11 +33,27 @@
         <div class="form-row">
             <div class="form-group col-md-2 col-6">
                 <label asp-for="BillingMonth">Billing month</label>
-                <input asp-for="BillingMonth" class="form-control form-control-sm" id="pfBillingMonth" autocomplete="off" />
+                <select asp-for="BillingMonth" class="form-control form-control-sm" id="pfBillingMonth">
+                    @for (var mi = 1; mi <= 12; mi++)
+                    {
+                        var monthName = CultureInfo.GetCultureInfo("en-US").DateTimeFormat.GetMonthName(mi);
+                        <option value="@monthName">@monthName</option>
+                    }
+                </select>
             </div>
             <div class="form-group col-md-2 col-6">
                 <label asp-for="BillingYear">Billing year</label>
-                <input asp-for="BillingYear" class="form-control form-control-sm" id="pfBillingYear" autocomplete="off" />
+                <select asp-for="BillingYear" class="form-control form-control-sm" id="pfBillingYear">
+                    @{
+                        var currentYearVal = Model.BillingYear?.Trim();
+                        if (!string.IsNullOrEmpty(currentYearVal) && currentYearVal != "2025" && currentYearVal != "2026")
+                        {
+                            <option value="@currentYearVal">@currentYearVal</option>
+                        }
+                    }
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
             </div>
             <div class="form-group col-md-2 col-6">
                 <label asp-for="PaidOn">Paid on</label>
@@ -46,8 +62,11 @@
             <div class="form-group col-md-3 col-6">
                 <label asp-for="BankBranch">Bank / branch</label>
                 <select asp-for="BankBranch" class="form-control form-control-sm" id="pfBankBranch">
-                    <option value="Allied Bank">Allied Bank</option>
-                    <option value="XYZ Bank">XYZ Bank</option>
+                    <option value="">-- Select bank / branch --</option>
+                    @foreach (var b in bankBranches)
+                    {
+                        <option value="@b">@b</option>
+                    }
                 </select>
             </div>
             <div class="form-group col-md-3 col-12">
@@ -120,6 +139,37 @@
             return data.paymentStatus || data.PaymentStatus || '';
         }
 
+        function pickStr(data, camel, pascal) {
+            if (!data) return '';
+            var v = data[camel];
+            if (v !== undefined && v !== null && String(v) !== '') return String(v);
+            v = data[pascal];
+            return (v === undefined || v === null) ? '' : String(v);
+        }
+
+        function pickNumOrDash(data, camel, pascal) {
+            var v = data[camel];
+            if (v !== undefined && v !== null && v !== '') return v;
+            v = data[pascal];
+            return (v !== undefined && v !== null && v !== '') ? v : '—';
+        }
+
+        function readJsonResponse(res) {
+            var ct = (res.headers.get('content-type') || '').toLowerCase();
+            if (!res.ok) {
+                return res.text().then(function (t) {
+                    var snippet = (t || '').replace(/<[^>]+>/g, ' ').trim().substring(0, 180);
+                    throw new Error('Request failed (' + res.status + ')' + (snippet ? ': ' + snippet : ''));
+                });
+            }
+            if (ct.indexOf('application/json') < 0) {
+                return res.text().then(function () {
+                    throw new Error('Server did not return JSON (check login or network).');
+                });
+            }
+            return res.json();
+        }
+
         function setBusy(on) {
             var el = $('pfBusy');
             if (el) el.style.display = on ? 'inline' : 'none';
@@ -134,7 +184,7 @@
 
         function updateSummary(data) {
             var badge = $('pfStatusBadge');
-            var st = (data.paymentStatus || '—').toString();
+            var st = pickStr(data, 'paymentStatus', 'PaymentStatus') || '—';
             badge.textContent = st;
             badge.className = 'badge badge-pill';
             var k = st.toLowerCase();
@@ -143,11 +193,11 @@
             else if (k.indexOf('surcharge') >= 0) badge.classList.add('badge-info');
             else badge.classList.add('badge-secondary');
 
-            $('pfCustomerName').textContent = data.customerName || '—';
-            $('pfRef').textContent = data.referenceNumber || '—';
-            $('pfAmtDue').textContent = data.billAmountInDueDate != null ? data.billAmountInDueDate : '—';
-            $('pfSurcharge').textContent = data.billSurcharge != null ? data.billSurcharge : '—';
-            $('pfAmtAfter').textContent = data.billAmountAfterDueDate != null ? data.billAmountAfterDueDate : '—';
+            $('pfCustomerName').textContent = pickStr(data, 'customerName', 'CustomerName') || '—';
+            $('pfRef').textContent = pickStr(data, 'referenceNumber', 'ReferenceNumber') || '—';
+            $('pfAmtDue').textContent = pickNumOrDash(data, 'billAmountInDueDate', 'BillAmountInDueDate');
+            $('pfSurcharge').textContent = pickNumOrDash(data, 'billSurcharge', 'BillSurcharge');
+            $('pfAmtAfter').textContent = pickNumOrDash(data, 'billAmountAfterDueDate', 'BillAmountAfterDueDate');
         }
 
         function getFormState() {
@@ -168,6 +218,10 @@
                 $('pfBtno').focus();
                 return;
             }
+            if (!s.billingMonth || !s.billingYear) {
+                flash('Choose billing month and billing year.', true);
+                return;
+            }
             setBusy(true);
             flash('');
             var url = '@Url.Action("QuickPaymentLookup", "MaintenanceBill")'
@@ -175,7 +229,7 @@
                 + '&billingMonth=' + encodeURIComponent(s.billingMonth)
                 + '&billingYear=' + encodeURIComponent(s.billingYear);
             fetch(url, { credentials: 'same-origin' })
-                .then(function (r) { return r.json(); })
+                .then(readJsonResponse)
                 .then(function (data) {
                     setBusy(false);
                     if (!isApiSuccess(data)) {
@@ -183,18 +237,18 @@
                         return;
                     }
                     updateSummary(data);
-                    flash('Bill loaded. Adjust status and press Save (Ctrl+Enter) if needed.', false);
+                    flash('Bill loaded. Change status if needed, then press Save status (or Ctrl+Enter).', false);
                 })
-                .catch(function () {
+                .catch(function (err) {
                     setBusy(false);
-                    flash('Network error during lookup.', true);
+                    flash(err && err.message ? err.message : 'Network error during lookup.', true);
                 });
         }
 
         function doApply() {
             var s = getFormState();
             if (!s.btno || !s.billingMonth || !s.billingYear) {
-                flash('Look up a bill first (Enter).', true);
+                flash('Enter tracking number and choose billing month and year.', true);
                 return;
             }
             setBusy(true);
@@ -214,7 +268,7 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
                 body: body.toString()
             })
-                .then(function (r) { return r.json(); })
+                .then(readJsonResponse)
                 .then(function (data) {
                     setBusy(false);
                     if (!isApiSuccess(data)) {
@@ -223,23 +277,26 @@
                         Swal.fire({ icon: 'error', title: m, timer: 2500, showConfirmButton: false });
                         return;
                     }
-                    updateSummary({ paymentStatus: paymentStatusFromApi(data) });
+                    updateSummary(data);
                     var okMsg = apiMessage(data) || 'Saved.';
                     flash(okMsg, false);
                     Swal.fire({ icon: 'success', title: okMsg, timer: 1200, showConfirmButton: false });
                     $('pfBtno').value = '';
                     $('pfBtno').focus();
                 })
-                .catch(function () {
+                .catch(function (err) {
                     setBusy(false);
-                    flash('Network error during save.', true);
+                    flash(err && err.message ? err.message : 'Network error during save.', true);
                 });
         }
 
-        $('btnLookup').addEventListener('click', doLookup);
-        $('btnApply').addEventListener('click', doApply);
+        var btnLookup = $('btnLookup');
+        var btnApply = $('btnApply');
+        var pfBtno = $('pfBtno');
+        if (btnLookup) btnLookup.addEventListener('click', doLookup);
+        if (btnApply) btnApply.addEventListener('click', doApply);
 
-        $('pfBtno').addEventListener('keydown', function (e) {
+        if (pfBtno) pfBtno.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 doLookup();
@@ -257,14 +314,6 @@
             }
         });
 
-        var successMessage = @Html.Raw(JsonSerializer.Serialize(tdSuccess));
-        var errorMessage = @Html.Raw(JsonSerializer.Serialize(tdError));
-        var btnoEl = $('pfBtno');
-        if (btnoEl) btnoEl.focus();
-        if (successMessage && successMessage.trim() !== '') {
-            Swal.fire({ icon: 'success', title: successMessage, showConfirmButton: true, timer: 3000 });
-        } else if (errorMessage && errorMessage.trim() !== '') {
-            Swal.fire({ icon: 'error', title: errorMessage, showConfirmButton: true, timer: 4000 });
-        }
+        if (pfBtno) pfBtno.focus();
     })();
 </script>

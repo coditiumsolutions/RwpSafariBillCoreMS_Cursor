@@ -59,9 +59,9 @@ namespace BMSBT.Models
         [StringLength(50)]
         public string? Size { get; set; }
 
-        [Required]
+        /// <summary>Optional in the UI. Use <c>string?</c> so nullable reference types do not add implicit [Required] validation; controller persists <c>string.Empty</c> for NOT NULL column.</summary>
         [StringLength(100)]
-        public string Sector { get; set; } = null!;
+        public string? Sector { get; set; }
 
         [Required]
         [StringLength(100)]

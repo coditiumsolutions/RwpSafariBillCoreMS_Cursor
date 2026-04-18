@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BMSBT.Models;
@@ -15,6 +16,13 @@ namespace BMSBT.Controllers
         public CustomersMaintenanceController(BmsbtContext context)
         {
             _context = context;
+        }
+
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            ViewBag.UserName = HttpContext.Session.GetString("UserName");
+            ViewBag.LoginTime = HttpContext.Session.GetString("LoginTime");
+            base.OnActionExecuting(context);
         }
 
         // GET: CustomersMaintenance
@@ -133,6 +141,8 @@ namespace BMSBT.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CustomersMaintenance customer)
         {
+            customer.Sector = string.IsNullOrWhiteSpace(customer.Sector) ? string.Empty : customer.Sector.Trim();
+
             if (ModelState.IsValid)
             {
                 _context.Add(customer);
@@ -160,6 +170,8 @@ namespace BMSBT.Controllers
         public async Task<IActionResult> Edit(int id, CustomersMaintenance customer)
         {
             if (id != customer.Uid) return NotFound();
+
+            customer.Sector = string.IsNullOrWhiteSpace(customer.Sector) ? string.Empty : customer.Sector.Trim();
 
             if (ModelState.IsValid)
             {

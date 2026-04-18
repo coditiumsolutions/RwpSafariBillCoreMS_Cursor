@@ -104,7 +104,8 @@
 
 
                     @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ||
-                         ViewContext.RouteData.Values["controller"]?.ToString() == "CustomersMaintenance")
+                         ViewContext.RouteData.Values["controller"]?.ToString() == "CustomersMaintenance" ||
+                         ViewContext.RouteData.Values["controller"]?.ToString() == "MaintenanceBill")
                     {
                         <li>
                             <a asp-controller="Home" asp-action="Dashboard">
@@ -172,7 +173,8 @@
                         <div class="collapse" id="twisteeSubMenuBMS">
                             <ul class="nav flex-column ml-3">
                                 @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ||
-                                     ViewContext.RouteData.Values["controller"]?.ToString() == "CustomersMaintenance")
+                                     ViewContext.RouteData.Values["controller"]?.ToString() == "CustomersMaintenance" ||
+                                     ViewContext.RouteData.Values["controller"]?.ToString() == "MaintenanceBill")
                                 {
                                     <li>
                                         <a asp-controller="Home" asp-action="BillSummary">
@@ -188,6 +190,20 @@
                                         </a>
                                     </li>
                                 }
+
+                                <li>
+                                    <a asp-controller="Fine" asp-action="Index">
+                                        <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
+                                        Fine
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a asp-controller="AdditionalCharges" asp-action="Index">
+                                        <i class='fas fa-plus-circle' style="color: yellowgreen; font-size: 14px;"></i>
+                                        Additional Charges
+                                    </a>
+                                </li>
 
                                 <!-- Add more Twistee internal links here -->
 
