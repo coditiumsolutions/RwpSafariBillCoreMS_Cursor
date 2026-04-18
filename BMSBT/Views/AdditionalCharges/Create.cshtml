@@ -1,12 +1,7 @@
 @model BMSBT.Models.AdditionalCharge
 @{
-    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdditionalCharges.cshtml";
     ViewData["Title"] = "Create Additional Charge";
-
-    var serviceNames = ViewBag.ServiceNames as IEnumerable<string> ?? Enumerable.Empty<string>();
-    var serviceTypes = ViewBag.ServiceTypes as IEnumerable<string> ?? Enumerable.Empty<string>();
-    var months = ViewBag.Months as IEnumerable<string> ?? Enumerable.Empty<string>();
-    var years = ViewBag.Years as IEnumerable<string> ?? Enumerable.Empty<string>();
 }
 
 <div class="card">
@@ -16,63 +11,7 @@
     <div class="card-body">
         <form asp-action="Create" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="form-row">
-                <div class="form-group col-md-3">
-                    <label asp-for="CustomerNo" class="control-label">Customer No</label>
-                    <input asp-for="CustomerNo" class="form-control" />
-                    <span asp-validation-for="CustomerNo" class="text-danger"></span>
-                </div>
-
-                <div class="form-group col-md-3">
-                    <label asp-for="ServiceName" class="control-label">Service Name</label>
-                    <select asp-for="ServiceName" class="form-control">
-                        <option value="">-- Select Service --</option>
-                        @foreach (var name in serviceNames)
-                        {
-                            <option value="@name">@name</option>
-                        }
-                    </select>
-                    <span asp-validation-for="ServiceName" class="text-danger"></span>
-                </div>
-
-                <div class="form-group col-md-3">
-                    <label asp-for="ServiceType" class="control-label">Service Type</label>
-                    <select asp-for="ServiceType" class="form-control">
-                        <option value="">-- Select Type --</option>
-                        @foreach (var type in serviceTypes)
-                        {
-                            <option value="@type">@type</option>
-                        }
-                    </select>
-                    <span asp-validation-for="ServiceType" class="text-danger"></span>
-                </div>
-
-                <div class="form-group col-md-3">
-                    <label asp-for="Month" class="control-label">Month</label>
-                    <select asp-for="Month" class="form-control">
-                        <option value="">-- Select Month --</option>
-                        @foreach (var m in months)
-                        {
-                            <option value="@m">@m</option>
-                        }
-                    </select>
-                    <span asp-validation-for="Month" class="text-danger"></span>
-                </div>
-
-                <div class="form-group col-md-3 mt-2">
-                    <label asp-for="Year" class="control-label">Year</label>
-                    <select asp-for="Year" class="form-control">
-                        <option value="">-- Select Year --</option>
-                        @foreach (var y in years)
-                        {
-                            <option value="@y">@y</option>
-                        }
-                    </select>
-                    <span asp-validation-for="Year" class="text-danger"></span>
-                </div>
-            </div>
-
+            <partial name="_AdditionalChargeFields" model="Model" />
             <div class="form-group mt-3">
                 <button type="submit" class="btn btn-success">Save</button>
                 <a asp-action="Index" class="btn btn-secondary">Back to List</a>
@@ -84,4 +23,3 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-

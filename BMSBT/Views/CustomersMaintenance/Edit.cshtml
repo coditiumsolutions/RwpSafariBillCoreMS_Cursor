@@ -15,7 +15,7 @@
 
 <div class="card shadow-sm">
     <div class="card-header text-white" style="background-color:#101f63;">
-        <h5 class="mb-0">Customer Information — UID: @Model.Uid</h5>
+        <h5 class="mb-0">@(string.IsNullOrWhiteSpace(Model.CustomerName) ? "—" : Model.CustomerName.Trim())<span class="mx-2 opacity-75">·</span>@(string.IsNullOrWhiteSpace(Model.BTNo) ? "—" : Model.BTNo.Trim())</h5>
     </div>
     <div class="card-body">
         <form asp-action="Edit" method="post">

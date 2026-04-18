@@ -2,7 +2,7 @@
 @using X.PagedList.Mvc.Core
 @model IPagedList<BMSBT.Models.AdditionalCharge>
 @{
-    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdditionalCharges.cshtml";
     ViewData["Title"] = "Additional Charges";
 }
 
@@ -25,35 +25,43 @@
         }
         else
         {
-            <table class="table table-bordered table-striped table-sm">
-                <thead class="table-light">
-                    <tr>
-                        <th>Customer No</th>
-                        <th>Service Name</th>
-                        <th>Service Type</th>
-                        <th>Month</th>
-                        <th>Year</th>
-                        <th style="width:220px;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model)
-                    {
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-sm">
+                    <thead class="table-light">
                         <tr>
-                            <td>@item.CustomerNo</td>
-                            <td>@item.ServiceName</td>
-                            <td>@item.ServiceType</td>
-                            <td>@item.Month</td>
-                            <td>@item.Year</td>
-                            <td>
-                                <a asp-action="Edit" asp-route-id="@item.Uid" class="btn btn-sm btn-primary">Edit</a>
-                                <a asp-action="Details" asp-route-id="@item.Uid" class="btn btn-sm btn-info">Details</a>
-                                <a asp-action="Delete" asp-route-id="@item.Uid" class="btn btn-sm btn-danger">Delete</a>
-                            </td>
+                            <th>BT No</th>
+                            <th>Department</th>
+                            <th>Service type</th>
+                            <th>Charge name</th>
+                            <th>Amount</th>
+                            <th>Frequency</th>
+                            <th>Month</th>
+                            <th>Year</th>
+                            <th style="width:220px;"></th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.BtNo</td>
+                                <td>@item.Department</td>
+                                <td>@item.ServiceType</td>
+                                <td>@item.ChargesName</td>
+                                <td>@item.Amount</td>
+                                <td>@item.Frequency</td>
+                                <td>@item.Month</td>
+                                <td>@item.Year</td>
+                                <td>
+                                    <a asp-action="Edit" asp-route-id="@item.Uid" class="btn btn-sm btn-primary">Edit</a>
+                                    <a asp-action="Details" asp-route-id="@item.Uid" class="btn btn-sm btn-info">Details</a>
+                                    <a asp-action="Delete" asp-route-id="@item.Uid" class="btn btn-sm btn-danger">Delete</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
 
             <div class="d-flex justify-content-center">
                 @Html.PagedListPager(Model, page => Url.Action("Index", new { page }), new PagedListRenderOptions
@@ -70,4 +78,3 @@
         }
     </div>
 </div>
-

@@ -1,0 +1,90 @@
+@model BMSBT.Models.AdditionalCharge
+@{
+    var departments = ViewBag.Departments as IList<string> ?? new List<string>();
+    var serviceTypes = ViewBag.ServiceTypes as IList<string> ?? new List<string>();
+    var chargesNames = ViewBag.ChargesNames as IList<string> ?? new List<string>();
+    var frequencies = ViewBag.Frequencies as IList<string> ?? new List<string>();
+    var months = ViewBag.Months as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var years = ViewBag.Years as IEnumerable<string> ?? Enumerable.Empty<string>();
+}
+
+<div class="form-row">
+    <div class="form-group col-md-3">
+        <label asp-for="BtNo" class="control-label">BT No</label>
+        <input asp-for="BtNo" class="form-control" maxlength="50" />
+        <span asp-validation-for="BtNo" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-3">
+        <label asp-for="Department" class="control-label">Department</label>
+        <select asp-for="Department" class="form-control">
+            <option value="">-- Select --</option>
+            @foreach (var x in departments)
+            {
+                <option value="@x">@x</option>
+            }
+        </select>
+        <span asp-validation-for="Department" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-3">
+        <label asp-for="ServiceType" class="control-label">Service type</label>
+        <select asp-for="ServiceType" class="form-control">
+            <option value="">-- Select --</option>
+            @foreach (var x in serviceTypes)
+            {
+                <option value="@x">@x</option>
+            }
+        </select>
+        <span asp-validation-for="ServiceType" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-3">
+        <label asp-for="ChargesName" class="control-label">Charge name</label>
+        <select asp-for="ChargesName" class="form-control">
+            <option value="">-- Select --</option>
+            @foreach (var x in chargesNames)
+            {
+                <option value="@x">@x</option>
+            }
+        </select>
+        <span asp-validation-for="ChargesName" class="text-danger"></span>
+    </div>
+</div>
+<div class="form-row">
+    <div class="form-group col-md-3">
+        <label asp-for="Amount" class="control-label">Amount</label>
+        <input asp-for="Amount" class="form-control" type="number" step="1" />
+        <span asp-validation-for="Amount" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-3">
+        <label asp-for="Frequency" class="control-label">Frequency</label>
+        <select asp-for="Frequency" class="form-control">
+            <option value="">-- Select --</option>
+            @foreach (var x in frequencies)
+            {
+                <option value="@x">@x</option>
+            }
+        </select>
+        <span asp-validation-for="Frequency" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-3">
+        <label asp-for="Month" class="control-label">Month</label>
+        <select asp-for="Month" class="form-control">
+            <option value="">-- Select month --</option>
+            @foreach (var m in months)
+            {
+                <option value="@m">@m</option>
+            }
+        </select>
+        <span asp-validation-for="Month" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-3">
+        <label asp-for="Year" class="control-label">Year</label>
+        <select asp-for="Year" class="form-control">
+            <option value="">-- Select year --</option>
+            @foreach (var y in years)
+            {
+                <option value="@y">@y</option>
+            }
+        </select>
+        <span asp-validation-for="Year" class="text-danger"></span>
+    </div>
+</div>

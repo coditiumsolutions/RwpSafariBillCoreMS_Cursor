@@ -89,7 +89,7 @@ public partial class MaintenanceBill
     [NotMapped]
     public int? Fine { get; set; }
 
-    /// <summary>Matches DB: int.</summary>
+    /// <summary>Matches DB: int. Typically Other + Generator from CustomersMaintenance.</summary>
     public int? OtherCharges { get; set; }
 
     /// <summary>Matches DB: int.</summary>
@@ -98,7 +98,23 @@ public partial class MaintenanceBill
     /// <summary>Matches DB: int.</summary>
     public int? MiscCharges { get; set; }
 
+    /// <summary>Matches DB RentAmount (Adv. Payment on printed bill).</summary>
+    public int? RentAmount { get; set; }
+
+    /// <summary>Matches DB FoodSafety.</summary>
+    public int? FoodSafety { get; set; }
+
+    /// <summary>Matches DB TrollyTrip.</summary>
+    public int? TrollyTrip { get; set; }
+
+    /// <summary>Matches DB ExtraWork.</summary>
+    public int? ExtraWork { get; set; }
+
     public string? History { get; set; }
+
+    /// <summary>DB column <c>compute</c>: stores current-period subtotal (Maint + Tax + Other + Water + Adv + Trolley + Food Safety + Misc + Extra Work), no arrears.</summary>
+    [Column("compute")]
+    public string? Compute { get; set; }
 
     [NotMapped]
     public string? FineDept { get; set; }

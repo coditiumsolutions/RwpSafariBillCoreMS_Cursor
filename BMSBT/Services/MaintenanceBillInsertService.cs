@@ -1,3 +1,4 @@
+using System.Globalization;
 using BMSBT.BillServices;
 using BMSBT.DTO;
 using BMSBT.Models;
@@ -64,16 +65,26 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
                     .SumAsync(f => f.FineToCharge, cancellationToken);
             }
 
-            // AdditionalCharges table currently only tracks:
-            //   CustomerNo, ServiceName, ServiceType, Month, Year
-            // and does not expose a numeric amount column. Until such a column
-            // is added, we treat additional water/other charges as 0 here.
-            waterCharges = 0m;
+            var btKey = dto.BTNo.Trim();
+            var addlRows = await _dbContext.AdditionalCharges.AsNoTracking()
+                .Where(a => a.BtNo != null && a.BtNo.Trim() == btKey)
+                .ToListAsync(cancellationToken);
+            if (!addlRows.Any())
+            {
+                addlRows = await _dbContext.AdditionalCharges.AsNoTracking()
+                    .Where(a => a.BtNo != null && a.BtNo == dto.BTNo)
+                    .ToListAsync(cancellationToken);
+            }
+
+            if (AdditionalChargeWaterBilling.HasWaterChargeRows(addlRows))
+                waterCharges = AdditionalChargeWaterBilling.SumWaterCharges(addlRows, dto.BillingMonth, dto.BillingYear);
             otherCharges = 0m;
         }
 
         // Calculate billing amounts based on tariff values, arrears, fine, and additional charges (including MiscCharges from Rates)
         var billingCalculations = CalculateBillingAmounts(maintCharges, taxAmount, arrears, fineToChargeSum, waterCharges, otherCharges + miscCharges);
+
+        var currentBillSubtotal = (int)Math.Round(maintCharges + taxAmount + waterCharges + otherCharges + miscCharges, MidpointRounding.AwayFromZero);
 
         var bill = new MaintenanceBill
         {
@@ -103,6 +114,7 @@ public class MaintenanceBillInsertService : IMaintenanceBillInsertService
             OtherCharges = (int)otherCharges,
             WaterCharges = (int)waterCharges,
             MiscCharges = (int)miscCharges,
+            Compute = currentBillSubtotal.ToString(CultureInfo.InvariantCulture),
 
             // Dates
             // Prefer values provided by caller (e.g., from OperatorsSetup), else fallback to today

@@ -94,6 +94,13 @@ public partial class BmsbtContext : DbContext
                 .HasMaxLength(100);
         });
 
+        modelBuilder.Entity<AdditionalCharge>(entity =>
+        {
+            entity.ToTable("AdditionalCharges");
+            entity.Property(e => e.Uid).HasColumnName("UID");
+            entity.Property(e => e.BtNo).HasColumnName("BTNo");
+        });
+
         modelBuilder.Entity<CustomersMaintenance>(entity =>
         {
             entity.ToTable("CustomersMaintenance");

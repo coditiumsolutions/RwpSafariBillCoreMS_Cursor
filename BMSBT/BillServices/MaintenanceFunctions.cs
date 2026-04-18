@@ -1,3 +1,4 @@
+using System.Globalization;
 using BMSBT.Models;
 using BMSBT.Models.MyObjects;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -240,20 +241,22 @@ namespace BMSBT.BillServices
                     .Select(f => (decimal?)f.FineToCharge)
                     .Sum() ?? 0m;
 
-                // NOTE:
-                // The live database `AdditionalCharges` table (see db.txt) now has the
-                // shape:
-                //   - CustomerNo
-                //   - ServiceName
-                //   - ServiceType
-                //   - Month
-                //   - Year
-                //
-                // It no longer contains per-BTNo numeric charge columns like
-                // BTNo / ChargesName / ChargesAmount. Until a numeric amount
-                // column is reintroduced, we treat additional charges as 0
-                // for billing calculations.
-                waterCharges = 0m;
+                var btKey = btNo.Trim();
+                var addlRows = _dbContext.AdditionalCharges.AsNoTracking()
+                    .Where(a => a.BtNo != null && a.BtNo.Trim() == btKey)
+                    .ToList();
+                if (!addlRows.Any())
+                {
+                    addlRows = _dbContext.AdditionalCharges.AsNoTracking()
+                        .Where(a => a.BtNo != null && a.BtNo == btNo)
+                        .ToList();
+                }
+
+                if (AdditionalChargeWaterBilling.HasWaterChargeRows(addlRows))
+                    waterCharges = AdditionalChargeWaterBilling.SumWaterCharges(addlRows, month, year);
+                else
+                    waterCharges = Math.Round(customer.Water ?? 0m, 0, MidpointRounding.AwayFromZero);
+
                 otherCharges = 0m;
             }
 
@@ -271,6 +274,8 @@ namespace BMSBT.BillServices
             decimal arrearsAmt = Math.Round(actualArrearDec, 0);
 
             var btNoFromCustomer = GetEffectiveBTNo(customer);
+
+            var currentBillSubtotal = (int)Math.Round(amountDec + taxDec + waterCharges + otherCharges + miscDec, 0, MidpointRounding.AwayFromZero);
 
             var newBill = new MaintenanceBill
             {
@@ -294,6 +299,7 @@ namespace BMSBT.BillServices
                 WaterCharges = (int)waterCharges,
                 OtherCharges = (int)otherCharges,
                 MiscCharges = (int)miscDec,
+                Compute = currentBillSubtotal.ToString(CultureInfo.InvariantCulture),
                 IssueDate = IssueDate,
                 DueDate = DueDate,
 

@@ -5,10 +5,16 @@
     var projectTitle = !string.IsNullOrWhiteSpace(project)
         ? project.Trim().ToUpperInvariant()
         : (Model.Project ?? "").Trim().ToUpperInvariant();
-    var total = Model.BillAmountInDueDate ?? 0;
-    var lpSurcharge = Model.BillSurcharge ?? 0;
-    var payAfterDue = Model.BillAmountAfterDueDate ?? (total + lpSurcharge);
+    var rentAmt = Model.RentAmount ?? 0;
+    var foodAmt = Model.FoodSafety ?? 0;
+    var trolleyAmt = Model.TrollyTrip ?? 0;
+    var extraAmt = Model.ExtraWork ?? 0;
+    var currentBillSubtotal = (Model.MaintCharges ?? 0) + (Model.TaxAmount ?? 0) + (Model.OtherCharges ?? 0)
+        + (Model.WaterCharges ?? 0) + rentAmt + trolleyAmt + foodAmt + (Model.MiscCharges ?? 0) + extraAmt;
     var arrears = Model.Arrears ?? 0;
+    var payWithinDueDate = currentBillSubtotal + arrears;
+    var lpSurcharge = Model.BillSurcharge ?? 0;
+    var payAfterDue = Model.BillAmountAfterDueDate ?? (payWithinDueDate + lpSurcharge);
     var dueDateStr = Model.DueDate?.ToString("dd-MM-yyyy") ?? "";
     var issueDateStr = Model.IssueDate?.ToString("dd-MM-yyyy") ?? "";
     var phaseNameStr = !string.IsNullOrWhiteSpace(Model.PhaseName)
@@ -280,14 +286,20 @@
                                 </tr>
                                 <tr>
                                     <td class="caption">Adv. Payment</td>
-                                    <td class="amount">0</td>
-                                    <td class="caption-right">Install Amount</td>
-                                    <td class="amount-right">0</td>
+                                    <td class="amount">@rentAmt.ToString("N0")</td>
+                                    <td class="caption-right">Trolley Trip</td>
+                                    <td class="amount-right">@trolleyAmt.ToString("N0")</td>
                                 </tr>
                                 <tr>
                                     <td class="caption">Misc. Charges</td>
                                     <td class="amount">@((Model.MiscCharges ?? 0).ToString("N0"))</td>
                                     <td class="caption-right">Food Safety</td>
+                                    <td class="amount-right">@foodAmt.ToString("N0")</td>
+                                </tr>
+                                <tr>
+                                    <td class="caption">Extra Work</td>
+                                    <td class="amount">@extraAmt.ToString("N0")</td>
+                                    <td class="caption-right">Install Amount</td>
                                     <td class="amount-right">0</td>
                                 </tr>
                             </table>
@@ -304,7 +316,7 @@
                                 </tr>
                                 <tr>
                                     <td class="label">CURRENT BILL</td>
-                                    <td class="value">@((Model.BillAmountInDueDate ?? 0).ToString("N0"))</td>
+                                    <td class="value">@currentBillSubtotal.ToString("N0")</td>
                                 </tr>
                                 <tr>
                                     <td class="label">INSTALL AMOUNT</td>
@@ -312,14 +324,14 @@
                                 </tr>
                                 <tr>
                                     <td class="label">Total</td>
-                                    <td class="value">@((arrears + (Model.BillAmountInDueDate ?? 0)).ToString("N0"))</td>
+                                    <td class="value">@payWithinDueDate.ToString("N0")</td>
                                 </tr>
                             </table>
 
                             <table class="payment-box" style="width:100%;">
                                 <tr>
                                     <td class="label">PAY WITHIN DUE DATE</td>
-                                    <td class="amount">@total.ToString("N0")</td>
+                                    <td class="amount">@payWithinDueDate.ToString("N0")</td>
                                 </tr>
                                 <tr>
                                     <td class="label">SURCHARGE</td>

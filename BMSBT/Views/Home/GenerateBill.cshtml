@@ -194,7 +194,7 @@
                 var html = '<div class="card"><div class="card-header fw-bold">' + title + '</div><div class="card-body p-0">' +
                     '<div class="table-responsive"><table class="table table-sm table-bordered mb-0">' +
                     '<thead><tr>' +
-                    '<th>Customer</th><th>Tariff Found</th><th>BillAmount</th><th>TaxAmount</th><th>TotalBill</th><th>Surcharge</th><th>BillInDueDate</th><th>BillAfterDate</th><th>Status</th><th>Reason</th>' +
+                    '<th>Customer</th><th>Tariff Found</th><th>BillAmount</th><th>TaxAmount</th><th>Current Bill</th><th>Surcharge</th><th>BillInDueDate</th><th>BillAfterDate</th><th>Status</th><th>Reason</th>' +
                     '</tr></thead><tbody>';
 
                 response.customerLogs.forEach(function (x) {
@@ -204,7 +204,7 @@
                         '<td>' + tariffInfo + '</td>' +
                         '<td>' + (x.billAmount ?? 0) + '</td>' +
                         '<td>' + (x.taxAmount ?? 0) + '</td>' +
-                        '<td>' + (x.totalBill ?? 0) + '</td>' +
+                        '<td>' + (x.currentBillSubtotal ?? x.totalBill ?? x.TotalBill ?? 0) + '</td>' +
                         '<td>' + (x.surcharge ?? 0) + '</td>' +
                         '<td>' + (x.billInDueDate ?? 0) + '</td>' +
                         '<td>' + (x.billAfterDate ?? 0) + '</td>' +

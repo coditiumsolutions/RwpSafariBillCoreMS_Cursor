@@ -1,6 +1,6 @@
 @model BMSBT.Models.AdditionalCharge
 @{
-    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdditionalCharges.cshtml";
     ViewData["Title"] = "Edit Additional Charge";
 }
 
@@ -12,47 +12,7 @@
         <form asp-action="Edit" method="post">
             <input type="hidden" asp-for="Uid" />
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="form-row">
-                <div class="form-group col-md-3">
-                    <label asp-for="CustomerNo" class="control-label">Customer No</label>
-                    <input asp-for="CustomerNo" class="form-control" />
-                    <span asp-validation-for="CustomerNo" class="text-danger"></span>
-                </div>
-
-                <div class="form-group col-md-3">
-                    <label asp-for="ServiceName" class="control-label">Service Name</label>
-                    <select asp-for="ServiceName" class="form-control">
-                        <option value="">-- Select Service --</option>
-                        <option value="Water Charges">Water Charges</option>
-                        <option value="Other Charges">Other Charges</option>
-                    </select>
-                    <span asp-validation-for="ServiceName" class="text-danger"></span>
-                </div>
-
-                <div class="form-group col-md-3">
-                    <label asp-for="ServiceType" class="control-label">Service Type</label>
-                    <select asp-for="ServiceType" class="form-control">
-                        <option value="">-- Select Type --</option>
-                        <option value="Maintenance">Maintenance</option>
-                        <option value="Electricity">Electricity</option>
-                    </select>
-                    <span asp-validation-for="ServiceType" class="text-danger"></span>
-                </div>
-
-                <div class="form-group col-md-3">
-                    <label asp-for="Month" class="control-label">Month</label>
-                    <input asp-for="Month" class="form-control" />
-                    <span asp-validation-for="Month" class="text-danger"></span>
-                </div>
-
-                <div class="form-group col-md-3 mt-2">
-                    <label asp-for="Year" class="control-label">Year</label>
-                    <input asp-for="Year" class="form-control" />
-                    <span asp-validation-for="Year" class="text-danger"></span>
-                </div>
-            </div>
-
+            <partial name="_AdditionalChargeFields" model="Model" />
             <div class="form-group mt-3">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
                 <a asp-action="Index" class="btn btn-secondary">Back to List</a>
@@ -64,4 +24,3 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-

@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BMSBT.Models
 {
+    /// <summary>Maps to dbo.AdditionalCharges (see db.txt).</summary>
     [Table("AdditionalCharges")]
     public class AdditionalCharge
     {
@@ -10,21 +11,23 @@ namespace BMSBT.Models
         [Column("UID")]
         public int Uid { get; set; }
 
-        // Columns from db.txt:
-        //  - CustomerNo (nvarchar 50)
-        //  - ServiceName (nvarchar 100)
-        //  - ServiceType (nvarchar 50)
-        //  - Month (nvarchar 20)
-        //  - Year (nvarchar 10)
-
         [MaxLength(50)]
-        public string? CustomerNo { get; set; }
+        [Column("BTNo")]
+        public string? BtNo { get; set; }
 
-        [MaxLength(100)]
-        public string? ServiceName { get; set; }
+        [MaxLength(60)]
+        public string? Department { get; set; }
 
-        [MaxLength(50)]
+        [MaxLength(60)]
         public string? ServiceType { get; set; }
+
+        [MaxLength(60)]
+        public string? ChargesName { get; set; }
+
+        public int Amount { get; set; }
+
+        [MaxLength(50)]
+        public string? Frequency { get; set; }
 
         [MaxLength(20)]
         public string? Month { get; set; }
@@ -33,4 +36,3 @@ namespace BMSBT.Models
         public string? Year { get; set; }
     }
 }
-

@@ -1,6 +1,6 @@
 @model BMSBT.Models.AdditionalCharge
 @{
-    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
+    Layout = "~/Views/Shared/_LayoutAdditionalCharges.cshtml";
     ViewData["Title"] = "Additional Charge Details";
 }
 
@@ -10,14 +10,26 @@
     </div>
     <div class="card-body">
         <dl class="row">
-            <dt class="col-sm-3">Customer No</dt>
-            <dd class="col-sm-9">@Model.CustomerNo</dd>
+            <dt class="col-sm-3">UID</dt>
+            <dd class="col-sm-9">@Model.Uid</dd>
 
-            <dt class="col-sm-3">Service Name</dt>
-            <dd class="col-sm-9">@Model.ServiceName</dd>
+            <dt class="col-sm-3">BT No</dt>
+            <dd class="col-sm-9">@Model.BtNo</dd>
 
-            <dt class="col-sm-3">Service Type</dt>
+            <dt class="col-sm-3">Department</dt>
+            <dd class="col-sm-9">@Model.Department</dd>
+
+            <dt class="col-sm-3">Service type</dt>
             <dd class="col-sm-9">@Model.ServiceType</dd>
+
+            <dt class="col-sm-3">Charge name</dt>
+            <dd class="col-sm-9">@Model.ChargesName</dd>
+
+            <dt class="col-sm-3">Amount</dt>
+            <dd class="col-sm-9">@Model.Amount</dd>
+
+            <dt class="col-sm-3">Frequency</dt>
+            <dd class="col-sm-9">@Model.Frequency</dd>
 
             <dt class="col-sm-3">Month</dt>
             <dd class="col-sm-9">@Model.Month</dd>
@@ -30,4 +42,3 @@
         <a asp-action="Index" class="btn btn-secondary">Back to List</a>
     </div>
 </div>
-
