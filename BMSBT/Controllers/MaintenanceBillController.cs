@@ -3,6 +3,7 @@ using BMSBT.DTO;
 using BMSBT.Models;
 using BMSBT.Requests;
 using BMSBT.Roles;
+using BMSBT.Services;
 using DevExpress.XtraRichEdit.Import.Html;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -26,15 +27,24 @@ namespace BMSBT.Controllers
         //private readonly OperatorDetailsService _operatorDetailsService;
         private readonly ICurrentOperatorService _operatorService;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IMaintenanceBillExcelPaymentService _maintenanceBillExcelPaymentService;
+        private readonly ILogger<MaintenanceBillController> _logger;
 
 
 
-        public MaintenanceBillController(IHttpClientFactory httpClientFactory, BmsbtContext dbContext, ICurrentOperatorService operatorService)
+        public MaintenanceBillController(
+            IHttpClientFactory httpClientFactory,
+            BmsbtContext dbContext,
+            ICurrentOperatorService operatorService,
+            IMaintenanceBillExcelPaymentService maintenanceBillExcelPaymentService,
+            ILogger<MaintenanceBillController> logger)
         {
             _dbContext = dbContext;
             MaintenanceFunctions = new MaintenanceFunctions(_dbContext);
             _operatorService = operatorService;
             _httpClientFactory = httpClientFactory;
+            _maintenanceBillExcelPaymentService = maintenanceBillExcelPaymentService;
+            _logger = logger;
 
         }
 
@@ -966,6 +976,46 @@ namespace BMSBT.Controllers
                 billSurcharge = bill.BillSurcharge,
                 billAmountAfterDueDate = bill.BillAmountAfterDueDate
             });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PayByExcel([FromForm] MaintenanceBillExcelUploadRequest request, CancellationToken cancellationToken)
+        {
+            if (request.ExcelFile == null || request.ExcelFile.Length == 0)
+                return Json(new { success = false, message = "Please upload an Excel (.xlsx) file." });
+
+            var extension = Path.GetExtension(request.ExcelFile.FileName);
+            if (!".xlsx".Equals(extension, StringComparison.OrdinalIgnoreCase))
+                return Json(new { success = false, message = "Invalid file type. Only .xlsx files are allowed." });
+
+            try
+            {
+                var result = await _maintenanceBillExcelPaymentService.ProcessAsync(request, cancellationToken);
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Excel payment processing completed.",
+                    totalProcessedRows = result.TotalProcessedRows,
+                    successfullyUpdatedRecords = result.SuccessfullyUpdatedRecords,
+                    failedOrNotFoundRecords = result.FailedOrNotFoundRecords,
+                    missingRecords = result.MissingRecords
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "PayByExcel failed unexpectedly.");
+                return StatusCode(500, new { success = false, message = "Unexpected error occurred while processing the Excel file." });
+            }
         }
 
         /// <summary>

@@ -64,6 +64,9 @@ public partial class MaintenanceBill
 
     public string? BankDetail { get; set; }
 
+    [Column("AMOUNTPAID")]
+    public int? AmountPaid { get; set; }
+
     [NotMapped]
     public DateTime? LastUpdated { get; set; }
 

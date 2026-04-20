@@ -91,6 +91,36 @@
             </div>
         </div>
 
+        <div class="mb-3">
+            <button type="button" class="btn btn-outline-primary" id="btnPayByExcelToggle">Pay By Excel</button>
+        </div>
+
+        <div class="card border-secondary mb-3" id="pfExcelCard" style="display:none;">
+            <div class="card-header py-2">
+                <strong>Excel Payment Upload</strong>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group col-md-5">
+                        <label for="pfExcelFile">Excel file (.xlsx)</label>
+                        <input type="file" class="form-control-file" id="pfExcelFile" accept=".xlsx" />
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label for="pfStartRow">Start Row Number</label>
+                        <input type="number" min="1" class="form-control" id="pfStartRow" placeholder="e.g. 5" />
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label for="pfEndRow">End Row Number</label>
+                        <input type="number" min="1" class="form-control" id="pfEndRow" placeholder="e.g. 10" />
+                    </div>
+                    <div class="form-group col-md-3 d-flex align-items-end">
+                        <button type="button" class="btn btn-primary w-100" id="btnPayByExcelSubmit">Submit</button>
+                    </div>
+                </div>
+                <div id="pfExcelResult" class="small" aria-live="polite"></div>
+            </div>
+        </div>
+
         <div class="card border-info mb-3" id="pfSummaryCard">
             <div class="card-body py-3">
                 <div class="row">
@@ -293,8 +323,118 @@
         var btnLookup = $('btnLookup');
         var btnApply = $('btnApply');
         var pfBtno = $('pfBtno');
+        var btnPayByExcelToggle = $('btnPayByExcelToggle');
+        var btnPayByExcelSubmit = $('btnPayByExcelSubmit');
+        var excelCard = $('pfExcelCard');
+
+        function renderExcelResult(data) {
+            var host = $('pfExcelResult');
+            if (!host) return;
+
+            if (!isApiSuccess(data)) {
+                host.className = 'small text-danger';
+                host.textContent = apiMessage(data) || 'Excel processing failed.';
+                return;
+            }
+
+            var total = data.totalProcessedRows || data.TotalProcessedRows || 0;
+            var ok = data.successfullyUpdatedRecords || data.SuccessfullyUpdatedRecords || 0;
+            var failed = data.failedOrNotFoundRecords || data.FailedOrNotFoundRecords || 0;
+            var missing = data.missingRecords || data.MissingRecords || [];
+
+            var html = '<div class="alert alert-success py-2 mb-2">'
+                + '<strong>Processed:</strong> ' + total
+                + ' | <strong>Updated:</strong> ' + ok
+                + ' | <strong>Failed/Not Found:</strong> ' + failed
+                + '</div>';
+
+            if (missing && missing.length) {
+                html += '<div class="alert alert-warning py-2 mb-0"><div><strong>Missing / failed rows:</strong></div><ul class="mb-0 pl-3">';
+                for (var i = 0; i < missing.length; i++) {
+                    var m = missing[i] || {};
+                    html += '<li>Row ' + (m.rowNumber || m.RowNumber || 'N/A')
+                        + ' | BTNo: ' + (m.btno || m.Btno || '-')
+                        + ' | Month: ' + (m.billingMonth || m.BillingMonth || '-')
+                        + ' | Year: ' + (m.billingYear || m.BillingYear || '-')
+                        + ' | Reason: ' + (m.reason || m.Reason || 'Not found')
+                        + '</li>';
+                }
+                html += '</ul></div>';
+            }
+
+            host.className = 'small';
+            host.innerHTML = html;
+        }
+
+        function doExcelPay() {
+            var fileInput = $('pfExcelFile');
+            var startRowInput = $('pfStartRow');
+            var endRowInput = $('pfEndRow');
+
+            var file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
+            var startRow = startRowInput ? parseInt(startRowInput.value || '0', 10) : 0;
+            var endRow = endRowInput ? parseInt(endRowInput.value || '0', 10) : 0;
+
+            if (!file) {
+                renderExcelResult({ success: false, message: 'Please choose an Excel file first.' });
+                return;
+            }
+            if (!file.name || file.name.toLowerCase().indexOf('.xlsx') < 0) {
+                renderExcelResult({ success: false, message: 'Only .xlsx files are allowed.' });
+                return;
+            }
+            if (!startRow || !endRow || startRow <= 0 || endRow <= 0) {
+                renderExcelResult({ success: false, message: 'Enter valid start and end row numbers.' });
+                return;
+            }
+            if (startRow > endRow) {
+                renderExcelResult({ success: false, message: 'Start row number cannot be greater than end row number.' });
+                return;
+            }
+
+            setBusy(true);
+            var host = $('pfExcelResult');
+            if (host) {
+                host.className = 'small text-muted';
+                host.textContent = 'Processing Excel rows...';
+            }
+
+            var body = new FormData();
+            body.append('ExcelFile', file);
+            body.append('StartRowNumber', String(startRow));
+            body.append('EndRowNumber', String(endRow));
+            body.append('__RequestVerificationToken', token);
+
+            fetch('@Url.Action("PayByExcel", "MaintenanceBill")', {
+                method: 'POST',
+                credentials: 'same-origin',
+                body: body
+            })
+                .then(readJsonResponse)
+                .then(function (data) {
+                    setBusy(false);
+                    renderExcelResult(data);
+                    if (isApiSuccess(data)) {
+                        Swal.fire({ icon: 'success', title: 'Excel processed successfully', timer: 1400, showConfirmButton: false });
+                    } else {
+                        Swal.fire({ icon: 'error', title: apiMessage(data) || 'Excel processing failed', timer: 2400, showConfirmButton: false });
+                    }
+                })
+                .catch(function (err) {
+                    setBusy(false);
+                    renderExcelResult({ success: false, message: err && err.message ? err.message : 'Network error during Excel processing.' });
+                });
+        }
+
         if (btnLookup) btnLookup.addEventListener('click', doLookup);
         if (btnApply) btnApply.addEventListener('click', doApply);
+        if (btnPayByExcelToggle && excelCard) {
+            btnPayByExcelToggle.addEventListener('click', function () {
+                var open = excelCard.style.display !== 'none';
+                excelCard.style.display = open ? 'none' : 'block';
+            });
+        }
+        if (btnPayByExcelSubmit) btnPayByExcelSubmit.addEventListener('click', doExcelPay);
 
         if (pfBtno) pfBtno.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') {
