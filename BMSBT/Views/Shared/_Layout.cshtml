@@ -154,75 +154,11 @@
                             Setups
                         </a>
                     </li>
-
-                    <!-- Twistee with collapsible internal links (BMS Home) -->
-                    <li class="nav-item">
-                        <a class="nav-link d-flex justify-content-between align-items-center"
-                           data-toggle="collapse"
-                           href="#twisteeSubMenuBMS"
-                           role="button"
-                           aria-expanded="false"
-                           aria-controls="twisteeSubMenuBMS">
-                            <span>
-                                <i class="fas fa-cog" style="color: yellowgreen; font-size: 14px;"></i>
-                                &nbsp; Other Links
-                            </span>
-                            <i class="fas fa-chevron-down twistee-caret"></i>
+                    <li>
+                        <a asp-controller="Operations" asp-action="Index">
+                            <i class='fas fa-tasks' style="color: yellowgreen; font-size: 14px;"></i>
+                            Operations
                         </a>
-
-                        <div class="collapse" id="twisteeSubMenuBMS">
-                            <ul class="nav flex-column ml-3">
-                                @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ||
-                                     ViewContext.RouteData.Values["controller"]?.ToString() == "CustomersMaintenance" ||
-                                     ViewContext.RouteData.Values["controller"]?.ToString() == "MaintenanceBill")
-                                {
-                                    <li>
-                                        <a asp-controller="Home" asp-action="BillSummary">
-                                            <i class="fas fa-chart-bar" style="color: yellowgreen; font-size: 14px;"></i>
-                                            Bill Summary
-                                        </a>
-                                    </li>
-
-                                    <li>
-                                        <a asp-controller="MaintenanceBill" asp-action="PaymentForm">
-                                            <i class='fas fa-edit' style="color: yellowgreen; font-size: 14px;"></i>
-                                            Pay Bill(s)
-                                        </a>
-                                    </li>
-                                }
-
-                                <li>
-                                    <a asp-controller="Fine" asp-action="Index">
-                                        <i class='fas fa-cog' style="color: yellowgreen; font-size: 14px;"></i>
-                                        Fine
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a asp-controller="AdditionalCharges" asp-action="Index">
-                                        <i class='fas fa-plus-circle' style="color: yellowgreen; font-size: 14px;"></i>
-                                        Additional Charges
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a asp-controller="Adjustments" asp-action="Index">
-                                        <i class='fas fa-sliders-h' style="color: yellowgreen; font-size: 14px;"></i>
-                                        Adjustments
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a asp-controller="Reports" asp-action="Index">
-                                        <i class='fas fa-chart-pie' style="color: yellowgreen; font-size: 14px;"></i>
-                                        Reports
-                                    </a>
-                                </li>
-
-                                <!-- Add more Twistee internal links here -->
-
-                            </ul>
-                        </div>
                     </li>
 
 
@@ -266,13 +202,3 @@
 <!-- Bootstrap 4 JS (requires Popper which you already include) -->
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-<!-- caret toggle for Twistee submenu -->
-<script>
-    $(document).on('show.bs.collapse', '.collapse', function () {
-      $(this).prev().find('.twistee-caret').removeClass('fa-chevron-down').addClass('fa-chevron-up');
-    });
-
-    $(document).on('hide.bs.collapse', '.collapse', function () {
-      $(this).prev().find('.twistee-caret').removeClass('fa-chevron-up').addClass('fa-chevron-down');
-    });
-</script>

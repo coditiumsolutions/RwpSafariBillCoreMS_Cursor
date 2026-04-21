@@ -1,0 +1,101 @@
+@model List<BMSBT.Models.MaintenanceBill>
+@{
+    ViewData["Title"] = "Recovery Report";
+    Layout = "~/Views/Shared/_LayoutReports.cshtml";
+
+    var months = ViewBag.Months as List<string> ?? new List<string>();
+    var years = ViewBag.Years as List<string> ?? new List<string>();
+    var projects = ViewBag.Projects as List<string> ?? new List<string>();
+    var selectedMonth = ViewBag.SelectedMonth as string ?? "";
+    var selectedYear = ViewBag.SelectedYear as string ?? "";
+    var selectedProject = ViewBag.SelectedProject as string ?? "";
+}
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Recovery Report Filters</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" asp-action="RecoveryReport" asp-controller="Reports">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label class="font-weight-bold">Month</label>
+                    <select name="month" class="form-control">
+                        @foreach (var month in months)
+                        {
+                            <option value="@month" selected="@(month == selectedMonth)">@month</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label class="font-weight-bold">Year</label>
+                    <select name="year" class="form-control">
+                        @foreach (var year in years)
+                        {
+                            <option value="@year" selected="@(year == selectedYear)">@year</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label class="font-weight-bold">Project</label>
+                    <select name="project" class="form-control">
+                        <option value="" selected="@string.IsNullOrWhiteSpace(selectedProject)">-- All Projects --</option>
+                        @foreach (var project in projects)
+                        {
+                            <option value="@project" selected="@(project == selectedProject)">@project</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Load</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Recovery Report</h5>
+    </div>
+    <div class="card-body">
+        @if (Model == null || !Model.Any())
+        {
+            <p class="mb-0">No records found for the selected criteria.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>maint charges</th>
+                            <th>misc charges</th>
+                            <th>trolley charges</th>
+                            <th>water charges</th>
+                            <th>rent charges</th>
+                            <th>extra work</th>
+                            <th>other charges</th>
+                            <th>arrears</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model)
+                        {
+                            <tr>
+                                <td>@(row.MaintCharges ?? 0)</td>
+                                <td>@(row.MiscCharges ?? 0)</td>
+                                <td>@(row.TrollyTrip ?? 0)</td>
+                                <td>@(row.WaterCharges ?? 0)</td>
+                                <td>@(row.RentAmount ?? 0)</td>
+                                <td>@(row.ExtraWork ?? 0)</td>
+                                <td>@(row.OtherCharges ?? 0)</td>
+                                <td>@(row.Arrears ?? 0)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
