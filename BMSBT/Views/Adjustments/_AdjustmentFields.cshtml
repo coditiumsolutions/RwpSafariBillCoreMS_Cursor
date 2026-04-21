@@ -1,0 +1,51 @@
+@model BMSBT.Models.Adjustment
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+<div class="form-row">
+    <div class="form-group col-md-4">
+        <label asp-for="BtNo">BT No</label>
+        <input asp-for="BtNo" class="form-control" />
+        <span asp-validation-for="BtNo" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-4">
+        <label asp-for="BillingType">Billing Type</label>
+        <select asp-for="BillingType" class="form-control" asp-items="new SelectList((IEnumerable<string>)ViewBag.BillingTypes)"></select>
+        <span asp-validation-for="BillingType" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-4">
+        <label asp-for="AdjustmentType">Adjustment Type</label>
+        <select asp-for="AdjustmentType" class="form-control" asp-items="new SelectList((IEnumerable<string>)ViewBag.AdjustmentTypes)"></select>
+        <span asp-validation-for="AdjustmentType" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group col-md-8">
+        <label asp-for="AdjustmentName">Adjustment Name</label>
+        <input asp-for="AdjustmentName" class="form-control" />
+        <span asp-validation-for="AdjustmentName" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-4">
+        <label asp-for="AdjustmentValue">Adjustment Value</label>
+        <input asp-for="AdjustmentValue" class="form-control" />
+        <span asp-validation-for="AdjustmentValue" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="form-row">
+    <div class="form-group col-md-4">
+        <label asp-for="Frequency">Frequency</label>
+        <select asp-for="Frequency" class="form-control" asp-items="new SelectList((IEnumerable<string>)ViewBag.Frequencies)"></select>
+        <span asp-validation-for="Frequency" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-4">
+        <label asp-for="Month">Month</label>
+        <select asp-for="Month" class="form-control" asp-items="new SelectList((IEnumerable<string>)ViewBag.Months)"></select>
+        <span asp-validation-for="Month" class="text-danger"></span>
+    </div>
+    <div class="form-group col-md-4">
+        <label asp-for="Year">Year</label>
+        <select asp-for="Year" class="form-control" asp-items="new SelectList((IEnumerable<string>)ViewBag.Years)"></select>
+        <span asp-validation-for="Year" class="text-danger"></span>
+    </div>
+</div>

@@ -1,0 +1,80 @@
+@using X.PagedList
+@using X.PagedList.Mvc.Core
+@model IPagedList<BMSBT.Models.Adjustment>
+@{
+    Layout = "~/Views/Shared/_LayoutAdjustments.cshtml";
+    ViewData["Title"] = "Adjustments";
+}
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Adjustments</h5>
+        <a asp-action="Create" class="btn btn-sm btn-success">Create New</a>
+    </div>
+    <div class="card-body">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">
+                @TempData["SuccessMessage"]
+            </div>
+        }
+
+        @if (Model == null || !Model.Any())
+        {
+            <p>No adjustments found.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>BT No</th>
+                            <th>Billing Type</th>
+                            <th>Adjustment Name</th>
+                            <th>Adjustment Type</th>
+                            <th>Value</th>
+                            <th>Frequency</th>
+                            <th>Month</th>
+                            <th>Year</th>
+                            <th style="width:220px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.BtNo</td>
+                                <td>@item.BillingType</td>
+                                <td>@item.AdjustmentName</td>
+                                <td>@item.AdjustmentType</td>
+                                <td>@item.AdjustmentValue</td>
+                                <td>@item.Frequency</td>
+                                <td>@item.Month</td>
+                                <td>@item.Year</td>
+                                <td>
+                                    <a asp-action="Edit" asp-route-id="@item.AdjustmentId" class="btn btn-sm btn-primary">Edit</a>
+                                    <a asp-action="Details" asp-route-id="@item.AdjustmentId" class="btn btn-sm btn-info">Details</a>
+                                    <a asp-action="Delete" asp-route-id="@item.AdjustmentId" class="btn btn-sm btn-danger">Delete</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-center">
+                @Html.PagedListPager(Model, page => Url.Action("Index", new { page }), new PagedListRenderOptions
+                {
+                    LiElementClasses = new string[] { "page-item" },
+                    PageClasses = new string[] { "page-link" },
+                    DisplayLinkToFirstPage = PagedListDisplayMode.Always,
+                    DisplayLinkToLastPage = PagedListDisplayMode.Always,
+                    DisplayLinkToPreviousPage = PagedListDisplayMode.Always,
+                    DisplayLinkToNextPage = PagedListDisplayMode.Always,
+                    DisplayEllipsesWhenNotShowingAllPageNumbers = true
+                })
+            </div>
+        }
+    </div>
+</div>

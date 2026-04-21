@@ -55,6 +55,7 @@ public partial class BmsbtContext : DbContext
     public virtual DbSet<User> Users { get; set; }
     public DbSet<Fine> Fine { get; set; }
     public DbSet<AdditionalCharge> AdditionalCharges { get; set; }
+    public DbSet<Adjustment> Adjustments { get; set; }
 
     /// <summary>dbo.SubProject — keyless read for phase dropdowns.</summary>
     public virtual DbSet<SubProjectPhase> SubProjectPhases { get; set; }
@@ -98,6 +99,12 @@ public partial class BmsbtContext : DbContext
         {
             entity.ToTable("AdditionalCharges");
             entity.Property(e => e.Uid).HasColumnName("UID");
+            entity.Property(e => e.BtNo).HasColumnName("BTNo");
+        });
+
+        modelBuilder.Entity<Adjustment>(entity =>
+        {
+            entity.ToTable("Adjustments");
             entity.Property(e => e.BtNo).HasColumnName("BTNo");
         });
 

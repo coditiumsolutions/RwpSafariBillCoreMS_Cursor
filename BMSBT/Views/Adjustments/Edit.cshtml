@@ -1,0 +1,26 @@
+@model BMSBT.Models.Adjustment
+@{
+    Layout = "~/Views/Shared/_LayoutAdjustments.cshtml";
+    ViewData["Title"] = "Edit Adjustment";
+}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Edit Adjustment</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="AdjustmentId" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <partial name="_AdjustmentFields" model="Model" />
+            <div class="form-group mt-3">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

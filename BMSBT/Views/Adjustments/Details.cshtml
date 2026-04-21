@@ -1,0 +1,44 @@
+@model BMSBT.Models.Adjustment
+@{
+    Layout = "~/Views/Shared/_LayoutAdjustments.cshtml";
+    ViewData["Title"] = "Adjustment Details";
+}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Adjustment Details</h5>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Adjustment ID</dt>
+            <dd class="col-sm-9">@Model.AdjustmentId</dd>
+
+            <dt class="col-sm-3">BT No</dt>
+            <dd class="col-sm-9">@Model.BtNo</dd>
+
+            <dt class="col-sm-3">Billing Type</dt>
+            <dd class="col-sm-9">@Model.BillingType</dd>
+
+            <dt class="col-sm-3">Adjustment Name</dt>
+            <dd class="col-sm-9">@Model.AdjustmentName</dd>
+
+            <dt class="col-sm-3">Adjustment Type</dt>
+            <dd class="col-sm-9">@Model.AdjustmentType</dd>
+
+            <dt class="col-sm-3">Adjustment Value</dt>
+            <dd class="col-sm-9">@Model.AdjustmentValue</dd>
+
+            <dt class="col-sm-3">Frequency</dt>
+            <dd class="col-sm-9">@Model.Frequency</dd>
+
+            <dt class="col-sm-3">Month</dt>
+            <dd class="col-sm-9">@Model.Month</dd>
+
+            <dt class="col-sm-3">Year</dt>
+            <dd class="col-sm-9">@Model.Year</dd>
+        </dl>
+
+        <a asp-action="Edit" asp-route-id="@Model.AdjustmentId" class="btn btn-primary">Edit</a>
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+    </div>
+</div>

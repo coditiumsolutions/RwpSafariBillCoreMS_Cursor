@@ -1,7 +1,7 @@
 Database: BMSSafariRwp
 Connection: Server=172.20.229.2;Database=BMSSafariRwp;User Id=admin;Password=***;MultipleActiveResultSets=True;TrustServerCertificate=True;
 (From appsettings: DefaultConnection)
-Generated: 2026-04-18 14:19:25
+Generated: 2026-04-21 12:52:57
 
 ---
 
@@ -29,6 +29,9 @@ Table: Adjustments
   - AdjustmentName (varchar 50)
   - AdjustmentType (varchar 50)
   - AdjustmentValue (int)
+  - Frequency (nvarchar 20)
+  - Month (nvarchar 20)
+  - Year (nvarchar 10)
 
 Table: AuditLogs
   - LogId (int)

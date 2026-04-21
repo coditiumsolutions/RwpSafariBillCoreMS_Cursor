@@ -17,14 +17,76 @@ namespace BMSBT.Controllers
             _dbContext = dbContext;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(string? month, string? year, string? project)
         {
             if (HttpContext.Session.GetString("UserName") == null)
             {
                 return RedirectToAction("Index", "Login");
             }
-            ViewBag.Username = HttpContext.Session.GetString("UserName");
+
+            ViewBag.UserName = HttpContext.Session.GetString("UserName");
             ViewBag.LoginTime = HttpContext.Session.GetString("LoginTime");
+
+            var selectedMonth = string.IsNullOrWhiteSpace(month) ? DateTime.Now.ToString("MMMM") : month.Trim();
+            var selectedYear = string.IsNullOrWhiteSpace(year) ? DateTime.Now.Year.ToString() : year.Trim();
+            var selectedProject = string.IsNullOrWhiteSpace(project) ? string.Empty : project.Trim();
+
+            var monthList = new List<string>
+            {
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            };
+            var yearList = new List<string> { "2025", "2026", "2027" };
+
+            var projects = _dbContext.Configurations
+                .AsNoTracking()
+                .Where(c => c.ConfigKey != null
+                            && c.ConfigValue != null
+                            && c.ConfigKey.Trim().ToLower() == "projects")
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(v => v, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var customersQuery = _dbContext.CustomersMaintenance.AsNoTracking().AsQueryable();
+            if (!string.IsNullOrWhiteSpace(selectedProject))
+            {
+                customersQuery = customersQuery.Where(c => c.Project != null && c.Project.Trim() == selectedProject);
+            }
+            var totalCustomers = customersQuery.Count();
+
+            var billsQuery = _dbContext.MaintenanceBills
+                .AsNoTracking()
+                .Where(b => b.BillingMonth == selectedMonth && b.BillingYear == selectedYear);
+
+            if (!string.IsNullOrWhiteSpace(selectedProject))
+            {
+                billsQuery = billsQuery.Where(b => b.Project != null && b.Project.Trim() == selectedProject);
+            }
+
+            var totalBillsAmount = billsQuery.Sum(b => (decimal?)b.BillAmountInDueDate) ?? 0m;
+            var totalPaidAmount = billsQuery
+                .Where(b => b.PaymentStatus != null && b.PaymentStatus.Trim().ToLower() == "paid")
+                .Sum(b => (decimal?)b.BillAmountInDueDate) ?? 0m;
+            var totalUnpaidAmount = billsQuery
+                .Where(b => b.PaymentStatus == null || b.PaymentStatus.Trim().ToLower() != "paid")
+                .Sum(b => (decimal?)b.BillAmountInDueDate) ?? 0m;
+
+            ViewBag.Months = monthList;
+            ViewBag.Years = yearList;
+            ViewBag.Projects = projects;
+            ViewBag.SelectedMonth = selectedMonth;
+            ViewBag.SelectedYear = selectedYear;
+            ViewBag.SelectedProject = selectedProject;
+            ViewBag.TotalCustomers = totalCustomers;
+            ViewBag.TotalBillsAmount = totalBillsAmount;
+            ViewBag.TotalPaidAmount = totalPaidAmount;
+            ViewBag.TotalUnpaidAmount = totalUnpaidAmount;
+
             return View();
         }
 

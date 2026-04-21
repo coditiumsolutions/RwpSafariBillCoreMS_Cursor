@@ -108,82 +108,45 @@
 
             <!-- Left Sidebar -->
             <div class="col-md-3 col-lg-2 p-3 sidebar">
-                <h4>Reports</h4>
+                <h4>Reports Module</h4>
 
 
                 <ul class="nav flex-column">
 
                     <li>
-                        <a asp-controller="Graphs" asp-action="Index">
-                            <i class='fas fa-money-bill' style="color: yellowgreen; font-size: 14px;"></i>
-                            Customers
+                        <a asp-controller="Reports" asp-action="Index">
+                            <i class='fas fa-chart-bar' style="color: yellowgreen; font-size: 14px;"></i>
+                            Summary Report
                         </a>
                     </li>
-
                     <li>
-                        <a asp-controller="Graphs" asp-action="GraphSelection">
-                            <i class='fas fa-money-bill' style="color: yellowgreen; font-size: 14px;"></i>
-                            Graph Selection
+                        <a asp-controller="Reports" asp-action="GetBillsSpecialDiscount">
+                            <i class='fas fa-file-alt' style="color: yellowgreen; font-size: 14px;"></i>
+                            Special Discount Bills
                         </a>
                     </li>
-
                     <li>
-                        <a asp-controller="Graphs" asp-action="BillReport">
-                            <i class='fas fa-money-bill' style="color: yellowgreen; font-size: 14px;"></i>
-                            Month Generate
+                        <a asp-controller="Reports" asp-action="GetBillsRecoverable">
+                            <i class='fas fa-file-invoice-dollar' style="color: yellowgreen; font-size: 14px;"></i>
+                            Recoverable Bills
                         </a>
                     </li>
-
                     <li>
-                        <a asp-controller="Graphs" asp-action="GraphSelectionEBills">
-                            <i class='fas fa-money-bill' style="color: yellowgreen; font-size: 14px;"></i>
-                           Monthly Payment
-                        </a>
-                    </li>
-
-                   
-
-                    <li>
-                        <a asp-controller="Customers" asp-action="Index">
-                            <i class='fas fa-money-bill' style="color: yellowgreen; font-size: 14px;"></i>
-                            Defaulters
-                        </a>
-                    </li>
-
-
-                    <li>
-                        <a asp-controller="EBillU" asp-action="Index">
-                            <i class='fas fa-bolt' style="color: yellowgreen; font-size: 14px;"></i>
-                            Payments
-                        </a>
-                    </li>
-
-
-                    <li>
-                        <a asp-controller="MaintenanceBill" asp-action="Index">
-                            <i class='fas fa-money-bill' style="color: yellowgreen; font-size: 14px;"></i>
-                            Collections
+                        <a asp-controller="Reports" asp-action="GetTwoMonthOutstandingBills">
+                            <i class='fas fa-exclamation-circle' style="color: yellowgreen; font-size: 14px;"></i>
+                            Two Month Outstanding
                         </a>
                     </li>
 
                 </ul>
 
-                <!-- Separate Quick Links Block -->
                 <div class="quick-links-block">
                     <h4>Quick Links</h4>
                     <ul class="nav flex-column">
                         <li>
-                            <a asp-controller="EBillU" asp-action="Index">
-
+                            <a asp-controller="Home" asp-action="Index">
                                 <i class='fas fa-arrow-left' style="color: antiquewhite; font-size: 14px; font-weight: bold;"></i>
-                                Click To: E-Bills
-                            </a>
-                        </li>
-
-                        <li>
-                            <a asp-controller="MaintenanceBill" asp-action="Index">
-                                <i class='fas fa-arrow-left' style="color: antiquewhite; font-size: 14px; font-weight: bold;"></i>
-                                Click To: M-Bills
+                                Back To Home
                             </a>
                         </li>
                     </ul>

@@ -201,8 +201,39 @@ public sealed class BillingService : IBillingService
                 }
             }
 
+            // Adjustments rule:
+            // If BTNo has (AdjustmentName='excludearrears', AdjustmentValue=1) => arrears = 0
+            // If BTNo has (AdjustmentName='excludesurcharge', AdjustmentValue=1) => surcharge = 0
+            bool excludeArrears = false;
+            bool excludeSurcharge = false;
+            var adjustmentBtNo = customer.BTNo?.Trim();
+            if (!string.IsNullOrWhiteSpace(adjustmentBtNo))
+            {
+                var adjustmentRows = _dbContext.Adjustments
+                    .AsNoTracking()
+                    .Where(a => a.BtNo != null && a.AdjustmentName != null && a.AdjustmentValue == 1 && a.BtNo == adjustmentBtNo)
+                    .ToList();
+
+                var matchingRows = adjustmentRows.Where(a =>
+                    string.Equals(a.BtNo!.Trim(), adjustmentBtNo, StringComparison.OrdinalIgnoreCase));
+
+                excludeArrears = matchingRows.Any(a =>
+                    string.Equals(a.AdjustmentName!.Trim(), "excludearrears", StringComparison.OrdinalIgnoreCase));
+                excludeSurcharge = matchingRows.Any(a =>
+                    string.Equals(a.AdjustmentName!.Trim(), "excludesurcharge", StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (excludeArrears)
+            {
+                arrears = 0;
+            }
+
             // Surcharge = MaintCharges * 10 / 100 (no tax/misc included)
             var surcharge = Convert.ToInt32(Math.Round(maintCharges * 10.0 / 100.0, MidpointRounding.AwayFromZero));
+            if (excludeSurcharge)
+            {
+                surcharge = 0;
+            }
             result.Surcharge = surcharge;
 
             // BillInDueDate (Current Bill field) = current bill + unpaid previous arrears.
