@@ -14,344 +14,374 @@
 }
 
 <style>
-    .bill-summary-page {
+    .bs-page {
+        --bs-surface: #ffffff;
+        --bs-heading: #0f172a;
+        --bs-text: #334155;
+        --bs-muted: #64748b;
+        --bs-border: #e2e8f0;
+        --bs-row-odd: #fafbfc;
+        --bs-row-even: #ffffff;
+        --bs-row-hover: #eef6ff;
+        --bs-primary: #0f5fa8;
+        --bs-primary-ink: #ffffff;
+        --bs-accent: #00203F;
+        font-size: 0.9375rem;
+        line-height: 1.45;
+        color: var(--bs-text);
         max-width: 1600px;
         margin: 0 auto;
-        padding: 0 0.5rem 1.5rem;
     }
 
-    .page-hero {
+    .bs-hero {
+        padding: 0.9rem 0.25rem 0.4rem;
         display: flex;
         justify-content: space-between;
-        align-items: end;
+        align-items: flex-end;
         gap: 1rem;
         flex-wrap: wrap;
-        margin-bottom: 1rem;
     }
 
-    .page-title {
+    .bs-title {
         margin: 0;
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: #0f172a;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--bs-heading);
+        letter-spacing: 0.01em;
     }
 
-    .page-subtitle {
-        margin: 0.35rem 0 0;
-        color: #64748b;
-        font-size: 0.98rem;
+    .bs-subtitle {
+        margin: 0.25rem 0 0;
+        color: var(--bs-muted);
+        font-size: 0.92rem;
+        max-width: 70ch;
     }
 
-    .period-badge {
+    .bs-period {
         display: inline-flex;
         align-items: center;
-        padding: 0.55rem 0.9rem;
+        gap: 0.45rem;
+        padding: 0.45rem 0.75rem;
         border-radius: 999px;
-        background: #e0f2fe;
-        color: #075985;
-        font-weight: 700;
+        background: rgba(15, 95, 168, 0.12);
+        color: #0b4a86;
+        font-weight: 800;
         white-space: nowrap;
     }
 
-    .filter-section {
-        padding: 1rem 1.1rem;
-        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-        border: 1px solid #dbe4ee;
-        border-radius: 14px;
-        margin-bottom: 1rem;
-        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
-    }
-
-    .filter-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(180px, 240px));
-        gap: 1rem;
-        align-items: end;
-    }
-
-    .filter-grid .form-group {
-        margin-bottom: 0;
-    }
-
-    .filter-grid .form-control {
-        min-height: 44px;
-        border-radius: 10px;
-    }
-
-    .summary-cards {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(220px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
-
-    .summary-card {
-        padding: 1.15rem 1.25rem;
-        background: #ffffff;
-        border: 1px solid #dbe4ee;
-        border-radius: 14px;
-        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
-    }
-
-    .summary-card-label {
-        font-size: 0.85rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #64748b;
-        margin-bottom: 0.45rem;
-    }
-
-    .summary-card-value {
-        font-size: 2rem;
-        font-weight: 800;
-        color: #0f172a;
-        line-height: 1.1;
-    }
-
-    .summary-card-note {
-        margin-top: 0.35rem;
-        color: #64748b;
-        font-size: 0.92rem;
-    }
-
-    .table-card {
-        background: #ffffff;
-        border: 1px solid #dbe4ee;
-        border-radius: 14px;
+    .bs-card {
+        background: var(--bs-surface);
+        border: 1px solid var(--bs-border);
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
         overflow: hidden;
-        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+        margin-top: 10px;
     }
 
-    .table-card-header {
+    .bs-card-header {
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        border-bottom: 1px solid var(--bs-border);
+        padding: 0.9rem 1.1rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 1rem;
+        gap: 12px;
         flex-wrap: wrap;
-        padding: 1rem 1.25rem;
-        background: linear-gradient(180deg, #f8fbff 0%, #f1f5f9 100%);
-        border-bottom: 1px solid #dbe4ee;
     }
 
-    .table-card-title {
+    .bs-card-title {
         margin: 0;
-        font-size: 1.1rem;
+        font-size: 0.98rem;
+        font-weight: 800;
+        color: var(--bs-heading);
+    }
+
+    .bs-card-body {
+        padding: 1rem 1.1rem;
+    }
+
+    .bs-filter label {
+        display: block;
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.02em;
+        color: #475569;
+        font-size: 0.74rem;
         font-weight: 700;
-        color: #0f172a;
+        text-transform: uppercase;
     }
 
-    .table-card-note {
-        margin: 0.25rem 0 0;
-        color: #64748b;
-        font-size: 0.92rem;
+    .bs-filter .form-control,
+    .bs-filter .btn {
+        min-height: 40px;
+        border-radius: 10px;
+        font-size: 0.9rem;
     }
 
-    .table-responsive {
+    .bs-kpis {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .bs-kpi {
+        grid-column: span 4;
+        padding: 1rem 1.1rem;
+        border: 1px solid var(--bs-border);
+        border-radius: 12px;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    }
+
+    .bs-kpi-label {
+        font-size: 0.74rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--bs-muted);
+        margin-bottom: 0.35rem;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    .bs-kpi-value {
+        font-size: 1.85rem;
+        font-weight: 900;
+        color: var(--bs-heading);
+        line-height: 1.1;
         margin: 0;
     }
 
-    .summary-table {
+    .bs-kpi-note {
+        margin: 0.35rem 0 0;
+        color: var(--bs-muted);
+        font-size: 0.9rem;
+    }
+
+    .bs-table {
         width: 100%;
         border-collapse: collapse;
         background-color: #ffffff;
-        margin-top: 0;
+        margin: 0;
     }
 
-    .summary-table th,
-    .summary-table td {
-        border-bottom: 1px solid #e2e8f0;
-        padding: 14px 18px;
+    .bs-table th,
+    .bs-table td {
+        border-bottom: 1px solid var(--bs-border);
+        padding: 12px 16px;
         text-align: left;
+        vertical-align: middle;
     }
 
-    .summary-table th {
-        background-color: #0f5fa8;
-        color: #ffffff;
-        font-weight: 700;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-    }
-
-    .summary-table tbody tr:nth-child(even) {
-        background-color: #f8fafc;
-    }
-
-    .summary-table tbody tr:hover {
-        background-color: #eef6ff;
-    }
-
-    .summary-table tfoot td {
+    .bs-table thead th {
+        background: linear-gradient(180deg, var(--bs-accent) 0%, #093053 100%);
+        color: var(--bs-primary-ink);
         font-weight: 800;
-        background-color: #e0f2fe;
-        border-top: 2px solid #7dd3fc;
-        padding: 15px 18px;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border-bottom: none;
+        position: sticky;
+        top: 0;
+        z-index: 1;
     }
 
-    .summary-table td.numeric,
-    .summary-table th.numeric {
+    .bs-table tbody tr:nth-child(odd) {
+        background-color: var(--bs-row-odd);
+    }
+
+    .bs-table tbody tr:nth-child(even) {
+        background-color: var(--bs-row-even);
+    }
+
+    .bs-table tbody tr:hover {
+        background-color: var(--bs-row-hover);
+    }
+
+    .bs-table tfoot td {
+        font-weight: 900;
+        background: rgba(125, 211, 252, 0.25);
+        border-top: 2px solid rgba(125, 211, 252, 0.6);
+    }
+
+    .bs-table td.numeric,
+    .bs-table th.numeric {
         text-align: right;
+        font-variant-numeric: tabular-nums;
     }
 
-    .project-cell {
-        font-weight: 600;
-        color: #0f172a;
-    }
-
-    .metric-chip {
-        display: inline-flex;
-        min-width: 72px;
-        justify-content: center;
-        padding: 0.3rem 0.65rem;
-        border-radius: 999px;
-        background: #eff6ff;
-        color: #1d4ed8;
+    .bs-project {
         font-weight: 700;
+        color: var(--bs-heading);
     }
 
-    .form-label {
-        font-weight: 600;
-        color: #334155;
-        margin-bottom: 0.45rem;
+    .bs-chip {
+        display: inline-flex;
+        min-width: 84px;
+        justify-content: center;
+        padding: 0.25rem 0.65rem;
+        border-radius: 999px;
+        background: rgba(15, 95, 168, 0.10);
+        color: #0b4a86;
+        font-weight: 800;
+        border: 1px solid rgba(15, 95, 168, 0.20);
     }
 
-    .no-data {
+    .bs-empty {
         color: #6c757d;
         font-style: italic;
-        padding: 28px 20px;
+        padding: 26px 16px;
         text-align: center;
     }
 
     @@media (max-width: 991.98px) {
-        .filter-grid,
-        .summary-cards {
-            grid-template-columns: 1fr;
+        .bs-kpi {
+            grid-column: span 12;
         }
 
-        .summary-card-value {
-            font-size: 1.65rem;
+        .bs-kpi-value {
+            font-size: 1.55rem;
         }
     }
 </style>
 
-<div class="container-fluid mt-3">
-    <div class="bill-summary-page">
-        <div class="page-hero">
-            <div>
-                <h4 class="page-title">Bills Summary by Project</h4>
-                <p class="page-subtitle">A wider, cleaner summary view for comparing customer counts and generated bills across projects.</p>
-            </div>
-            <div class="period-badge">@selectedMonth @selectedYear</div>
+<div class="bs-page mt-2">
+    <div class="bs-hero">
+        <div>
+            <h4 class="bs-title">Bills Summary</h4>
+            <p class="bs-subtitle">Project-wise comparison of total customers and bills generated for the selected period.</p>
         </div>
-
-        <form id="billsSummaryForm" asp-controller="Home" asp-action="BillSummary" method="get" class="filter-section">
-            <div class="filter-grid">
-                <div class="form-group">
-                <label class="form-label">Month</label>
-                <select name="month" id="monthDropdown" class="form-control" style="min-width: 160px;">
-                    <option value="">-- Select Month --</option>
-                    @foreach (var m in months)
-                    {
-                        if (m == selectedMonth)
-                        {
-                            <option value="@m" selected>@m</option>
-                        }
-                        else
-                        {
-                            <option value="@m">@m</option>
-                        }
-                    }
-                </select>
-                </div>
-                <div class="form-group">
-                <label class="form-label">Year</label>
-                <select name="year" id="yearDropdown" class="form-control" style="min-width: 100px;">
-                    <option value="">-- Select Year --</option>
-                    @foreach (var y in years)
-                    {
-                        if (y == selectedYear)
-                        {
-                            <option value="@y" selected>@y</option>
-                        }
-                        else
-                        {
-                            <option value="@y">@y</option>
-                        }
-                    }
-                </select>
-                </div>
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary btn-block w-100">Show Report</button>
-                </div>
-            </div>
-        </form>
-
-        <div class="summary-cards">
-            <div class="summary-card">
-                <div class="summary-card-label">Total Customers</div>
-                <div class="summary-card-value">@totalCustomers.ToString("N0")</div>
-                <div class="summary-card-note">Customers available across all projects</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-card-label">Bills Generated</div>
-                <div class="summary-card-value">@totalBillsGenerated.ToString("N0")</div>
-                <div class="summary-card-note">Bills created for the selected month and year</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-card-label">Generation Rate</div>
-                <div class="summary-card-value">@generationRate.ToString("0.0")%</div>
-                <div class="summary-card-note">Generated bills compared to total customers</div>
-            </div>
+        <div class="bs-period">
+            <i class="fas fa-calendar-alt"></i>
+            <span>@selectedMonth @selectedYear</span>
         </div>
+    </div>
 
-        <div class="table-card">
-            <div class="table-card-header">
-                <div>
-                    <h5 class="table-card-title">Project-wise Report</h5>
-                    <p class="table-card-note">Use this table to compare customer counts and generated bills side by side.</p>
-                </div>
-            </div>
-            <div class="table-responsive">
-                <table class="summary-table table mb-0">
-                    <thead>
-                        <tr>
-                            <th>Project</th>
-                            <th class="numeric">Customers</th>
-                            <th class="numeric">Bills Generated</th>
-                        </tr>
-                    </thead>
-                    <tbody id="summaryTableBody">
-                        @if (Model != null && Model.Any())
-                        {
-                            @foreach (var row in Model)
+    <div class="bs-card bs-filter">
+        <div class="bs-card-header">
+            <h5 class="bs-card-title">Filters</h5>
+        </div>
+        <div class="bs-card-body">
+            <form id="billsSummaryForm" asp-controller="Home" asp-action="BillSummary" method="get">
+                <div class="form-row align-items-end">
+                    <div class="form-group col-md-3 col-lg-2">
+                        <label for="monthDropdown">Month</label>
+                        <select name="month" id="monthDropdown" class="form-control">
+                            <option value="">-- Select Month --</option>
+                            @foreach (var m in months)
                             {
-                                <tr>
-                                    <td class="project-cell">@row.Project</td>
-                                    <td class="numeric"><span class="metric-chip">@row.Customers.ToString("N0")</span></td>
-                                    <td class="numeric"><span class="metric-chip">@row.BillsGenerated.ToString("N0")</span></td>
-                                </tr>
+                                if (m == selectedMonth)
+                                {
+                                    <option value="@m" selected>@m</option>
+                                }
+                                else
+                                {
+                                    <option value="@m">@m</option>
+                                }
                             }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="3" class="no-data">@(string.IsNullOrEmpty(selectedMonth) || string.IsNullOrEmpty(selectedYear) ? "Select a month and year, then click Show." : "No customer data.")</td>
-                            </tr>
-                        }
-                    </tbody>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3 col-lg-2">
+                        <label for="yearDropdown">Year</label>
+                        <select name="year" id="yearDropdown" class="form-control">
+                            <option value="">-- Select Year --</option>
+                            @foreach (var y in years)
+                            {
+                                if (y == selectedYear)
+                                {
+                                    <option value="@y" selected>@y</option>
+                                }
+                                else
+                                {
+                                    <option value="@y">@y</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter mr-2"></i>Show
+                        </button>
+                    </div>
+                    <div class="form-group col-md-2 col-lg-2">
+                        <a class="btn btn-outline-secondary w-100"
+                           asp-controller="Home"
+                           asp-action="BillSummary"
+                           asp-route-month="@DateTime.Now.ToString("MMMM")"
+                           asp-route-year="@DateTime.Now.Year.ToString()">
+                            <i class="fas fa-undo mr-2"></i>Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="bs-kpis">
+        <div class="bs-kpi">
+            <div class="bs-kpi-label"><i class="fas fa-users" style="color:#0b4a86;"></i> Total customers</div>
+            <p class="bs-kpi-value">@totalCustomers.ToString("N0")</p>
+            <p class="bs-kpi-note">Customers across all projects</p>
+        </div>
+        <div class="bs-kpi">
+            <div class="bs-kpi-label"><i class="fas fa-file-invoice" style="color:#0b4a86;"></i> Bills generated</div>
+            <p class="bs-kpi-value">@totalBillsGenerated.ToString("N0")</p>
+            <p class="bs-kpi-note">Bills for @selectedMonth @selectedYear</p>
+        </div>
+        <div class="bs-kpi">
+            <div class="bs-kpi-label"><i class="fas fa-percentage" style="color:#0b4a86;"></i> Generation rate</div>
+            <p class="bs-kpi-value">@generationRate.ToString("0.0")%</p>
+            <p class="bs-kpi-note">Bills generated ÷ total customers</p>
+        </div>
+    </div>
+
+    <div class="bs-card">
+        <div class="bs-card-header">
+            <div>
+                <h5 class="bs-card-title">Project-wise report</h5>
+                <div class="text-muted" style="font-size: 0.9rem;">Compare counts side by side. Header stays visible while you scroll.</div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="bs-table table mb-0">
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th class="numeric">Customers</th>
+                        <th class="numeric">Bills generated</th>
+                    </tr>
+                </thead>
+                <tbody id="summaryTableBody">
                     @if (Model != null && Model.Any())
                     {
-                        <tfoot>
-                    <tr>
-                        <td>Total</td>
-                        <td class="numeric">@totalCustomers.ToString("N0")</td>
-                        <td class="numeric">@totalBillsGenerated.ToString("N0")</td>
-                    </tr>
-                        </tfoot>
+                        @foreach (var row in Model)
+                        {
+                            <tr>
+                                <td class="bs-project">@row.Project</td>
+                                <td class="numeric"><span class="bs-chip">@row.Customers.ToString("N0")</span></td>
+                                <td class="numeric"><span class="bs-chip">@row.BillsGenerated.ToString("N0")</span></td>
+                            </tr>
+                        }
                     }
-                </table>
-            </div>
+                    else
+                    {
+                        <tr>
+                            <td colspan="3" class="bs-empty">@(string.IsNullOrEmpty(selectedMonth) || string.IsNullOrEmpty(selectedYear) ? "Select a month and year, then click Show." : "No customer data.")</td>
+                        </tr>
+                    }
+                </tbody>
+                @if (Model != null && Model.Any())
+                {
+                    <tfoot>
+                        <tr>
+                            <td>Total</td>
+                            <td class="numeric">@totalCustomers.ToString("N0")</td>
+                            <td class="numeric">@totalBillsGenerated.ToString("N0")</td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
         </div>
     </div>
 </div>
@@ -399,12 +429,12 @@
                     if (data && data.length > 0) {
                         data.forEach(function (row) {
                             var tr = document.createElement('tr');
-                            tr.innerHTML = '<td class="project-cell">' + (row.project || '') + '</td><td class="numeric"><span class="metric-chip">' + (row.customers || 0) + '</span></td><td class="numeric"><span class="metric-chip">' + (row.billsGenerated || 0) + '</span></td>';
+                            tr.innerHTML = '<td class="bs-project">' + (row.project || '') + '</td><td class="numeric"><span class="bs-chip">' + (row.customers || 0) + '</span></td><td class="numeric"><span class="bs-chip">' + (row.billsGenerated || 0) + '</span></td>';
                             tbody.appendChild(tr);
                         });
                     } else {
                         var tr = document.createElement('tr');
-                        tr.innerHTML = '<td colspan="3" class="no-data">No records for the selected month and year.</td>';
+                        tr.innerHTML = '<td colspan="3" class="bs-empty">No records for the selected month and year.</td>';
                         tbody.appendChild(tr);
                     }
                 })
