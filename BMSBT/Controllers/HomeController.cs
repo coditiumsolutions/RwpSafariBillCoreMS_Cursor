@@ -515,6 +515,8 @@ namespace BMSBT.Controllers
                 {
                     { "Safari-1", ("Safari-1", "Safari-1", "Safari Villas") },
                     { "Safari-2", ("Safari-2", "Safari-2", "Safari II") },
+                    { "Safari-3", ("Safari-3", "Safari-3", "III-E") },
+                    { "Safari 3", ("Safari-3", "Safari-3", "III-E") },
                     { "Bahria Spring", ("BahriaSpring", "bahria spring", "bahria springs") },
                     { "BahriaSpring", ("BahriaSpring", "bahria spring", "bahria springs") },
                     { "Bahria Heights-1", ("SafariHeights", "Bahria Heights-1", "Bahria Heights Ext.1") }
