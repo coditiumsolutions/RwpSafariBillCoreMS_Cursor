@@ -1,3 +1,18 @@
+@{
+    var rolesText = Context.Session.GetString("Role");
+    var canAccessUsersManagement = false;
+    if (!string.IsNullOrWhiteSpace(rolesText))
+    {
+        foreach (var role in rolesText.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (string.Equals(role?.Trim(), "UserSetup", StringComparison.OrdinalIgnoreCase))
+            {
+                canAccessUsersManagement = true;
+                break;
+            }
+        }
+    }
+}
 <!DOCTYPE html>
 
 <html>
@@ -139,12 +154,15 @@
                         </a>
                     </li>
 
-                    <li>
-                        <a asp-controller="UsersManagement" asp-action="Index">
-                            <i class='fas fa-edit' style="color: yellowgreen; font-size: 14px;"></i>
-                            All Users
-                        </a>
-                    </li>
+                    @if (canAccessUsersManagement)
+                    {
+                        <li>
+                            <a asp-controller="UsersManagement" asp-action="Index">
+                                <i class='fas fa-edit' style="color: yellowgreen; font-size: 14px;"></i>
+                                All Users
+                            </a>
+                        </li>
+                    }
 
                     <li>
                         <a asp-controller="Maintenance" asp-action="MaintTariff">
@@ -153,14 +171,6 @@
                         </a>
                     </li>
 
-                    <li>
-                        <a asp-controller="MaintenanceNew" asp-action="Operations">
-                            <i class="fas fa-tasks" style="color: yellowgreen; font-size: 14px;"></i>
-                            Operations
-                        </a>
-                    </li>
-
-                   
                 </ul>
             </div>
 

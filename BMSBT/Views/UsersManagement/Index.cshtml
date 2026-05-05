@@ -11,6 +11,26 @@
 
 <!-- Create New User Button -->
 <a asp-action="CreateUser" class="btn btn-primary mb-3">+ Create New User</a>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Message"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
 <!-- Search Bar -->
 <div class="search-panel mb-3">
     <input type="text" id="searchInput" placeholder="Search..." class="form-control" style="width:990px; display:inline-block; margin-right:10px;" />
@@ -35,8 +55,13 @@
                     <td>@user.Username</td>
                     <td>@user.Role</td>
                     <td>
-                        <!-- Edit Button -->
                         <a asp-action="EditUser" asp-route-id="@user.Uid" class="btn btn-sm btn-success">Edit</a>
+                        <form asp-action="DeleteUser" method="post" class="d-inline"
+                              onsubmit="return confirm('Are you sure you want to delete this user? This cannot be undone.');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@user.Uid" />
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
                     </td>
                 </tr>
             }

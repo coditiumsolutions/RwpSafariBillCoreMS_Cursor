@@ -4,8 +4,12 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
     var months = ViewBag.Months as List<string> ?? new List<string>();
     var years = ViewBag.Years as List<string> ?? new List<string>();
+    var projects = ViewBag.Projects as List<string> ?? new List<string>();
+    var phases = ViewBag.Phases as List<string> ?? new List<string>();
     var selectedMonth = ViewBag.SelectedMonth as string ?? "";
     var selectedYear = ViewBag.SelectedYear as string ?? "";
+    var selectedProject = ViewBag.SelectedProject as string ?? "";
+    var selectedPhase = ViewBag.SelectedPhase as string ?? "";
     var totalCustomers = Model?.Sum(x => x.Customers) ?? 0;
     var totalBillsGenerated = Model?.Sum(x => x.BillsGenerated) ?? 0;
     var generationRate = totalCustomers > 0
@@ -299,7 +303,41 @@
                             }
                         </select>
                     </div>
-                    <div class="form-group col-md-4 col-lg-3">
+                    <div class="form-group col-md-3 col-lg-3">
+                        <label for="projectDropdown">Project</label>
+                        <select name="project" id="projectDropdown" class="form-control">
+                            <option value="">-- All Projects --</option>
+                            @foreach (var p in projects)
+                            {
+                                if (p == selectedProject)
+                                {
+                                    <option value="@p" selected>@p</option>
+                                }
+                                else
+                                {
+                                    <option value="@p">@p</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3 col-lg-3">
+                        <label for="phaseDropdown">Phase</label>
+                        <select name="phase" id="phaseDropdown" class="form-control">
+                            <option value="">-- All Phases --</option>
+                            @foreach (var p in phases)
+                            {
+                                if (p == selectedPhase)
+                                {
+                                    <option value="@p" selected>@p</option>
+                                }
+                                else
+                                {
+                                    <option value="@p">@p</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-md-4 col-lg-2">
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="fas fa-filter mr-2"></i>Show
                         </button>
@@ -391,6 +429,8 @@
         var form = document.getElementById('billsSummaryForm');
         var monthDropdown = document.getElementById('monthDropdown');
         var yearDropdown = document.getElementById('yearDropdown');
+        var projectDropdown = document.getElementById('projectDropdown');
+        var phaseDropdown = document.getElementById('phaseDropdown');
         var useAjax = false;
 
         function hasSelection() {
@@ -415,12 +455,23 @@
                 submitForm();
             }
         });
+        projectDropdown.addEventListener('change', function () {
+            submitForm();
+        });
+        phaseDropdown.addEventListener('change', function () {
+            submitForm();
+        });
 
         function fetchSummaryData() {
             if (!hasSelection()) return;
             var month = monthDropdown.value;
             var year = yearDropdown.value;
-            var url = '@Url.Action("GetBillSummaryData", "Home")?month=' + encodeURIComponent(month) + '&year=' + encodeURIComponent(year);
+            var project = projectDropdown.value || '';
+            var phase = phaseDropdown.value || '';
+            var url = '@Url.Action("GetBillSummaryData", "Home")?month=' + encodeURIComponent(month) +
+                '&year=' + encodeURIComponent(year) +
+                '&project=' + encodeURIComponent(project) +
+                '&phase=' + encodeURIComponent(phase);
             fetch(url)
                 .then(function (r) { return r.json(); })
                 .then(function (data) {

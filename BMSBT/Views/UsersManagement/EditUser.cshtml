@@ -4,6 +4,7 @@
     ViewData["Title"] = "Edit User";
     Layout = "~/Views/Shared/_LayoutSetup.cshtml";
     var selectedRoles = (string[])ViewBag.SelectedRoles;
+    var availableRoles = ViewBag.AvailableRoles as List<string> ?? new List<string>();
 }
 <div class="card shadow-lg">
     <div class="card-header text-white" style="background-color:#101f63;">
@@ -41,9 +42,9 @@
                     <div class="col-md-3 mb-3">
                         <label asp-for="Role" class="form-label">Roles</label>
                         <select asp-for="Role" class="form-control select2-multiple" multiple="multiple" name="Role">
-                            @foreach (var role in new List<string> { "Admin", "Manager", "E-Bill", "M-Bill", "Audit","COO" })
+                            @foreach (var role in availableRoles)
                             {
-                                <option value="@role" selected="@(selectedRoles != null && Array.Exists(selectedRoles, r => r == role) ? "selected" : null)">@role</option>
+                                <option value="@role" selected="@(selectedRoles != null && Array.Exists(selectedRoles, r => string.Equals(r?.Trim(), role, StringComparison.OrdinalIgnoreCase)) ? "selected" : null)">@role</option>
                             }
                         </select>
                         <span asp-validation-for="Role" class="text-danger"></span>

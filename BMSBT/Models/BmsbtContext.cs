@@ -117,6 +117,35 @@ public partial class BmsbtContext : DbContext
             entity.Property(e => e.PloNo).HasColumnName("PloNo").HasMaxLength(100);
             entity.Property(e => e.StreetNumber).HasColumnName("StreetNumber").HasMaxLength(50);
             entity.Property(e => e.ConnectionStatus).HasMaxLength(20);
+
+            // DB stores these as SQL float, while domain model uses decimal? for billing math.
+            entity.Property(e => e.Maint).HasConversion(
+                v => v.HasValue ? (double?)v.Value : null,
+                v => v.HasValue ? (decimal?)v.Value : null);
+            entity.Property(e => e.Misc).HasConversion(
+                v => v.HasValue ? (double?)v.Value : null,
+                v => v.HasValue ? (decimal?)v.Value : null);
+            entity.Property(e => e.Water).HasConversion(
+                v => v.HasValue ? (double?)v.Value : null,
+                v => v.HasValue ? (decimal?)v.Value : null);
+            entity.Property(e => e.Rent).HasConversion(
+                v => v.HasValue ? (double?)v.Value : null,
+                v => v.HasValue ? (decimal?)v.Value : null);
+            entity.Property(e => e.Generator).HasConversion(
+                v => v.HasValue ? (double?)v.Value : null,
+                v => v.HasValue ? (decimal?)v.Value : null);
+            entity.Property(e => e.Other).HasConversion(
+                v => v.HasValue ? (double?)v.Value : null,
+                v => v.HasValue ? (decimal?)v.Value : null);
+            entity.Property(e => e.FoodSafety).HasConversion(
+                v => v.HasValue ? (double?)v.Value : null,
+                v => v.HasValue ? (decimal?)v.Value : null);
+            entity.Property(e => e.TrollyTrip).HasConversion(
+                v => v.HasValue ? (double?)v.Value : null,
+                v => v.HasValue ? (decimal?)v.Value : null);
+            entity.Property(e => e.ExtraWork).HasConversion(
+                v => v.HasValue ? (double?)v.Value : null,
+                v => v.HasValue ? (decimal?)v.Value : null);
         });
 
         // Configure BillingReportData as keyless entity

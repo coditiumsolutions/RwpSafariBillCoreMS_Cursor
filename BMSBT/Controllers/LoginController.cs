@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.EntityFrameworkCore;
@@ -17,11 +18,13 @@ namespace BMSBT.Controllers
     {
         private readonly BmsbtContext _context;
         private readonly ICurrentOperatorService _operatorService;
+        private readonly PasswordHasher<User> _passwordHasher;
+
         public LoginController(BmsbtContext context, ICurrentOperatorService operatorService)
         {
             _context = context;
             _operatorService = operatorService;
-            _operatorService = operatorService;
+            _passwordHasher = new PasswordHasher<User>();
         }
         MaintenanceBill m = new MaintenanceBill();
 
@@ -49,7 +52,7 @@ namespace BMSBT.Controllers
                 return View();
             }
 
-            if (user.PasswordHash == password)
+            if (VerifyPassword(user, password))
             {
                 // ✅ Await the InitializeAsync call
               
@@ -149,15 +152,13 @@ namespace BMSBT.Controllers
         }
 
 
-        private string HashPassword(string password)
+        private bool VerifyPassword(User user, string password)
         {
-            using var sha256 = System.Security.Cryptography.SHA256.Create();
-            var bytes = System.Text.Encoding.UTF8.GetBytes(password);
-            var hash = sha256.ComputeHash(bytes);
-            return Convert.ToBase64String(hash);
+            if (string.IsNullOrWhiteSpace(user.PasswordHash))
+                return false;
+            var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+            return result is PasswordVerificationResult.Success or PasswordVerificationResult.SuccessRehashNeeded;
         }
-
-
 
         //2. Important Login Detail
         //Login Method which uses Cookies Detail
@@ -178,10 +179,15 @@ namespace BMSBT.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(string username, string password)
         {
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                ViewBag.Error = "Username and Password are required.";
+                return View();
+            }
+
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
 
-            //  if (user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            if (user != null && user.PasswordHash == password)
+            if (user != null && VerifyPassword(user, password))
             {
                 var operatorSetup = await _context.OperatorsSetups
                     .FirstOrDefaultAsync(o => o.OperatorName == user.Username);

@@ -2,7 +2,9 @@
 @{
     ViewData["Title"] = "AccessDenied";
     Layout = "~/Views/Shared/_LayoutCustomers.cshtml";
+    var accessDeniedMessage = TempData["AccessDeniedMessage"]?.ToString();
 }
 
 <h1>Access Denied</h1>
+<p>@(string.IsNullOrWhiteSpace(accessDeniedMessage) ? "you do no have rights to open the link" : accessDeniedMessage)</p>
 

@@ -86,12 +86,16 @@ namespace BMSBT.Controllers
             ViewBag.LoginTime = HttpContext.Session.GetString("LoginTime");
 
             var projects = GetConfigurationCsvValuesByKey("Projects");
+            var customers = context.CustomersMaintenance
+                .OrderByDescending(c => c.Uid)
+                .ToList()
+                .ToPagedList(1, 20);
 
             var model = new MaintenanceCustomerFilterViewModel
             {
                 Projects = projects,
                 Phases = new List<string>(),
-                Customers = new List<CustomersMaintenance>().ToPagedList(1, 20)
+                Customers = customers
             };
 
             return View(model);
@@ -565,11 +569,16 @@ namespace BMSBT.Controllers
         }
 
         [HttpGet]
-        public IActionResult BillSummary(string? month, string? year)
+        public IActionResult BillSummary(string? month, string? year, string? project, string? phase)
         {
             if (HttpContext.Session.GetString("UserName") == null)
             {
                 return RedirectToAction("Index", "Login");
+            }
+            if (!CurrentUserHasRole("Reports"))
+            {
+                TempData["AccessDeniedMessage"] = "you do no have rights to open the link";
+                return RedirectToAction("AccessDenied", "Login");
             }
 
             ViewBag.UserName = HttpContext.Session.GetString("UserName");
@@ -579,11 +588,42 @@ namespace BMSBT.Controllers
             ViewBag.Years = GetYears();
             ViewBag.SelectedMonth = month ?? DateTime.Now.ToString("MMMM");
             ViewBag.SelectedYear = year ?? DateTime.Now.Year.ToString();
+            ViewBag.SelectedProject = project ?? "";
+            ViewBag.SelectedPhase = phase ?? "";
 
             var selectedMonth = ViewBag.SelectedMonth as string;
             var selectedYear = ViewBag.SelectedYear as string;
+            var selectedProject = (ViewBag.SelectedProject as string)?.Trim();
+            var selectedPhase = (ViewBag.SelectedPhase as string)?.Trim();
 
-            var customerSummaryByProject = context.CustomersMaintenance
+            var projectList = context.CustomersMaintenance
+                .Where(c => !string.IsNullOrWhiteSpace(c.Project))
+                .Select(c => c.Project!.Trim())
+                .Distinct()
+                .OrderBy(p => p)
+                .ToList();
+            ViewBag.Projects = projectList;
+
+            var phaseQuery = context.CustomersMaintenance
+                .Where(c => !string.IsNullOrWhiteSpace(c.SubProject));
+            if (!string.IsNullOrWhiteSpace(selectedProject))
+            {
+                phaseQuery = phaseQuery.Where(c => c.Project != null && c.Project.Trim() == selectedProject);
+            }
+            var phaseList = phaseQuery
+                .Select(c => c.SubProject!.Trim())
+                .Distinct()
+                .OrderBy(p => p)
+                .ToList();
+            ViewBag.Phases = phaseList;
+
+            var customersFiltered = context.CustomersMaintenance.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(selectedProject))
+                customersFiltered = customersFiltered.Where(c => c.Project != null && c.Project.Trim() == selectedProject);
+            if (!string.IsNullOrWhiteSpace(selectedPhase))
+                customersFiltered = customersFiltered.Where(c => c.SubProject != null && c.SubProject.Trim() == selectedPhase);
+
+            var customerSummaryByProject = customersFiltered
                 .GroupBy(c => c.Project)
                 .Select(g => new { Project = g.Key ?? "", Customers = g.Count() })
                 .OrderBy(x => x.Project)
@@ -595,6 +635,8 @@ namespace BMSBT.Controllers
                 var billsQuery = from mb in context.MaintenanceBills
                                  join cm in context.CustomersMaintenance on mb.Btno equals cm.BTNo
                                  where mb.BillingMonth == selectedMonth && mb.BillingYear == selectedYear
+                                 where string.IsNullOrWhiteSpace(selectedProject) || (cm.Project != null && cm.Project.Trim() == selectedProject)
+                                 where string.IsNullOrWhiteSpace(selectedPhase) || (cm.SubProject != null && cm.SubProject.Trim() == selectedPhase)
                                  group mb by cm.Project into g
                                  select new { Project = g.Key ?? "", Count = g.Count() };
                 foreach (var x in billsQuery)
@@ -616,9 +658,21 @@ namespace BMSBT.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetBillSummaryData(string month, string year)
+        public IActionResult GetBillSummaryData(string month, string year, string? project, string? phase)
         {
-            var customerSummaryByProject = context.CustomersMaintenance
+            if (!CurrentUserHasRole("Reports"))
+                return Json(new List<BillsSummaryCombinedViewModel>());
+
+            var selectedProject = (project ?? "").Trim();
+            var selectedPhase = (phase ?? "").Trim();
+
+            var customersFiltered = context.CustomersMaintenance.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(selectedProject))
+                customersFiltered = customersFiltered.Where(c => c.Project != null && c.Project.Trim() == selectedProject);
+            if (!string.IsNullOrWhiteSpace(selectedPhase))
+                customersFiltered = customersFiltered.Where(c => c.SubProject != null && c.SubProject.Trim() == selectedPhase);
+
+            var customerSummaryByProject = customersFiltered
                 .GroupBy(c => c.Project)
                 .Select(g => new { Project = g.Key ?? "", Customers = g.Count() })
                 .OrderBy(x => x.Project)
@@ -630,6 +684,8 @@ namespace BMSBT.Controllers
                 var billsQuery = from mb in context.MaintenanceBills
                                  join cm in context.CustomersMaintenance on mb.Btno equals cm.BTNo
                                  where mb.BillingMonth == month && mb.BillingYear == year
+                                 where string.IsNullOrWhiteSpace(selectedProject) || (cm.Project != null && cm.Project.Trim() == selectedProject)
+                                 where string.IsNullOrWhiteSpace(selectedPhase) || (cm.SubProject != null && cm.SubProject.Trim() == selectedPhase)
                                  group mb by cm.Project into g
                                  select new { Project = g.Key ?? "", Count = g.Count() };
                 foreach (var x in billsQuery)
@@ -654,6 +710,17 @@ namespace BMSBT.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        private bool CurrentUserHasRole(string roleName)
+        {
+            var rolesText = HttpContext.Session.GetString("Role");
+            if (string.IsNullOrWhiteSpace(rolesText))
+                return false;
+
+            return rolesText
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Any(r => string.Equals(r.Trim(), roleName, StringComparison.OrdinalIgnoreCase));
         }
 
 

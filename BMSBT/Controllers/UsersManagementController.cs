@@ -1,6 +1,7 @@
 ﻿using BMSBT.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using System.Diagnostics;
 using X.PagedList.Extensions;
 
@@ -16,6 +17,25 @@ namespace BMSBT.Controllers
             _logger = logger;
             this.context = context;
             _passwordHasher = new PasswordHasher<User>();
+        }
+
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            var sessionUser = HttpContext.Session.GetString("UserName");
+            if (string.IsNullOrWhiteSpace(sessionUser))
+            {
+                context.Result = RedirectToAction("Index", "Login");
+                return;
+            }
+
+            if (!HasUserSetupRole())
+            {
+                TempData["AccessDeniedMessage"] = "you do no have rights to open the link";
+                context.Result = RedirectToAction("AccessDenied", "Login");
+                return;
+            }
+
+            base.OnActionExecuting(context);
         }
 
 
@@ -81,6 +101,7 @@ namespace BMSBT.Controllers
         [HttpGet]
         public IActionResult CreateUser()
         {
+            ViewBag.AvailableRoles = GetConfiguredRoles();
             return View();
         }
 
@@ -116,6 +137,7 @@ namespace BMSBT.Controllers
 
             // If Role is not null, convert it into a list for multi-selection
             ViewBag.SelectedRoles = user.Role?.Split(',') ?? new string[] { };
+            ViewBag.AvailableRoles = GetConfiguredRoles();
 
             return View(user);
         }
@@ -144,8 +166,57 @@ namespace BMSBT.Controllers
             return RedirectToAction("Index");
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteUser(int id)
+        {
+            var sessionUser = HttpContext.Session.GetString("UserName");
+            var user = context.Users.FirstOrDefault(u => u.Uid == id);
+            if (user == null)
+            {
+                TempData["Error"] = "User not found.";
+                return RedirectToAction("Index");
+            }
 
+            if (!string.IsNullOrEmpty(sessionUser) &&
+                string.Equals(user.Username, sessionUser, StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = "You cannot delete your own account while signed in.";
+                return RedirectToAction("Index");
+            }
 
+            context.Users.Remove(user);
+            context.SaveChanges();
+            TempData["Message"] = "User deleted successfully.";
+            return RedirectToAction("Index");
+        }
 
+        private List<string> GetConfiguredRoles()
+        {
+            return context.Configurations
+                .Where(c => c.ConfigKey != null
+                            && c.ConfigKey.Trim().ToLower() == "roles"
+                            && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .AsEnumerable()
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(v => v)
+                .ToList();
+        }
+
+        private bool HasUserSetupRole()
+        {
+            var rolesText = HttpContext.Session.GetString("Role");
+            if (string.IsNullOrWhiteSpace(rolesText))
+                return false;
+
+            return rolesText
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(r => r.Trim())
+                .Any(r => string.Equals(r, "UserSetup", StringComparison.OrdinalIgnoreCase));
+        }
     }
 }

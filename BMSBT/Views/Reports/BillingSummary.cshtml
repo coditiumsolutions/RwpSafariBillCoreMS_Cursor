@@ -1,0 +1,84 @@
+@model List<BMSBT.ViewModels.BillsSummaryCombinedViewModel>
+@{
+    ViewData["Title"] = "Billing Summary";
+    Layout = "~/Views/Shared/_LayoutReports.cshtml";
+    var months = ViewBag.Months as List<string> ?? new List<string>();
+    var years = ViewBag.Years as List<string> ?? new List<string>();
+    var projects = ViewBag.Projects as List<string> ?? new List<string>();
+    var phases = ViewBag.Phases as List<string> ?? new List<string>();
+    var selectedMonth = ViewBag.SelectedMonth as string ?? "";
+    var selectedYear = ViewBag.SelectedYear as string ?? "";
+    var selectedProject = ViewBag.SelectedProject as string ?? "";
+    var selectedPhase = ViewBag.SelectedPhase as string ?? "";
+}
+
+<div class="card mb-3">
+    <div class="card-header"><strong>Billing Summary Filters</strong></div>
+    <div class="card-body">
+        <form method="get" asp-controller="Reports" asp-action="BillingSummary">
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <label>Billing Month</label>
+                    <select name="month" class="form-control">
+                        @foreach (var m in months) { <option value="@m" selected="@(m == selectedMonth)">@m</option> }
+                    </select>
+                </div>
+                <div class="form-group col-md-2">
+                    <label>Billing Year</label>
+                    <select name="year" class="form-control">
+                        @foreach (var y in years) { <option value="@y" selected="@(y == selectedYear)">@y</option> }
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Project</label>
+                    <select name="project" class="form-control">
+                        <option value="">-- All Projects --</option>
+                        @foreach (var p in projects) { <option value="@p" selected="@(p == selectedProject)">@p</option> }
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Phase</label>
+                    <select name="phase" class="form-control">
+                        <option value="">-- All Phases --</option>
+                        @foreach (var p in phases) { <option value="@p" selected="@(p == selectedPhase)">@p</option> }
+                    </select>
+                </div>
+                <div class="form-group col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Show</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><strong>Billing Summary By Project</strong></div>
+    <div class="card-body table-responsive">
+        <table class="table table-bordered table-sm">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Project</th>
+                    <th class="text-right">Customers</th>
+                    <th class="text-right">Bills Generated</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var row in Model)
+                    {
+                        <tr>
+                            <td>@row.Project</td>
+                            <td class="text-right">@row.Customers</td>
+                            <td class="text-right">@row.BillsGenerated</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="3" class="text-center text-muted">No data found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
