@@ -178,25 +178,108 @@ namespace BMSBT.Controllers
                                 where string.IsNullOrWhiteSpace(selectedProject) || (cm.Project != null && cm.Project.Trim() == selectedProject)
                                 where string.IsNullOrWhiteSpace(selectedPhase) || (cm.SubProject != null && cm.SubProject.Trim() == selectedPhase)
                                 group mb by new { Project = cm.Project ?? "", Phase = cm.SubProject ?? "" } into g
-                                select new { g.Key.Project, g.Key.Phase, Bills = g.Count() })
-                                .ToDictionary(x => $"{x.Project}|{x.Phase}", x => x.Bills, StringComparer.OrdinalIgnoreCase);
+                                select new
+                                {
+                                    g.Key.Project,
+                                    g.Key.Phase,
+                                    Bills = g.Count(),
+                                    BillAmount = g.Sum(x => (decimal?)x.BillAmountInDueDate) ?? 0m
+                                })
+                                .ToDictionary(
+                                    x => $"{x.Project}|{x.Phase}",
+                                    x => new { x.Bills, x.BillAmount },
+                                    StringComparer.OrdinalIgnoreCase);
 
             var model = groupedCustomers
                 .Select(x =>
                 {
                     var key = $"{x.Project}|{x.Phase}";
-                    groupedBills.TryGetValue(key, out var billsCount);
+                    groupedBills.TryGetValue(key, out var billsData);
                     return new CustomersSummaryRowViewModel
                     {
                         Project = x.Project,
                         Phase = x.Phase,
                         Customers = x.Customers,
-                        BillsGenerated = billsCount
+                        BillsGenerated = billsData?.Bills ?? 0,
+                        BillAmountGenerated = billsData?.BillAmount ?? 0m
                     };
                 })
                 .ToList();
 
             return View(model);
+        }
+
+        [HttpGet]
+        public IActionResult Users()
+        {
+            var users = _dbContext.Users
+                .AsNoTracking()
+                .OrderBy(u => u.Username)
+                .ToList();
+
+            ViewBag.TotalUsers = users.Count;
+            return View(users);
+        }
+
+        [HttpGet]
+        public IActionResult Collections(string? month, string? year, string? project, string? phase)
+        {
+            var selectedMonth = string.IsNullOrWhiteSpace(month) ? DateTime.Now.ToString("MMMM") : month.Trim();
+            var selectedYear = string.IsNullOrWhiteSpace(year) ? DateTime.Now.Year.ToString() : year.Trim();
+            var selectedProject = string.IsNullOrWhiteSpace(project) ? string.Empty : project.Trim();
+            var selectedPhase = string.IsNullOrWhiteSpace(phase) ? string.Empty : phase.Trim();
+
+            ViewBag.Months = GetMonthList();
+            ViewBag.Years = GetYearList();
+            ViewBag.Projects = GetProjectList();
+            ViewBag.Phases = GetPhaseList(selectedProject);
+            ViewBag.SelectedMonth = selectedMonth;
+            ViewBag.SelectedYear = selectedYear;
+            ViewBag.SelectedProject = selectedProject;
+            ViewBag.SelectedPhase = selectedPhase;
+
+            var query = from mb in _dbContext.MaintenanceBills.AsNoTracking()
+                        join cm in _dbContext.CustomersMaintenance.AsNoTracking() on mb.Btno equals cm.BTNo
+                        where mb.BillingMonth == selectedMonth && mb.BillingYear == selectedYear
+                        where string.IsNullOrWhiteSpace(selectedProject) || (cm.Project != null && cm.Project.Trim() == selectedProject)
+                        where string.IsNullOrWhiteSpace(selectedPhase) || (cm.SubProject != null && cm.SubProject.Trim() == selectedPhase)
+                        select new
+                        {
+                            Status = mb.PaymentStatus,
+                            AmountGenerated = (decimal?)mb.BillAmountInDueDate ?? 0m,
+                            AmountPaid = (decimal?)mb.AmountPaid ?? 0m
+                        };
+
+            var model = query
+                .AsEnumerable()
+                .GroupBy(x => NormalizeCollectionStatus(x.Status))
+                .Select(g => new CollectionsSummaryRowViewModel
+                {
+                    Status = g.Key,
+                    TotalBillsGenerated = g.Count(),
+                    TotalAmountGenerated = g.Sum(x => x.AmountGenerated),
+                    TotalAmountCollected = g.Sum(x => x.AmountPaid)
+                })
+                .OrderBy(x => x.Status)
+                .ToList();
+
+            return View(model);
+        }
+
+        private static string NormalizeCollectionStatus(string? status)
+        {
+            var s = (status ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(s))
+                return "Unpaid";
+            if (s == "paid")
+                return "Paid";
+            if (s == "paid with surcharge" || s == "paidwithsurcharge")
+                return "Paid with surcharge";
+            if (s == "partially paid" || s == "paritally paid")
+                return "Partially Paid";
+            if (s == "unpaid")
+                return "Unpaid";
+            return status!.Trim();
         }
 
         private bool CurrentUserHasRole(string roleName)

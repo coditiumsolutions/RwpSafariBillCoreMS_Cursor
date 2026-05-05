@@ -1,6 +1,6 @@
-@model List<BMSBT.ViewModels.CustomersSummaryRowViewModel>
+@model List<BMSBT.ViewModels.CollectionsSummaryRowViewModel>
 @{
-    ViewData["Title"] = "Customers Summary";
+    ViewData["Title"] = "Collections";
     Layout = "~/Views/Shared/_LayoutReports.cshtml";
     var months = ViewBag.Months as List<string> ?? new List<string>();
     var years = ViewBag.Years as List<string> ?? new List<string>();
@@ -10,15 +10,16 @@
     var selectedYear = ViewBag.SelectedYear as string ?? "";
     var selectedProject = ViewBag.SelectedProject as string ?? "";
     var selectedPhase = ViewBag.SelectedPhase as string ?? "";
-    var totalCustomers = Model.Sum(x => x.Customers);
-    var totalBillsGenerated = Model.Sum(x => x.BillsGenerated);
-    var totalBillAmountGenerated = Model.Sum(x => x.BillAmountGenerated);
+
+    var totalBills = Model.Sum(x => x.TotalBillsGenerated);
+    var totalGenerated = Model.Sum(x => x.TotalAmountGenerated);
+    var totalCollected = Model.Sum(x => x.TotalAmountCollected);
 }
 
 <div class="card mb-3">
-    <div class="card-header"><strong>Customers Summary Filters</strong></div>
+    <div class="card-header"><strong>Collections Filters</strong></div>
     <div class="card-body">
-        <form method="get" asp-controller="Reports" asp-action="CustomersSummary">
+        <form method="get" asp-controller="Reports" asp-action="Collections">
             <div class="form-row">
                 <div class="form-group col-md-2">
                     <label>Billing Month</label>
@@ -55,16 +56,15 @@
 </div>
 
 <div class="card">
-    <div class="card-header"><strong>Customers Summary By Project / Phase</strong></div>
+    <div class="card-header"><strong>Collections Summary By Status</strong></div>
     <div class="card-body table-responsive">
         <table class="table table-bordered table-sm">
             <thead class="thead-dark">
                 <tr>
-                    <th>Project</th>
-                    <th>Phase</th>
-                    <th class="text-right">Customers</th>
-                    <th class="text-right">Bills Generated (@selectedMonth @selectedYear)</th>
-                    <th class="text-right">Bill Amount Generated</th>
+                    <th>Status</th>
+                    <th class="text-right">Total Bills Generated</th>
+                    <th class="text-right">Total Amount Generated</th>
+                    <th class="text-right">Total Amount Collected</th>
                 </tr>
             </thead>
             <tbody>
@@ -73,27 +73,26 @@
                     foreach (var row in Model)
                     {
                         <tr>
-                            <td>@row.Project</td>
-                            <td>@row.Phase</td>
-                            <td class="text-right">@row.Customers</td>
-                            <td class="text-right">@row.BillsGenerated</td>
-                            <td class="text-right">@row.BillAmountGenerated.ToString("N0")</td>
+                            <td>@row.Status</td>
+                            <td class="text-right">@row.TotalBillsGenerated</td>
+                            <td class="text-right">@row.TotalAmountGenerated.ToString("N0")</td>
+                            <td class="text-right">@row.TotalAmountCollected.ToString("N0")</td>
                         </tr>
                     }
                 }
                 else
                 {
-                    <tr><td colspan="5" class="text-center text-muted">No data found.</td></tr>
+                    <tr><td colspan="4" class="text-center text-muted">No data found.</td></tr>
                 }
             </tbody>
             @if (Model.Any())
             {
                 <tfoot>
                     <tr class="font-weight-bold">
-                        <td colspan="2" class="text-right">Total</td>
-                        <td class="text-right">@totalCustomers</td>
-                        <td class="text-right">@totalBillsGenerated</td>
-                        <td class="text-right">@totalBillAmountGenerated.ToString("N0")</td>
+                        <td class="text-right">Total</td>
+                        <td class="text-right">@totalBills</td>
+                        <td class="text-right">@totalGenerated.ToString("N0")</td>
+                        <td class="text-right">@totalCollected.ToString("N0")</td>
                     </tr>
                 </tfoot>
             }

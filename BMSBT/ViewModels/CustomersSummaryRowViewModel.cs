@@ -6,5 +6,6 @@ namespace BMSBT.ViewModels
         public string Phase { get; set; } = "";
         public int Customers { get; set; }
         public int BillsGenerated { get; set; }
+        public decimal BillAmountGenerated { get; set; }
     }
 }

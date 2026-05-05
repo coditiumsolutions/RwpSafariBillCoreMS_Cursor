@@ -1,0 +1,46 @@
+@model List<BMSBT.Models.User>
+@{
+    ViewData["Title"] = "Users Report";
+    Layout = "~/Views/Shared/_LayoutReports.cshtml";
+    var totalUsers = ViewBag.TotalUsers is int c ? c : Model.Count;
+}
+
+<div class="card mb-3">
+    <div class="card-header">
+        <strong>Users Report</strong>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info mb-3">
+            Total users in this project: <strong>@totalUsers</strong>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+                <thead class="thead-dark">
+                    <tr>
+                        <th style="width:55%;">Username</th>
+                        <th style="width:45%;">Roles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var user in Model)
+                        {
+                            <tr>
+                                <td>@user.Username</td>
+                                <td>@(string.IsNullOrWhiteSpace(user.Role) ? "-" : user.Role)</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">No users found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
