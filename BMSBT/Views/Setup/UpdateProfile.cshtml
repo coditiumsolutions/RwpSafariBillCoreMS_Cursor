@@ -1,0 +1,46 @@
+@model BMSBT.ViewModels.UpdateProfileViewModel
+
+@{
+    ViewData["Title"] = "Update Profile";
+    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
+}
+
+<div class="card shadow-sm">
+    <div class="card-header text-white" style="background-color:#101f63;">
+        <h5 class="mb-0">Update Profile</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="UpdateProfile" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="form-group">
+                <label asp-for="CurrentPassword">Current Password</label>
+                <input asp-for="CurrentPassword" type="password" class="form-control" />
+                <span asp-validation-for="CurrentPassword" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="NewPassword">New Password</label>
+                <input asp-for="NewPassword" type="password" class="form-control" />
+                <span asp-validation-for="NewPassword" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ConfirmPassword">Confirm New Password</label>
+                <input asp-for="ConfirmPassword" type="password" class="form-control" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+            </div>
+
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save mr-1"></i>Save
+            </button>
+            <a asp-action="Profile" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

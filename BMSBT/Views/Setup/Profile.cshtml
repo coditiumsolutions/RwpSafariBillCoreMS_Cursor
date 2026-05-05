@@ -1,0 +1,49 @@
+@model BMSBT.ViewModels.ProfileViewModel
+
+@{
+    ViewData["Title"] = "Profile";
+    Layout = "~/Views/Shared/_LayoutSetup.cshtml";
+}
+
+<div class="card shadow-sm">
+    <div class="card-header text-white" style="background-color:#101f63;">
+        <h5 class="mb-0">Profile</h5>
+    </div>
+    <div class="card-body">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+        }
+
+        <table class="table table-bordered table-sm">
+            <tr>
+                <th style="width:220px;">User ID</th>
+                <td>@Model.UserId</td>
+            </tr>
+            <tr>
+                <th>Username</th>
+                <td>@Model.Username</td>
+            </tr>
+            <tr>
+                <th>Employee ID</th>
+                <td>@(string.IsNullOrWhiteSpace(Model.EmployeeId) ? "-" : Model.EmployeeId)</td>
+            </tr>
+            <tr>
+                <th>Role</th>
+                <td>@(string.IsNullOrWhiteSpace(Model.Role) ? "-" : Model.Role)</td>
+            </tr>
+            <tr>
+                <th>Last Login Time</th>
+                <td>@(string.IsNullOrWhiteSpace(Model.LoginTime) ? "-" : Model.LoginTime)</td>
+            </tr>
+        </table>
+
+        <a asp-controller="Setup" asp-action="UpdateProfile" class="btn btn-primary">
+            <i class="fas fa-key mr-1"></i>Update Profile
+        </a>
+    </div>
+</div>
