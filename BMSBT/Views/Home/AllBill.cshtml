@@ -278,6 +278,13 @@
         </form>
 
         <div class="cm-grid-container">
+            @if (TempData["AllBillMessage"] != null)
+            {
+                <div class="alert alert-info">
+                    @TempData["AllBillMessage"]
+                </div>
+            }
+
             @if (incompleteFilterSelection)
             {
                 <div class="alert alert-warning">
@@ -313,6 +320,22 @@
                                         <td>@item.PaymentStatus</td>
                                         <td class="no-print">
                                             <a asp-action="Print" asp-controller="MaintenanceNew" asp-route-id="@item.Uid" asp-route-project="@selectedProject" target="_blank" class="btn btn-sm btn-outline-primary">Print</a>
+                                            <form asp-action="DeleteBill" asp-controller="Home" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.Uid" />
+                                                <input type="hidden" name="project" value="@selectedProject" />
+                                                <input type="hidden" name="phase" value="@selectedPhase" />
+                                                <input type="hidden" name="subProject" value="@selectedPhase" />
+                                                <input type="hidden" name="month" value="@selectedMonth" />
+                                                <input type="hidden" name="year" value="@selectedYear" />
+                                                <input type="hidden" name="custNoOrName" value="@custNoOrName" />
+                                                <input type="hidden" name="page" value="@(Model?.PageNumber ?? 1)" />
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        onclick="return confirm('Delete this bill permanently? This action cannot be undone.');">
+                                                    Delete
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 }

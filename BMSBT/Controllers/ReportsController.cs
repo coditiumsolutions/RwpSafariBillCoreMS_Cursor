@@ -266,6 +266,102 @@ namespace BMSBT.Controllers
             return View(model);
         }
 
+        [HttpGet]
+        public IActionResult Recovery(string? month, string? year, string? project, string? phase)
+        {
+            var selectedMonth = string.IsNullOrWhiteSpace(month) ? DateTime.Now.ToString("MMMM") : month.Trim();
+            var selectedYear = string.IsNullOrWhiteSpace(year) ? DateTime.Now.Year.ToString() : year.Trim();
+            var selectedProject = string.IsNullOrWhiteSpace(project) ? string.Empty : project.Trim();
+            var selectedPhase = string.IsNullOrWhiteSpace(phase) ? string.Empty : phase.Trim();
+
+            ViewBag.Months = GetMonthList();
+            ViewBag.Years = GetYearList();
+            ViewBag.Projects = GetProjectList();
+            ViewBag.Phases = GetPhaseList(selectedProject);
+            ViewBag.SelectedMonth = selectedMonth;
+            ViewBag.SelectedYear = selectedYear;
+            ViewBag.SelectedProject = selectedProject;
+            ViewBag.SelectedPhase = selectedPhase;
+
+            var phaseList = string.IsNullOrWhiteSpace(selectedPhase)
+                ? GetPhaseList(selectedProject)
+                : new List<string> { selectedPhase };
+
+            var billRows = (from mb in _dbContext.MaintenanceBills.AsNoTracking()
+                            join cm in _dbContext.CustomersMaintenance.AsNoTracking() on mb.Btno equals cm.BTNo
+                            where mb.BillingMonth == selectedMonth && mb.BillingYear == selectedYear
+                            where string.IsNullOrWhiteSpace(selectedProject) || (cm.Project != null && cm.Project.Trim() == selectedProject)
+                            where string.IsNullOrWhiteSpace(selectedPhase) || (cm.SubProject != null && cm.SubProject.Trim() == selectedPhase)
+                            select new
+                            {
+                                Phase = (cm.SubProject ?? "").Trim(),
+                                mb.PaymentStatus,
+                                mb.BillAmountInDueDate,
+                                mb.AmountPaid,
+                                mb.MaintCharges,
+                                mb.MiscCharges,
+                                mb.WaterCharges,
+                                mb.RentAmount
+                            }).ToList();
+
+            var groupedData = billRows
+                .GroupBy(x => x.Phase)
+                .Select(g => new RecoverySummaryViewModel
+                {
+                    Phase = g.Key,
+                    TotalBills = g.Count(),
+                    PaidBills = g.Count(b => b.PaymentStatus != null && b.PaymentStatus.Trim().ToLower() == "paid"),
+                    UnpaidBills = g.Count(b => b.PaymentStatus == null || b.PaymentStatus.Trim().ToLower() != "paid"),
+                    MaintenanceCharges = g.Sum(b => (decimal?)b.MaintCharges) ?? 0m,
+                    MiscCharges = g.Sum(b => (decimal?)b.MiscCharges) ?? 0m,
+                    MiscPaid = g.Sum(b =>
+                    {
+                        var misc = (decimal?)b.MiscCharges ?? 0m;
+                        var totalBill = (decimal?)b.BillAmountInDueDate ?? 0m;
+                        var amountPaid = (decimal?)b.AmountPaid ?? 0m;
+                        if (misc <= 0m || amountPaid <= 0m || totalBill <= 0m)
+                        {
+                            return 0m;
+                        }
+
+                        var paidRatio = amountPaid / totalBill;
+                        if (paidRatio > 1m) paidRatio = 1m;
+                        if (paidRatio < 0m) paidRatio = 0m;
+                        return misc * paidRatio;
+                    }),
+                    WaterCharges = g.Sum(b => (decimal?)b.WaterCharges) ?? 0m,
+                    RentCharges = g.Sum(b => (decimal?)b.RentAmount) ?? 0m
+                }).ToList();
+
+            var groupedLookup = groupedData.ToDictionary(x => x.Phase, StringComparer.OrdinalIgnoreCase);
+            var model = phaseList
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .Select(phaseName =>
+                {
+                    if (groupedLookup.TryGetValue(phaseName, out var row))
+                    {
+                        return row;
+                    }
+
+                    return new RecoverySummaryViewModel
+                    {
+                        Phase = phaseName,
+                        TotalBills = 0,
+                        PaidBills = 0,
+                        UnpaidBills = 0,
+                        MaintenanceCharges = 0m,
+                        MiscCharges = 0m,
+                        MiscPaid = 0m,
+                        WaterCharges = 0m,
+                        RentCharges = 0m
+                    };
+                })
+                .ToList();
+
+            return View(model);
+        }
+
         private static string NormalizeCollectionStatus(string? status)
         {
             var s = (status ?? "").Trim().ToLowerInvariant();

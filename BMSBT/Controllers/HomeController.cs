@@ -304,6 +304,65 @@ namespace BMSBT.Controllers
             return View(model);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteBill(int id, string? project, string? phase, string? subProject, string? month, string? year, string? custNoOrName, int? page)
+        {
+            if (HttpContext.Session.GetString("UserName") == null)
+            {
+                return RedirectToAction("Index", "Login");
+            }
+
+            var bill = context.MaintenanceBills.FirstOrDefault(x => x.Uid == id);
+            if (bill == null)
+            {
+                TempData["AllBillMessage"] = "Bill record was not found.";
+                return RedirectToAction(nameof(AllBill), new { project, phase, subProject, month, year, custNoOrName, page });
+            }
+
+            if (string.IsNullOrWhiteSpace(bill.Btno))
+            {
+                TempData["AllBillMessage"] = "BTNo is empty and cannot be marked as deleted.";
+                return RedirectToAction(nameof(AllBill), new { project, phase, subProject, month, year, custNoOrName, page });
+            }
+
+            var deletedBy = HttpContext.Session.GetString("UserName") ?? "Unknown User";
+            var deletedAt = DateTime.Now;
+            var deletionHistoryText = $"Bill deleted by {deletedBy} on {deletedAt:dd-MMM-yyyy hh:mm tt}";
+            var oldDataPayload = new
+            {
+                DeleteHistory = deletionHistoryText,
+                bill.Uid,
+                BTNo = bill.Btno,
+                bill.CustomerName,
+                bill.BillingMonth,
+                bill.BillingYear,
+                bill.BillAmountInDueDate,
+                ExistingHistory = bill.History
+            };
+
+            var auditLog = new AuditLog
+            {
+                TableName = "MaintenanceBills",
+                Operation = "Delete",
+                RecordId = bill.Uid.ToString(),
+                OldData = JsonSerializer.Serialize(oldDataPayload),
+                NewData = null,
+                ModuleName = "AllBill",
+                ChangedBy = deletedBy,
+                ChangedAt = deletedAt,
+                IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+            };
+
+            context.AuditLogs.Add(auditLog);
+            context.MaintenanceBills.Remove(bill);
+            context.SaveChanges();
+
+            TempData["AllBillMessage"] = $"Bill BTNo {bill.Btno} deleted permanently.";
+
+            return RedirectToAction(nameof(AllBill), new { project, phase, subProject, month, year, custNoOrName, page });
+        }
+
         [HttpGet]
         public IActionResult GenerateBill(string selectedProject, string selectedPhaseName, string selectedPhaseNumber, string selectedSubProject, string btNoSearch)
         {
