@@ -91,6 +91,27 @@ namespace BMSBT.Controllers
                 .ToList();
         }
 
+        private List<string> GetConfigurationCsvValuesByKey(string configKey)
+        {
+            var rawValues = _dbContext.Configurations
+                .AsNoTracking()
+                .Where(c => c.ConfigKey != null && c.ConfigValue != null)
+                .AsEnumerable()
+                .Where(c => c.ConfigKey != null
+                            && c.ConfigKey.Trim().Equals(configKey, StringComparison.OrdinalIgnoreCase)
+                            && !string.IsNullOrWhiteSpace(c.ConfigValue))
+                .Select(c => c.ConfigValue!)
+                .ToList();
+
+            return rawValues
+                .SelectMany(v => v.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .Select(v => v.Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(v => v, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
         [HttpGet]
         public IActionResult BillingSummary(string? month, string? year, string? project, string? phase)
         {
@@ -359,6 +380,52 @@ namespace BMSBT.Controllers
                 })
                 .ToList();
 
+            return View(model);
+        }
+
+        [HttpGet]
+        public IActionResult BillsHistory(string? logType, string? billingMonth, string? billingYear)
+        {
+            var selectedLogType = string.IsNullOrWhiteSpace(logType) ? string.Empty : logType.Trim();
+            var selectedBillingMonth = string.IsNullOrWhiteSpace(billingMonth) ? string.Empty : billingMonth.Trim();
+            var selectedBillingYear = string.IsNullOrWhiteSpace(billingYear) ? string.Empty : billingYear.Trim();
+            var logTypes = GetConfigurationCsvValuesByKey("LogTypes");
+
+            ViewBag.LogTypes = logTypes;
+            ViewBag.SelectedLogType = selectedLogType;
+            ViewBag.Months = GetMonthList();
+            ViewBag.Years = GetYearList();
+            ViewBag.SelectedBillingMonth = selectedBillingMonth;
+            ViewBag.SelectedBillingYear = selectedBillingYear;
+
+            var query = _dbContext.AuditLogs
+                .AsNoTracking()
+                .OrderByDescending(a => a.ChangedAt)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(selectedLogType))
+            {
+                query = query.Where(a =>
+                    (a.Operation != null && a.Operation.Trim() == selectedLogType) ||
+                    (a.TableName != null && a.TableName.Trim() == selectedLogType) ||
+                    (a.ModuleName != null && a.ModuleName.Trim() == selectedLogType));
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedBillingMonth))
+            {
+                if (DateTime.TryParseExact(selectedBillingMonth, "MMMM", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var monthDate))
+                {
+                    var monthNumber = monthDate.Month;
+                    query = query.Where(a => a.ChangedAt.Month == monthNumber);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedBillingYear) && int.TryParse(selectedBillingYear, out var yearNumber))
+            {
+                query = query.Where(a => a.ChangedAt.Year == yearNumber);
+            }
+
+            var model = query.Take(500).ToList();
             return View(model);
         }
 

@@ -10,6 +10,14 @@
     var selectedYear = ViewBag.SelectedYear as string ?? "";
     var selectedProject = ViewBag.SelectedProject as string ?? "";
     var selectedPhase = ViewBag.SelectedPhase as string ?? "";
+    var totalBills = Model?.Sum(x => x.TotalBills) ?? 0;
+    var paidBills = Model?.Sum(x => x.PaidBills) ?? 0;
+    var unpaidBills = Model?.Sum(x => x.UnpaidBills) ?? 0;
+    var maintenanceCharges = Model?.Sum(x => x.MaintenanceCharges) ?? 0m;
+    var miscCharges = Model?.Sum(x => x.MiscCharges) ?? 0m;
+    var miscPaid = Model?.Sum(x => x.MiscPaid) ?? 0m;
+    var waterCharges = Model?.Sum(x => x.WaterCharges) ?? 0m;
+    var rentCharges = Model?.Sum(x => x.RentCharges) ?? 0m;
 }
 
 <div class="card mb-3">
@@ -105,6 +113,19 @@
                     </tr>
                 }
             </tbody>
+            <tfoot>
+                <tr class="font-weight-bold">
+                    <td>Total</td>
+                    <td class="text-right">@totalBills</td>
+                    <td class="text-right">@paidBills</td>
+                    <td class="text-right">@unpaidBills</td>
+                    <td class="text-right">@maintenanceCharges.ToString("N0")</td>
+                    <td class="text-right">@miscCharges.ToString("N0")</td>
+                    <td class="text-right">@miscPaid.ToString("N0")</td>
+                    <td class="text-right">@waterCharges.ToString("N0")</td>
+                    <td class="text-right">@rentCharges.ToString("N0")</td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 </div>

@@ -10,6 +10,8 @@
     var selectedYear = ViewBag.SelectedYear as string ?? "";
     var selectedProject = ViewBag.SelectedProject as string ?? "";
     var selectedPhase = ViewBag.SelectedPhase as string ?? "";
+    var totalCustomers = Model?.Sum(x => x.Customers) ?? 0;
+    var totalBillsGenerated = Model?.Sum(x => x.BillsGenerated) ?? 0;
 }
 
 <div class="card mb-3">
@@ -79,6 +81,13 @@
                     <tr><td colspan="3" class="text-center text-muted">No data found.</td></tr>
                 }
             </tbody>
+            <tfoot>
+                <tr class="font-weight-bold">
+                    <td>Total</td>
+                    <td class="text-right">@totalCustomers</td>
+                    <td class="text-right">@totalBillsGenerated</td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 </div>

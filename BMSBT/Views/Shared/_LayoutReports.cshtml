@@ -114,9 +114,15 @@
                 <ul class="nav flex-column">
 
                     <li>
-                        <a asp-controller="Reports" asp-action="BillingSummary">
-                            <i class='fas fa-chart-bar' style="color: yellowgreen; font-size: 14px;"></i>
-                            Billing
+                        <a asp-controller="Reports" asp-action="Collections">
+                            <i class='fas fa-coins' style="color: yellowgreen; font-size: 14px;"></i>
+                            Collections
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Reports" asp-action="Recovery">
+                            <i class='fas fa-chart-line' style="color: yellowgreen; font-size: 14px;"></i>
+                            Recovery
                         </a>
                     </li>
                     <li>
@@ -126,21 +132,21 @@
                         </a>
                     </li>
                     <li>
+                        <a asp-controller="Reports" asp-action="BillingSummary">
+                            <i class='fas fa-chart-bar' style="color: yellowgreen; font-size: 14px;"></i>
+                            Billing
+                        </a>
+                    </li>
+                    <li>
                         <a asp-controller="Reports" asp-action="Users">
                             <i class='fas fa-users' style="color: yellowgreen; font-size: 14px;"></i>
                             Users
                         </a>
                     </li>
                     <li>
-                        <a asp-controller="Reports" asp-action="Collections">
-                            <i class='fas fa-coins' style="color: yellowgreen; font-size: 14px;"></i>
-                            Collections
-                        </a>
-                    </li>
-                    <li>
-                        <a asp-controller="Reports" asp-action="Recovery">
-                            <i class='fas fa-file-invoice-dollar' style="color: yellowgreen; font-size: 14px;"></i>
-                            Recovery
+                        <a asp-controller="Reports" asp-action="BillsHistory">
+                            <i class='fas fa-history' style="color: yellowgreen; font-size: 14px;"></i>
+                            Bills History
                         </a>
                     </li>
 

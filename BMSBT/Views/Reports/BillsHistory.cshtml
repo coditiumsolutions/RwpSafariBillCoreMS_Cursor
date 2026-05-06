@@ -1,0 +1,265 @@
+@using System.Text.Json
+@model List<BMSBT.Models.AuditLog>
+@{
+    ViewData["Title"] = "Bills History";
+    Layout = "~/Views/Shared/_LayoutReports.cshtml";
+    var logTypes = ViewBag.LogTypes as List<string> ?? new List<string>();
+    var months = ViewBag.Months as List<string> ?? new List<string>();
+    var years = ViewBag.Years as List<string> ?? new List<string>();
+    var selectedLogType = ViewBag.SelectedLogType as string ?? "";
+    var selectedBillingMonth = ViewBag.SelectedBillingMonth as string ?? "";
+    var selectedBillingYear = ViewBag.SelectedBillingYear as string ?? "";
+
+    string ExtractBtNo(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return "-";
+        }
+
+        var text = raw.Trim();
+        if (!(text.StartsWith("{") || text.StartsWith("[")))
+        {
+            return "-";
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(text);
+            string? FindBtNo(JsonElement element)
+            {
+                switch (element.ValueKind)
+                {
+                    case JsonValueKind.Object:
+                        foreach (var prop in element.EnumerateObject())
+                        {
+                            if (string.Equals(prop.Name, "BTNo", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return prop.Value.ValueKind == JsonValueKind.String ? prop.Value.GetString() : prop.Value.ToString();
+                            }
+                        }
+
+                        foreach (var prop in element.EnumerateObject())
+                        {
+                            var found = FindBtNo(prop.Value);
+                            if (!string.IsNullOrWhiteSpace(found))
+                            {
+                                return found;
+                            }
+                        }
+                        break;
+                    case JsonValueKind.Array:
+                        foreach (var item in element.EnumerateArray())
+                        {
+                            var found = FindBtNo(item);
+                            if (!string.IsNullOrWhiteSpace(found))
+                            {
+                                return found;
+                            }
+                        }
+                        break;
+                }
+
+                return null;
+            }
+
+            var btNo = FindBtNo(doc.RootElement);
+            return string.IsNullOrWhiteSpace(btNo) ? "-" : btNo;
+        }
+        catch
+        {
+            return "-";
+        }
+    }
+}
+
+<div class="card mb-3">
+    <div class="card-header"><strong>Bills History Filters</strong></div>
+    <div class="card-body">
+        <form method="get" asp-controller="Reports" asp-action="BillsHistory">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>LogTypes</label>
+                    <select name="logType" class="form-control">
+                        <option value="">-- All Log Types --</option>
+                        @foreach (var lt in logTypes)
+                        {
+                            <option value="@lt" selected="@(lt == selectedLogType)">@lt</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Billing Month</label>
+                    <select name="billingMonth" class="form-control">
+                        <option value="">-- All Months --</option>
+                        @foreach (var m in months)
+                        {
+                            <option value="@m" selected="@(m == selectedBillingMonth)">@m</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Billing Year</label>
+                    <select name="billingYear" class="form-control">
+                        <option value="">-- All Years --</option>
+                        @foreach (var y in years)
+                        {
+                            <option value="@y" selected="@(y == selectedBillingYear)">@y</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Show</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Audit Logs</strong>
+        <span class="text-muted">Showing latest @(Model?.Count ?? 0) records</span>
+    </div>
+    <div class="card-body table-responsive">
+        <table class="table table-bordered table-sm">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Changed At</th>
+                    <th>Changed By</th>
+                    <th>Table Name</th>
+                    <th>Operation</th>
+                    <th>Record Id</th>
+                    <th>Old Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var row in Model)
+                    {
+                        <tr class="audit-row" style="cursor:pointer;"
+                            data-changedat="@row.ChangedAt.ToString("dd-MMM-yyyy hh:mm tt")"
+                            data-changedby="@row.ChangedBy"
+                            data-tablename="@row.TableName"
+                            data-operation="@row.Operation"
+                            data-recordid="@row.RecordId"
+                            data-olddata="@row.OldData">
+                            <td>@row.ChangedAt.ToString("dd-MMM-yyyy hh:mm tt")</td>
+                            <td>@row.ChangedBy</td>
+                            <td>@row.TableName</td>
+                            <td>@row.Operation</td>
+                            <td>@row.RecordId</td>
+                            <td style="white-space: pre-wrap; word-break: break-word; min-width: 360px;">BTNo: @ExtractBtNo(row.OldData)</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">No audit logs found.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header"><strong>Selected Record Detail</strong></div>
+    <div class="card-body">
+        <form>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>BTNo</label>
+                    <input id="detailBtNo" type="text" class="form-control" readonly />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Changed At</label>
+                    <input id="detailChangedAt" type="text" class="form-control" readonly />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Changed By</label>
+                    <input id="detailChangedBy" type="text" class="form-control" readonly />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>Table Name</label>
+                    <input id="detailTableName" type="text" class="form-control" readonly />
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Operation</label>
+                    <input id="detailOperation" type="text" class="form-control" readonly />
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Record Id</label>
+                    <input id="detailRecordId" type="text" class="form-control" readonly />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Old Data (Raw)</label>
+                <textarea id="detailOldData" class="form-control" rows="5" readonly></textarea>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function () {
+        function extractBtNo(oldData) {
+            if (!oldData) return '';
+            try {
+                var parsed = JSON.parse(oldData);
+                function findBtNo(value) {
+                    if (!value) return '';
+                    if (Array.isArray(value)) {
+                        for (var i = 0; i < value.length; i++) {
+                            var arrFound = findBtNo(value[i]);
+                            if (arrFound) return arrFound;
+                        }
+                        return '';
+                    }
+                    if (typeof value === 'object') {
+                        for (var key in value) {
+                            if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+                            if (key.toLowerCase() === 'btno') {
+                                return value[key] == null ? '' : String(value[key]);
+                            }
+                        }
+                        for (var childKey in value) {
+                            if (!Object.prototype.hasOwnProperty.call(value, childKey)) continue;
+                            var objFound = findBtNo(value[childKey]);
+                            if (objFound) return objFound;
+                        }
+                    }
+                    return '';
+                }
+                return findBtNo(parsed);
+            } catch (e) {
+                return '';
+            }
+        }
+
+        document.querySelectorAll('.audit-row').forEach(function (row) {
+            row.addEventListener('dblclick', function () {
+                var cells = row.querySelectorAll('td');
+                var changedAtText = cells[0] ? cells[0].textContent.trim() : '';
+                var changedByText = cells[1] ? cells[1].textContent.trim() : '';
+                var tableNameText = cells[2] ? cells[2].textContent.trim() : '';
+                var operationText = cells[3] ? cells[3].textContent.trim() : '';
+                var recordIdText = cells[4] ? cells[4].textContent.trim() : '';
+                var oldDataText = cells[5] ? cells[5].textContent.trim() : '';
+
+                var oldData = row.getAttribute('data-olddata') || '';
+                document.getElementById('detailBtNo').value = extractBtNo(oldData);
+                document.getElementById('detailChangedAt').value = changedAtText;
+                document.getElementById('detailChangedBy').value = changedByText;
+                document.getElementById('detailTableName').value = tableNameText;
+                document.getElementById('detailOperation').value = operationText;
+                document.getElementById('detailRecordId').value = recordIdText;
+                document.getElementById('detailOldData').value = oldDataText;
+            });
+        });
+    })();
+</script>
