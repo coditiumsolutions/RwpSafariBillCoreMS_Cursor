@@ -1,0 +1,110 @@
+@{
+    ViewData["Title"] = "Dash-Bills";
+    Layout = "~/Views/Shared/_LayoutReports.cshtml";
+
+    var months = ViewBag.Months as List<string> ?? new List<string>();
+    var years = ViewBag.Years as List<string> ?? new List<string>();
+    var projects = ViewBag.Projects as List<string> ?? new List<string>();
+    var selectedBillingMonth = ViewBag.SelectedBillingMonth as string ?? "";
+    var selectedBillingYear = ViewBag.SelectedBillingYear as string ?? "";
+    var selectedProject = ViewBag.SelectedProject as string ?? "";
+    var totalBills = (int?)(ViewBag.TotalBills) ?? 0;
+    var generatedAmount = (decimal?)(ViewBag.GeneratedAmount) ?? 0m;
+    var collectedAmount = (decimal?)(ViewBag.CollectedAmount) ?? 0m;
+    var outstandingAmount = (decimal?)(ViewBag.OutstandingAmount) ?? 0m;
+    var chartLabelsJson = ViewBag.ChartLabelsJson as string ?? "[]";
+    var chartValuesJson = ViewBag.ChartValuesJson as string ?? "[]";
+}
+
+<div class="card mb-3">
+    <div class="card-header"><strong>Dash-Bills Filters</strong></div>
+    <div class="card-body">
+        <form method="get" asp-controller="Reports" asp-action="DashBills">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>BillingMonth</label>
+                    <select name="billingMonth" class="form-control">
+                        @foreach (var m in months)
+                        {
+                            <option value="@m" selected="@(m == selectedBillingMonth)">@m</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label>BillingYear</label>
+                    <select name="billingYear" class="form-control">
+                        @foreach (var y in years)
+                        {
+                            <option value="@y" selected="@(y == selectedBillingYear)">@y</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Project</label>
+                    <select name="project" class="form-control">
+                        <option value="">-- All Projects --</option>
+                        @foreach (var p in projects)
+                        {
+                            <option value="@p" selected="@(p == selectedProject)">@p</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Show</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header"><strong>Summary</strong></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3"><strong>Total Bills:</strong> @totalBills</div>
+            <div class="col-md-3"><strong>Generated:</strong> @generatedAmount.ToString("N0")</div>
+            <div class="col-md-3"><strong>Collected:</strong> @collectedAmount.ToString("N0")</div>
+            <div class="col-md-3"><strong>Outstanding:</strong> @outstandingAmount.ToString("N0")</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><strong>Bar Graph</strong></div>
+    <div class="card-body">
+        <canvas id="dashBillsChart" height="90"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function () {
+        const labels = @Html.Raw(chartLabelsJson);
+        const values = @Html.Raw(chartValuesJson);
+        const canvas = document.getElementById('dashBillsChart');
+        if (!canvas) return;
+
+        new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Amount',
+                    data: values,
+                    backgroundColor: ['#4e73df', '#1cc88a', '#e74a3b'],
+                    borderColor: ['#4e73df', '#1cc88a', '#e74a3b'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    })();
+</script>

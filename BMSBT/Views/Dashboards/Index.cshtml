@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Dashboards";
+    Layout = "~/Views/Shared/_LayoutDashboards.cshtml";
+}
+
+<div class="card">
+    <div class="card-header"><strong>Dashboards</strong></div>
+    <div class="card-body">
+        <p class="mb-3">Select a dashboard:</p>
+        <div class="d-flex" style="gap:10px;">
+            <a asp-controller="Dashboards" asp-action="Customers" class="btn btn-primary">Customers</a>
+            <a asp-controller="Dashboards" asp-action="Bills" class="btn btn-success">Bills</a>
+        </div>
+    </div>
+</div>

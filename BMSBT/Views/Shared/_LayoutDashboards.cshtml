@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@ViewData["Title"] - Billing System</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="~/css/SGStyleSheet.css" />
+    <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/solid.js" crossorigin="anonymous"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/fontawesome.js" crossorigin="anonymous"></script>
+    <style>
+        .sidebar { position: absolute; }
+        .navbar2-top { background-color: #f8f9fa; padding: 0px 0; }
+        .navbar2-top .container { display: flex; justify-content: space-between; align-items: center; }
+        .navbar2-top .left-section { font-weight: bold; }
+        .navbar2-top .right-section { text-align: right; flex-grow: 1; }
+        .navbar2-top .left-section a { color: #0056b3; }
+        a { text-decoration: none !important; }
+        .user-info { color: #0056b3; font-size: 16px; font-weight: normal; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar1-top navbar-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="~/images/logo.png" alt="Logo" class="logo-margin" style="height: 70px; margin-left: 10px;">
+            </a>
+            <span class="navbar-text text-white">Safari Rawalpindi</span>
+        </div>
+    </nav>
+
+    <nav class="navbar navbar-expand-lg navbar2-top">
+        <div class="container">
+            <div class="left-section">
+                <a asp-controller="Home" asp-action="Index">Back Main Menu</a>
+            </div>
+            <div class="right-section">
+                <span class="user-info"> Logged-in as @ViewBag.UserName at @ViewBag.LoginTime </span>
+                <a asp-controller="Login" asp-action="Logout"
+                   class="btn btn-link text-black"
+                   onclick="return confirm('Are you sure you want to log out?');">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <nav class="navbar navbar-expand-lg navbar3-top">
+        <div class="container">
+            <span class="navbar-text text-white"></span>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3 col-lg-2 p-3 sidebar">
+                <h4>Dashboards</h4>
+                <ul class="nav flex-column">
+                    <li>
+                        <a asp-controller="Dashboards" asp-action="Index">
+                            <i class='fas fa-home' style="color: yellowgreen; font-size: 14px;"></i>
+                            Home
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Dashboards" asp-action="Customers">
+                            <i class='fas fa-users' style="color: yellowgreen; font-size: 14px;"></i>
+                            Customers
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Dashboards" asp-action="Bills">
+                            <i class='fas fa-money-bill-alt' style="color: yellowgreen; font-size: 14px;"></i>
+                            Bills
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Dashboards" asp-action="Collections">
+                            <i class='fas fa-chart-bar' style="color: yellowgreen; font-size: 14px;"></i>
+                            Collections
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Dashboards" asp-action="Users">
+                            <i class='fas fa-user-circle' style="color: yellowgreen; font-size: 14px;"></i>
+                            Users
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="col-md-9 col-lg-10 content-area p-3">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

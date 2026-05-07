@@ -1,0 +1,57 @@
+@{
+    ViewData["Title"] = "Dash-Customers";
+    Layout = "~/Views/Shared/_LayoutReports.cshtml";
+    var totalCustomers = (int?)(ViewBag.TotalCustomers) ?? 0;
+    var chartLabelsJson = ViewBag.ChartLabelsJson as string ?? "[]";
+    var chartValuesJson = ViewBag.ChartValuesJson as string ?? "[]";
+}
+
+<div class="card mb-3">
+    <div class="card-header"><strong>Customers Dashboard</strong></div>
+    <div class="card-body">
+        <div><strong>Total Customers:</strong> @totalCustomers.ToString("N0")</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><strong>Customers Bar Graph By Project</strong></div>
+    <div class="card-body">
+        <canvas id="dashCustomersChart" height="95"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function () {
+        const labels = @Html.Raw(chartLabelsJson);
+        const values = @Html.Raw(chartValuesJson);
+        const canvas = document.getElementById('dashCustomersChart');
+        if (!canvas) return;
+
+        new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Customers',
+                    data: values,
+                    backgroundColor: '#36b9cc',
+                    borderColor: '#2c9faf',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        });
+    })();
+</script>

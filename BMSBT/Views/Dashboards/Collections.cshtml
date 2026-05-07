@@ -1,0 +1,113 @@
+@{
+    ViewData["Title"] = "Collections Dashboard";
+    Layout = "~/Views/Shared/_LayoutDashboards.cshtml";
+    var months = ViewBag.Months as List<string> ?? new List<string>();
+    var years = ViewBag.Years as List<string> ?? new List<string>();
+    var selectedMonth = ViewBag.SelectedMonth as string ?? "";
+    var selectedYear = ViewBag.SelectedYear as string ?? "";
+    var totalGenerated = (decimal?)(ViewBag.TotalGenerated) ?? 0m;
+    var totalCollected = (decimal?)(ViewBag.TotalCollected) ?? 0m;
+    var totalOutstanding = (decimal?)(ViewBag.TotalOutstanding) ?? 0m;
+    var chartLabelsJson = ViewBag.ChartLabelsJson as string ?? "[]";
+    var generatedJson = ViewBag.GeneratedJson as string ?? "[]";
+    var collectedJson = ViewBag.CollectedJson as string ?? "[]";
+    var outstandingJson = ViewBag.OutstandingJson as string ?? "[]";
+}
+
+<div class="card mb-3">
+    <div class="card-header"><strong>Collections Filters</strong></div>
+    <div class="card-body">
+        <form method="get" asp-controller="Dashboards" asp-action="Collections">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>Billing Month</label>
+                    <select name="billingMonth" class="form-control">
+                        @foreach (var m in months)
+                        {
+                            <option value="@m" selected="@(m == selectedMonth)">@m</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label>Billing Year</label>
+                    <select name="billingYear" class="form-control">
+                        @foreach (var y in years)
+                        {
+                            <option value="@y" selected="@(y == selectedYear)">@y</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Show</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header"><strong>Collections Dashboard (@selectedMonth @selectedYear)</strong></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4"><strong>Total Generated:</strong> @totalGenerated.ToString("N0")</div>
+            <div class="col-md-4"><strong>Total Collected:</strong> @totalCollected.ToString("N0")</div>
+            <div class="col-md-4"><strong>Total Outstanding:</strong> @totalOutstanding.ToString("N0")</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><strong>Generated, Collected, Outstanding by Project (including All Projects)</strong></div>
+    <div class="card-body">
+        <canvas id="collectionsChart" height="110"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function () {
+        const labels = @Html.Raw(chartLabelsJson);
+        const generated = @Html.Raw(generatedJson);
+        const collected = @Html.Raw(collectedJson);
+        const outstanding = @Html.Raw(outstandingJson);
+        const canvas = document.getElementById('collectionsChart');
+        if (!canvas) return;
+
+        new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Generated',
+                        data: generated,
+                        backgroundColor: '#4e73df',
+                        borderColor: '#4e73df',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Collected',
+                        data: collected,
+                        backgroundColor: '#1cc88a',
+                        borderColor: '#1cc88a',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Outstanding',
+                        data: outstanding,
+                        backgroundColor: '#e74a3b',
+                        borderColor: '#e74a3b',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { stacked: false },
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    })();
+</script>

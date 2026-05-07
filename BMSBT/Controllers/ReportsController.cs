@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Data.SqlClient;
+using System.Text.Json;
 
 namespace BMSBT.Controllers
 {
@@ -539,6 +540,69 @@ namespace BMSBT.Controllers
             ViewBag.TotalBillsAmount = totalBillsAmount;
             ViewBag.TotalPaidAmount = totalPaidAmount;
             ViewBag.TotalUnpaidAmount = totalUnpaidAmount;
+
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult DashBills(string? billingMonth, string? billingYear, string? project)
+        {
+            var selectedMonth = string.IsNullOrWhiteSpace(billingMonth) ? DateTime.Now.ToString("MMMM") : billingMonth.Trim();
+            var selectedYear = string.IsNullOrWhiteSpace(billingYear) ? DateTime.Now.Year.ToString() : billingYear.Trim();
+            var selectedProject = string.IsNullOrWhiteSpace(project) ? string.Empty : project.Trim();
+
+            ViewBag.Months = GetMonthList();
+            ViewBag.Years = GetYearList();
+            ViewBag.Projects = GetProjectList();
+            ViewBag.SelectedBillingMonth = selectedMonth;
+            ViewBag.SelectedBillingYear = selectedYear;
+            ViewBag.SelectedProject = selectedProject;
+
+            var billsQuery = _dbContext.MaintenanceBills
+                .AsNoTracking()
+                .Where(b => b.BillingMonth == selectedMonth && b.BillingYear == selectedYear);
+
+            if (!string.IsNullOrWhiteSpace(selectedProject))
+            {
+                billsQuery = billsQuery.Where(b => b.Project != null && b.Project.Trim() == selectedProject);
+            }
+
+            var generatedAmount = billsQuery.Sum(b => (decimal?)b.BillAmountInDueDate) ?? 0m;
+            var collectedAmount = billsQuery.Sum(b => (decimal?)b.AmountPaid) ?? 0m;
+            var outstandingAmount = generatedAmount - collectedAmount;
+            if (outstandingAmount < 0m)
+            {
+                outstandingAmount = 0m;
+            }
+
+            ViewBag.TotalBills = billsQuery.Count();
+            ViewBag.GeneratedAmount = generatedAmount;
+            ViewBag.CollectedAmount = collectedAmount;
+            ViewBag.OutstandingAmount = outstandingAmount;
+            ViewBag.ChartLabelsJson = JsonSerializer.Serialize(new[] { "Generated", "Collected", "Outstanding" });
+            ViewBag.ChartValuesJson = JsonSerializer.Serialize(new[] { generatedAmount, collectedAmount, outstandingAmount });
+
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult DashCustomers()
+        {
+            var customersByProject = _dbContext.CustomersMaintenance
+                .AsNoTracking()
+                .Where(c => c.Project != null && c.Project.Trim() != "")
+                .GroupBy(c => c.Project!.Trim())
+                .Select(g => new
+                {
+                    Project = g.Key,
+                    Customers = g.Count()
+                })
+                .OrderBy(x => x.Project)
+                .ToList();
+
+            ViewBag.TotalCustomers = customersByProject.Sum(x => x.Customers);
+            ViewBag.ChartLabelsJson = JsonSerializer.Serialize(customersByProject.Select(x => x.Project).ToList());
+            ViewBag.ChartValuesJson = JsonSerializer.Serialize(customersByProject.Select(x => x.Customers).ToList());
 
             return View();
         }
