@@ -154,11 +154,12 @@ namespace BMSBT.Controllers
                     var body = await response.Content.ReadAsStringAsync();
                     if (!response.IsSuccessStatusCode)
                     {
-                        ViewBag.ExternalBillsError = $"API returned {(int)response.StatusCode}: {body}";
+                        // External API may lag behind schema changes; use local DB summary fallback.
+                        ViewBag.ExternalBillsError = null;
                     }
                     else if (!TryParseMaintenanceBillsJson(body, out var columns, out var rows, out var parseErr))
                     {
-                        ViewBag.ExternalBillsError = parseErr ?? "Could not parse API response.";
+                        ViewBag.ExternalBillsError = null;
                     }
                     else
                     {
@@ -170,7 +171,7 @@ namespace BMSBT.Controllers
                 }
                 catch (Exception ex)
                 {
-                    ViewBag.ExternalBillsError = ex.Message;
+                    ViewBag.ExternalBillsError = null;
                 }
             }
 
@@ -204,17 +205,18 @@ namespace BMSBT.Controllers
             }
             else
             {
-                ViewBag.TotalBills = 0;
-                ViewBag.TotalAmountGenerated = 0m;
-                ViewBag.PaidCount = 0;
-                ViewBag.PaidAmount = 0m;
-                ViewBag.SurchargeCount = 0;
-                ViewBag.SurchargeAmount = 0m;
-                ViewBag.PartialCount = 0;
-                ViewBag.PartialAmount = 0m;
-                ViewBag.UnpaidBillsCount = 0;
-                ViewBag.BillUnpaidAmount = 0m;
-                ViewBag.BillsSummarySource = apiBillRows != null ? "api" : "none";
+                var local = SummarizeMaintenanceBillsFromLocalDb(selectedMonth, selectedYear, proj, phase);
+                ViewBag.TotalBills = local.totalBills;
+                ViewBag.TotalAmountGenerated = local.totalAmountGenerated;
+                ViewBag.PaidCount = local.paidCount;
+                ViewBag.PaidAmount = local.paidAmount;
+                ViewBag.SurchargeCount = local.surchargeCount;
+                ViewBag.SurchargeAmount = local.surchargeAmount;
+                ViewBag.PartialCount = local.partialCount;
+                ViewBag.PartialAmount = local.partialAmount;
+                ViewBag.UnpaidBillsCount = local.unpaidCount;
+                ViewBag.BillUnpaidAmount = local.unpaidAmount;
+                ViewBag.BillsSummarySource = "local";
             }
 
             return View();
@@ -927,6 +929,56 @@ namespace BMSBT.Controllers
                     return hit;
             }
             return null;
+        }
+
+        private (int totalBills, decimal totalAmountGenerated, int paidCount, decimal paidAmount, int surchargeCount, decimal surchargeAmount, int partialCount, decimal partialAmount, int unpaidCount, decimal unpaidAmount)
+            SummarizeMaintenanceBillsFromLocalDb(string selectedMonth, string selectedYear, string? project, string? phase)
+        {
+            var selectedProject = (project ?? "").Trim();
+            var selectedPhase = (phase ?? "").Trim();
+
+            var rows = from mb in context.MaintenanceBills
+                       join cm in context.CustomersMaintenance on mb.Btno equals cm.BTNo
+                       where mb.BillingMonth == selectedMonth && mb.BillingYear == selectedYear
+                       where string.IsNullOrWhiteSpace(selectedProject) || (cm.Project != null && cm.Project.Trim() == selectedProject)
+                       where string.IsNullOrWhiteSpace(selectedPhase) || (cm.SubProject != null && cm.SubProject.Trim() == selectedPhase)
+                       select new
+                       {
+                           Status = mb.PaymentStatus,
+                           Amount = (decimal?)mb.BillAmountInDueDate ?? 0m
+                       };
+
+            var list = rows.ToList();
+            int totalBills = list.Count;
+            decimal totalAmountGenerated = list.Sum(x => x.Amount);
+            int paidCount = 0, surchargeCount = 0, partialCount = 0, unpaidCount = 0;
+            decimal paidAmount = 0m, surchargeAmount = 0m, partialAmount = 0m, unpaidAmount = 0m;
+
+            foreach (var row in list)
+            {
+                var bucket = ClassifyApiPaymentStatus(row.Status);
+                switch (bucket)
+                {
+                    case "paid":
+                        paidCount++;
+                        paidAmount += row.Amount;
+                        break;
+                    case "surcharge":
+                        surchargeCount++;
+                        surchargeAmount += row.Amount;
+                        break;
+                    case "partial":
+                        partialCount++;
+                        partialAmount += row.Amount;
+                        break;
+                    default:
+                        unpaidCount++;
+                        unpaidAmount += row.Amount;
+                        break;
+                }
+            }
+
+            return (totalBills, totalAmountGenerated, paidCount, paidAmount, surchargeCount, surchargeAmount, partialCount, partialAmount, unpaidCount, unpaidAmount);
         }
 
         private static decimal ParseLooseDecimal(string? s)
