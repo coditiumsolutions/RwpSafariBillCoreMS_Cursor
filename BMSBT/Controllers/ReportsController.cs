@@ -322,7 +322,10 @@ namespace BMSBT.Controllers
                                 mb.MaintCharges,
                                 mb.MiscCharges,
                                 mb.WaterCharges,
-                                mb.RentAmount
+                                mb.RentAmount,
+                                mb.ExtraWork,
+                                mb.OtherCharges,
+                                mb.Arrears
                             }).ToList();
 
             var groupedData = billRows
@@ -351,7 +354,28 @@ namespace BMSBT.Controllers
                         return misc * paidRatio;
                     }),
                     WaterCharges = g.Sum(b => (decimal?)b.WaterCharges) ?? 0m,
-                    RentCharges = g.Sum(b => (decimal?)b.RentAmount) ?? 0m
+                    RentCharges = g.Sum(b => (decimal?)b.RentAmount) ?? 0m,
+                    ExtraCharges = g.Sum(b => (decimal?)b.ExtraWork) ?? 0m,
+                    OtherCharges = g.Sum(b => (decimal?)b.OtherCharges) ?? 0m,
+                    Arrears = g.Sum(b => (decimal?)b.Arrears) ?? 0m,
+                    PayableAmount = g.Sum(b => (decimal?)b.BillAmountInDueDate) ?? 0m,
+                    AmountPaid = g.Sum(b => (decimal?)b.AmountPaid) ?? 0m,
+                    InstallmentPaid = g.Sum(b =>
+                    {
+                        var advance = (decimal?)b.RentAmount ?? 0m;
+                        var totalBill = (decimal?)b.BillAmountInDueDate ?? 0m;
+                        var amountPaid = (decimal?)b.AmountPaid ?? 0m;
+                        if (advance <= 0m || amountPaid <= 0m || totalBill <= 0m)
+                        {
+                            return 0m;
+                        }
+
+                        var paidRatio = amountPaid / totalBill;
+                        if (paidRatio > 1m) paidRatio = 1m;
+                        if (paidRatio < 0m) paidRatio = 0m;
+                        return advance * paidRatio;
+                    }),
+                    AdvanceAmount = g.Sum(b => (decimal?)b.RentAmount) ?? 0m
                 }).ToList();
 
             var groupedLookup = groupedData.ToDictionary(x => x.Phase, StringComparer.OrdinalIgnoreCase);
@@ -375,7 +399,14 @@ namespace BMSBT.Controllers
                         MiscCharges = 0m,
                         MiscPaid = 0m,
                         WaterCharges = 0m,
-                        RentCharges = 0m
+                        RentCharges = 0m,
+                        ExtraCharges = 0m,
+                        OtherCharges = 0m,
+                        Arrears = 0m,
+                        PayableAmount = 0m,
+                        AmountPaid = 0m,
+                        InstallmentPaid = 0m,
+                        AdvanceAmount = 0m
                     };
                 })
                 .ToList();

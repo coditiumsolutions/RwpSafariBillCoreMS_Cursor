@@ -65,7 +65,7 @@ namespace BMSBT.Models
 
         [Required]
         [StringLength(100)]
-        [Column("PloNo")]
+        [Column("PlotNo")]
         public string PloNo { get; set; } = null!;
 
         public string? History { get; set; }
@@ -107,7 +107,7 @@ namespace BMSBT.Models
         public decimal? ExtraWork { get; set; }
 
         [StringLength(50)]
-        [Column("StreetNumber")]
+        [Column("StreetNo")]
         public string? StreetNumber { get; set; }
 
         [StringLength(50)]

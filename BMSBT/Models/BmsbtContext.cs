@@ -114,8 +114,8 @@ public partial class BmsbtContext : DbContext
             entity.Property(e => e.CustomerNo).HasColumnName("KuickPayNo").HasMaxLength(20);
             entity.Property(e => e.SubProject).HasColumnName("Phase").HasMaxLength(50);
             entity.Property(e => e.CNICNo).HasColumnName("CNICNo").HasMaxLength(50);
-            entity.Property(e => e.PloNo).HasColumnName("PloNo").HasMaxLength(100);
-            entity.Property(e => e.StreetNumber).HasColumnName("StreetNumber").HasMaxLength(50);
+            entity.Property(e => e.PloNo).HasColumnName("PlotNo").HasMaxLength(100);
+            entity.Property(e => e.StreetNumber).HasColumnName("StreetNo").HasMaxLength(50);
             entity.Property(e => e.ConnectionStatus).HasMaxLength(20);
 
             // DB stores these as SQL float, while domain model uses decimal? for billing math.

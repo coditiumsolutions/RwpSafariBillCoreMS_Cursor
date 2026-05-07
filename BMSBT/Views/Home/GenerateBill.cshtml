@@ -111,6 +111,8 @@
                     <th><input type="checkbox" id="selectAllCustomers" /></th>
                     <th>BT Number</th>
                     <th>Customer Name</th>
+                    <th>PlotNo</th>
+                    <th>StreetNo</th>
                     <th>Project</th>
                     <th>Phase Name</th>
                     <th>Category</th>
@@ -132,6 +134,8 @@
                             </td>
                             <td>@customer.BTNo</td>
                             <td>@customer.CustomerName</td>
+                            <td>@customer.PloNo</td>
+                            <td>@customer.StreetNumber</td>
                             <td>@customer.Project</td>
                             <td>@customer.SubProject</td>
                             <td>@customer.Category</td>
@@ -144,7 +148,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="9" class="text-center text-muted">No customers found for selected filters.</td>
+                        <td colspan="11" class="text-center text-muted">No customers found for selected filters.</td>
                     </tr>
                 }
             </tbody>

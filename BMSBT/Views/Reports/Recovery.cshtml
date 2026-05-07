@@ -18,6 +18,13 @@
     var miscPaid = Model?.Sum(x => x.MiscPaid) ?? 0m;
     var waterCharges = Model?.Sum(x => x.WaterCharges) ?? 0m;
     var rentCharges = Model?.Sum(x => x.RentCharges) ?? 0m;
+    var extraCharges = Model?.Sum(x => x.ExtraCharges) ?? 0m;
+    var otherCharges = Model?.Sum(x => x.OtherCharges) ?? 0m;
+    var arrears = Model?.Sum(x => x.Arrears) ?? 0m;
+    var payableAmount = Model?.Sum(x => x.PayableAmount) ?? 0m;
+    var amountPaid = Model?.Sum(x => x.AmountPaid) ?? 0m;
+    var installmentPaid = Model?.Sum(x => x.InstallmentPaid) ?? 0m;
+    var advanceAmount = Model?.Sum(x => x.AdvanceAmount) ?? 0m;
 }
 
 <div class="card mb-3">
@@ -86,6 +93,13 @@
                     <th class="text-right">Misc Paid</th>
                     <th class="text-right">Water Charges</th>
                     <th class="text-right">Rent Charges</th>
+                    <th class="text-right">Extra Charges</th>
+                    <th class="text-right">Other Charges</th>
+                    <th class="text-right">Arrears</th>
+                    <th class="text-right">Payable Amount</th>
+                    <th class="text-right">Amount Paid</th>
+                    <th class="text-right">Installment Paid</th>
+                    <th class="text-right">Advane Amount</th>
                 </tr>
             </thead>
             <tbody>
@@ -103,13 +117,20 @@
                             <td class="text-right">@row.MiscPaid.ToString("N0")</td>
                             <td class="text-right">@row.WaterCharges.ToString("N0")</td>
                             <td class="text-right">@row.RentCharges.ToString("N0")</td>
+                            <td class="text-right">@row.ExtraCharges.ToString("N0")</td>
+                            <td class="text-right">@row.OtherCharges.ToString("N0")</td>
+                            <td class="text-right">@row.Arrears.ToString("N0")</td>
+                            <td class="text-right">@row.PayableAmount.ToString("N0")</td>
+                            <td class="text-right">@row.AmountPaid.ToString("N0")</td>
+                            <td class="text-right">@row.InstallmentPaid.ToString("N0")</td>
+                            <td class="text-right">@row.AdvanceAmount.ToString("N0")</td>
                         </tr>
                     }
                 }
                 else
                 {
                     <tr>
-                        <td colspan="9" class="text-center text-muted">No phases found for selected criteria.</td>
+                        <td colspan="16" class="text-center text-muted">No phases found for selected criteria.</td>
                     </tr>
                 }
             </tbody>
@@ -124,6 +145,13 @@
                     <td class="text-right">@miscPaid.ToString("N0")</td>
                     <td class="text-right">@waterCharges.ToString("N0")</td>
                     <td class="text-right">@rentCharges.ToString("N0")</td>
+                    <td class="text-right">@extraCharges.ToString("N0")</td>
+                    <td class="text-right">@otherCharges.ToString("N0")</td>
+                    <td class="text-right">@arrears.ToString("N0")</td>
+                    <td class="text-right">@payableAmount.ToString("N0")</td>
+                    <td class="text-right">@amountPaid.ToString("N0")</td>
+                    <td class="text-right">@installmentPaid.ToString("N0")</td>
+                    <td class="text-right">@advanceAmount.ToString("N0")</td>
                 </tr>
             </tfoot>
         </table>

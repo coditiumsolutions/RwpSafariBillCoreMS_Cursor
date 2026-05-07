@@ -1,6 +1,7 @@
 using BMSBT.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 using X.PagedList;
 using X.PagedList.Extensions;
 
@@ -73,6 +74,149 @@ namespace BMSBT.Controllers
                 .ToPagedList(pageNumber, pageSize);
 
             return View(items);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadExcel(IFormFile excelFile)
+        {
+            if (excelFile == null || excelFile.Length == 0)
+            {
+                TempData["ErrorMessage"] = "Please select an Excel file to upload.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var extension = Path.GetExtension(excelFile.FileName);
+            if (!string.Equals(extension, ".xlsx", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Only .xlsx files are supported.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using var stream = new MemoryStream();
+            await excelFile.CopyToAsync(stream);
+            stream.Position = 0;
+
+            using var package = new ExcelPackage(stream);
+            var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+            if (worksheet == null || worksheet.Dimension == null)
+            {
+                TempData["ErrorMessage"] = "The uploaded Excel file is empty.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            int rows = worksheet.Dimension.End.Row;
+            int cols = worksheet.Dimension.End.Column;
+
+            var requiredHeaders = new[]
+            {
+                "btno",
+                "department",
+                "servicetype",
+                "chargename",
+                "amount",
+                "frequency",
+                "month",
+                "year"
+            };
+
+            var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            int headerRow = FindHeaderRow(worksheet, rows, cols, requiredHeaders, headerMap);
+            bool usingHeaderMapping = headerMap.Count > 0;
+
+            // Fallback: if no explicit header row found, assume columns A:H in the expected order.
+            if (!usingHeaderMapping)
+            {
+                if (cols < requiredHeaders.Length)
+                {
+                    TempData["ErrorMessage"] = "Excel must contain at least 8 columns (BT No to Year).";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                for (int i = 0; i < requiredHeaders.Length; i++)
+                    headerMap[requiredHeaders[i]] = i + 1;
+            }
+            else
+            {
+                var missing = requiredHeaders.Where(h => !headerMap.ContainsKey(h)).ToList();
+                if (missing.Any())
+                {
+                    TempData["ErrorMessage"] = $"Missing required column(s): {string.Join(", ", missing)}";
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
+            var inserts = new List<AdditionalCharge>();
+            int skipped = 0;
+            int startRow = usingHeaderMapping ? headerRow + 1 : 1;
+
+            for (int row = startRow; row <= rows; row++)
+            {
+                string btNo = worksheet.Cells[row, headerMap["btno"]].Text?.Trim() ?? string.Empty;
+                string department = worksheet.Cells[row, headerMap["department"]].Text?.Trim() ?? string.Empty;
+                string serviceType = worksheet.Cells[row, headerMap["servicetype"]].Text?.Trim() ?? string.Empty;
+                string chargesName = worksheet.Cells[row, headerMap["chargename"]].Text?.Trim() ?? string.Empty;
+                string amountText = worksheet.Cells[row, headerMap["amount"]].Text?.Trim() ?? string.Empty;
+                string frequency = worksheet.Cells[row, headerMap["frequency"]].Text?.Trim() ?? string.Empty;
+                string month = worksheet.Cells[row, headerMap["month"]].Text?.Trim() ?? string.Empty;
+                string year = worksheet.Cells[row, headerMap["year"]].Text?.Trim() ?? string.Empty;
+
+                bool rowIsEmpty = string.IsNullOrWhiteSpace(btNo)
+                                  && string.IsNullOrWhiteSpace(department)
+                                  && string.IsNullOrWhiteSpace(serviceType)
+                                  && string.IsNullOrWhiteSpace(chargesName)
+                                  && string.IsNullOrWhiteSpace(amountText)
+                                  && string.IsNullOrWhiteSpace(frequency)
+                                  && string.IsNullOrWhiteSpace(month)
+                                  && string.IsNullOrWhiteSpace(year);
+                if (rowIsEmpty)
+                {
+                    continue;
+                }
+
+                // When no header exists, skip title/metadata rows until actual tabular values begin.
+                if (!usingHeaderMapping && !LooksLikeDataRow(btNo, amountText, frequency, month, year))
+                {
+                    continue;
+                }
+
+                if (!int.TryParse(amountText, out var amount))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                var item = new AdditionalCharge
+                {
+                    BtNo = btNo,
+                    Department = department,
+                    ServiceType = serviceType,
+                    ChargesName = chargesName,
+                    Amount = amount,
+                    Frequency = frequency,
+                    Month = month,
+                    Year = year
+                };
+
+                NormalizeModel(item);
+                inserts.Add(item);
+            }
+
+            if (inserts.Count == 0)
+            {
+                TempData["ErrorMessage"] = "No valid records found in the uploaded file.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            await _dbContext.AdditionalCharges.AddRangeAsync(inserts);
+            await _dbContext.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Upload complete. Inserted {inserts.Count} record(s)." +
+                                         (skipped > 0 ? $" Skipped {skipped} row(s)." : string.Empty);
+
+            return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Details(int? id)
@@ -192,6 +336,58 @@ namespace BMSBT.Controllers
             model.Frequency = string.IsNullOrWhiteSpace(model.Frequency) ? null : model.Frequency.Trim();
             model.Month = string.IsNullOrWhiteSpace(model.Month) ? null : model.Month.Trim();
             model.Year = string.IsNullOrWhiteSpace(model.Year) ? null : model.Year.Trim();
+        }
+
+        private static string NormalizeHeader(string header)
+        {
+            return new string(header.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+        }
+
+        private static int FindHeaderRow(
+            OfficeOpenXml.ExcelWorksheet worksheet,
+            int totalRows,
+            int totalCols,
+            IReadOnlyCollection<string> requiredHeaders,
+            Dictionary<string, int> headerMap)
+        {
+            int scanRows = Math.Min(totalRows, 15);
+            for (int row = 1; row <= scanRows; row++)
+            {
+                var candidateMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (int col = 1; col <= totalCols; col++)
+                {
+                    var rawHeader = worksheet.Cells[row, col].Text?.Trim();
+                    if (string.IsNullOrWhiteSpace(rawHeader))
+                        continue;
+
+                    var normalizedHeader = NormalizeHeader(rawHeader);
+                    if (requiredHeaders.Contains(normalizedHeader) && !candidateMap.ContainsKey(normalizedHeader))
+                    {
+                        candidateMap[normalizedHeader] = col;
+                    }
+                }
+
+                if (candidateMap.Count >= requiredHeaders.Count)
+                {
+                    foreach (var kvp in candidateMap)
+                        headerMap[kvp.Key] = kvp.Value;
+                    return row;
+                }
+            }
+
+            return -1;
+        }
+
+        private static bool LooksLikeDataRow(string btNo, string amountText, string frequency, string month, string year)
+        {
+            if (!int.TryParse(amountText, out _))
+                return false;
+
+            bool hasBtNo = !string.IsNullOrWhiteSpace(btNo);
+            bool hasMonthYear = !string.IsNullOrWhiteSpace(month) && !string.IsNullOrWhiteSpace(year);
+            bool hasFrequency = !string.IsNullOrWhiteSpace(frequency);
+
+            return hasBtNo || hasMonthYear || hasFrequency;
         }
 
         private bool AdditionalChargeExists(int id)

@@ -444,7 +444,12 @@ namespace BMSBT.Controllers
                     query = query.Where(c => c.BTNo != null && c.BTNo.Contains(btNoSearch));
                 }
 
-                filteredData = query.GroupBy(c => c.Category)
+                var orderedCustomers = query
+                    .AsEnumerable()
+                    .OrderBy(c => NaturalSortKey(c.PloNo))
+                    .ToList();
+
+                filteredData = orderedCustomers.GroupBy(c => c.Category)
                     .Select(g => new MaintSectorCustomersViewModel
                     {
                         Block = g.Key,
@@ -780,6 +785,34 @@ namespace BMSBT.Controllers
             return rolesText
                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Any(r => string.Equals(r.Trim(), roleName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string NaturalSortKey(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            var chars = input.ToCharArray();
+            var key = new System.Text.StringBuilder(input.Length + 16);
+            int i = 0;
+
+            while (i < chars.Length)
+            {
+                if (char.IsDigit(chars[i]))
+                {
+                    int start = i;
+                    while (i < chars.Length && char.IsDigit(chars[i])) i++;
+                    var number = input.Substring(start, i - start);
+                    key.Append(number.PadLeft(10, '0'));
+                }
+                else
+                {
+                    key.Append(chars[i]);
+                    i++;
+                }
+            }
+
+            return key.ToString();
         }
 
 
