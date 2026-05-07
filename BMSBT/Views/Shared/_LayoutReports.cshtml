@@ -108,10 +108,16 @@
 
             <!-- Left Sidebar -->
             <div class="col-md-3 col-lg-2 p-3 sidebar">
-                <h4>Billing Summary</h4>
+                <h4>Reports</h4>
 
 
                 <ul class="nav flex-column">
+                    <li>
+                        <a asp-controller="Reports" asp-action="BillingSummary">
+                            <i class='fas fa-chart-bar' style="color: yellowgreen; font-size: 14px;"></i>
+                            Summary
+                        </a>
+                    </li>
 
                     <li>
                         <a asp-controller="Reports" asp-action="Collections">
@@ -143,27 +149,7 @@
                             Users
                         </a>
                     </li>
-                    <li>
-                        <a asp-controller="Reports" asp-action="BillsHistory">
-                            <i class='fas fa-history' style="color: yellowgreen; font-size: 14px;"></i>
-                            Bills History
-                        </a>
-                    </li>
-
                 </ul>
-
-                <div class="quick-links-block">
-                    <h4>Quick Links</h4>
-                    <ul class="nav flex-column">
-                        <li>
-                            <a asp-controller="Home" asp-action="Index">
-                                <i class='fas fa-arrow-left' style="color: antiquewhite; font-size: 14px; font-weight: bold;"></i>
-                                Back To Home
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-
 
             </div>
 

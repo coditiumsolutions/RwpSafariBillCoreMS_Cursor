@@ -2,7 +2,7 @@
 @model List<BMSBT.Models.AuditLog>
 @{
     ViewData["Title"] = "Bills History";
-    Layout = "~/Views/Shared/_LayoutReports.cshtml";
+    Layout = "~/Views/Shared/_LayoutOperations.cshtml";
     var logTypes = ViewBag.LogTypes as List<string> ?? new List<string>();
     var months = ViewBag.Months as List<string> ?? new List<string>();
     var years = ViewBag.Years as List<string> ?? new List<string>();

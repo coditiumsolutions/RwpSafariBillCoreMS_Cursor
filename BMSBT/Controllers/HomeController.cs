@@ -120,8 +120,8 @@ namespace BMSBT.Controllers
             var extSection = _configuration.GetSection("ExternalMaintenanceBillsApi");
             var apiBase = extSection["BaseUrl"]?.Trim().TrimEnd('/');
             var pathSeg = extSection["DefaultPathSegment"];
-            var proj = string.IsNullOrWhiteSpace(apiProject) ? extSection["DefaultProject"] : apiProject;
-            var phase = string.IsNullOrWhiteSpace(phaseNumber) ? extSection["DefaultPhaseNumber"] : phaseNumber;
+            var proj = string.IsNullOrWhiteSpace(apiProject) ? string.Empty : apiProject.Trim();
+            var phase = string.IsNullOrWhiteSpace(phaseNumber) ? string.Empty : phaseNumber.Trim();
             ViewBag.ApiProject = proj ?? "";
             ViewBag.PhaseNumber = phase ?? "";
 
@@ -136,7 +136,7 @@ namespace BMSBT.Controllers
             List<Dictionary<string, string>>? apiBillRows = null;
             List<string>? apiBillColumns = null;
 
-            if (!string.IsNullOrEmpty(apiBase) && !string.IsNullOrEmpty(pathSeg))
+            if (!string.IsNullOrEmpty(apiBase) && !string.IsNullOrEmpty(pathSeg) && !string.IsNullOrWhiteSpace(proj))
             {
                 var url =
                     $"{apiBase}/api/MaintenanceBills/{Uri.EscapeDataString(pathSeg)}" +
@@ -589,6 +589,7 @@ namespace BMSBT.Controllers
                     { "Safari 3", ("Safari-3", "Safari-3", "III-E") },
                     { "Bahria Spring", ("BahriaSpring", "bahria spring", "bahria springs") },
                     { "BahriaSpring", ("BahriaSpring", "bahria spring", "bahria springs") },
+                    { "Bahria Heights", ("SafariHeights", "Bahria Heights", "Bahria Heights Ext.1") },
                     { "Bahria Heights-1", ("SafariHeights", "Bahria Heights-1", "Bahria Heights Ext.1") }
                 };
 
@@ -937,43 +938,60 @@ namespace BMSBT.Controllers
             var selectedProject = (project ?? "").Trim();
             var selectedPhase = (phase ?? "").Trim();
 
-            var rows = from mb in context.MaintenanceBills
-                       join cm in context.CustomersMaintenance on mb.Btno equals cm.BTNo
-                       where mb.BillingMonth == selectedMonth && mb.BillingYear == selectedYear
-                       where string.IsNullOrWhiteSpace(selectedProject) || (cm.Project != null && cm.Project.Trim() == selectedProject)
-                       where string.IsNullOrWhiteSpace(selectedPhase) || (cm.SubProject != null && cm.SubProject.Trim() == selectedPhase)
-                       select new
-                       {
-                           Status = mb.PaymentStatus,
-                           Amount = (decimal?)mb.BillAmountInDueDate ?? 0m
-                       };
+            var customerBtNos = context.CustomersMaintenance
+                .Where(c => c.BTNo != null && c.BTNo.Trim() != "")
+                .Where(c => string.IsNullOrWhiteSpace(selectedProject) || (c.Project != null && c.Project.Trim() == selectedProject))
+                .Where(c => string.IsNullOrWhiteSpace(selectedPhase) || (c.SubProject != null && c.SubProject.Trim() == selectedPhase))
+                .Select(c => c.BTNo!.Trim())
+                .Distinct()
+                .ToList();
 
-            var list = rows.ToList();
+            var billsQuery = context.MaintenanceBills
+                .Where(mb => mb.BillingMonth == selectedMonth && mb.BillingYear == selectedYear);
+
+            if (customerBtNos.Any())
+            {
+                billsQuery = billsQuery.Where(mb => mb.Btno != null && customerBtNos.Contains(mb.Btno.Trim()));
+            }
+
+            var list = billsQuery
+                .Select(mb => new
+                {
+                    Status = mb.PaymentStatus,
+                    BillAmount = (decimal?)mb.BillAmountInDueDate ?? 0m,
+                    AmountPaid = (decimal?)mb.AmountPaid ?? 0m
+                })
+                .ToList();
+
             int totalBills = list.Count;
-            decimal totalAmountGenerated = list.Sum(x => x.Amount);
+            decimal totalAmountGenerated = list.Sum(x => x.BillAmount);
             int paidCount = 0, surchargeCount = 0, partialCount = 0, unpaidCount = 0;
             decimal paidAmount = 0m, surchargeAmount = 0m, partialAmount = 0m, unpaidAmount = 0m;
 
             foreach (var row in list)
             {
                 var bucket = ClassifyApiPaymentStatus(row.Status);
+                var effectivePaid = row.AmountPaid > 0m ? row.AmountPaid : 0m;
+                var outstanding = row.BillAmount - effectivePaid;
+                if (outstanding < 0m) outstanding = 0m;
+
                 switch (bucket)
                 {
                     case "paid":
                         paidCount++;
-                        paidAmount += row.Amount;
+                        paidAmount += effectivePaid > 0m ? effectivePaid : row.BillAmount;
                         break;
                     case "surcharge":
                         surchargeCount++;
-                        surchargeAmount += row.Amount;
+                        surchargeAmount += effectivePaid > 0m ? effectivePaid : row.BillAmount;
                         break;
                     case "partial":
                         partialCount++;
-                        partialAmount += row.Amount;
+                        partialAmount += effectivePaid;
                         break;
                     default:
                         unpaidCount++;
-                        unpaidAmount += row.Amount;
+                        unpaidAmount += outstanding > 0m ? outstanding : row.BillAmount;
                         break;
                 }
             }
@@ -1002,6 +1020,8 @@ namespace BMSBT.Controllers
             if (t.Contains("surcharge", StringComparison.OrdinalIgnoreCase))
                 return "surcharge";
             if (t.Contains("partial", StringComparison.OrdinalIgnoreCase))
+                return "partial";
+            if (t.Contains("parit", StringComparison.OrdinalIgnoreCase))
                 return "partial";
             if (t == "unpaid")
                 return "unpaid";
