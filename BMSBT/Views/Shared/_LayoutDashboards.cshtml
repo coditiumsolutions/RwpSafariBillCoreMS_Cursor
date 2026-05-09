@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@ViewData["Title"] - Billing System</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="~/css/SGStyleSheet.css" />
     <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/solid.js" crossorigin="anonymous"></script>
     <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/fontawesome.js" crossorigin="anonymous"></script>
@@ -66,6 +67,12 @@
                         <a asp-controller="Dashboards" asp-action="Customers">
                             <i class='fas fa-users' style="color: yellowgreen; font-size: 14px;"></i>
                             Customers
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Dashboards" asp-action="ConnStatus">
+                            <i class='fa-solid fa-user-check' style="color: yellowgreen; font-size: 14px;"></i>
+                            Conn Status
                         </a>
                     </li>
                     <li>

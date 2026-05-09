@@ -1,0 +1,144 @@
+@{
+    ViewData["Title"] = "Connection Status";
+    Layout = "~/Views/Shared/_LayoutDashboards.cshtml";
+    var total = (int?)(ViewBag.TotalCustomers) ?? 0;
+    var connected = (int?)(ViewBag.ConnectedCount) ?? 0;
+    var disconnected = (int?)(ViewBag.DisconnectedCount) ?? 0;
+    var closed = (int?)(ViewBag.ClosedCount) ?? 0;
+    var other = (int?)(ViewBag.OtherCount) ?? 0;
+    var pctC = (double?)(ViewBag.PctConnected) ?? 0;
+    var pctD = (double?)(ViewBag.PctDisconnected) ?? 0;
+    var pctX = (double?)(ViewBag.PctClosed) ?? 0;
+    var pctO = (double?)(ViewBag.PctOther) ?? 0;
+    var chartLabelsJson = ViewBag.ChartLabelsJson as string ?? "[]";
+    var chartValuesJson = ViewBag.ChartValuesJson as string ?? "[]";
+    var chartColorsJson = ViewBag.ChartColorsJson as string ?? "[]";
+}
+
+<style>
+    .conn-dash-intro { font-size: 0.92rem; color: #5a5c69; margin-bottom: 1.25rem; }
+    .stat-card {
+        border-radius: .5rem;
+        border: none;
+        box-shadow: 0 .15rem 1.25rem rgba(58,59,69,.1);
+        overflow: hidden;
+        transition: transform .15s ease, box-shadow .15s ease;
+        height: 100%;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 .35rem 1.5rem rgba(58,59,69,.14); }
+    .stat-card .card-body { padding: 1.35rem 1.25rem; }
+    .stat-card .stat-label {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        opacity: .85;
+    }
+    .stat-card .stat-value { font-size: 2rem; font-weight: 700; line-height: 1.15; margin: .35rem 0 .15rem; }
+    .stat-card .stat-meta { font-size: .82rem; opacity: .8; }
+    .stat-connected { border-left: 5px solid #1cc88a; background: linear-gradient(135deg, #fff 0%, #f0fcf7 100%); }
+    .stat-disconnected { border-left: 5px solid #f6c23e; background: linear-gradient(135deg, #fff 0%, #fffbf0 100%); }
+    .stat-closed { border-left: 5px solid #e74a3b; background: linear-gradient(135deg, #fff 0%, #fdf3f2 100%); }
+    .stat-other { border-left: 5px solid #858796; background: linear-gradient(135deg, #fff 0%, #f8f9fc 100%); }
+    .chart-card { border-radius: .5rem; box-shadow: 0 .125rem .5rem rgba(58,59,69,.07); margin-bottom: 1.25rem; }
+    .chart-card .card-header { font-weight: 700; border-bottom: 1px solid #e3e6f0; background: #f8f9fc; }
+    .chart-wrap { position: relative; min-height: 280px; display: flex; align-items: center; justify-content: center; padding: .5rem 0; }
+</style>
+
+<div class="mb-4">
+    <h3 class="mb-1 font-weight-bold">Connection status</h3>
+    <p class="conn-dash-intro mb-0">
+        Counts come from maintenance customers (<strong>@(total.ToString("N0"))</strong> total).
+        <strong>Active</strong> in the database is shown as <strong>Connected</strong>.
+    </p>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card stat-card stat-connected text-dark">
+            <div class="card-body">
+                <div class="stat-label text-success">Connected <span class="font-weight-normal">(Active)</span></div>
+                <div class="stat-value text-dark">@connected.ToString("N0")</div>
+                <div class="stat-meta">@pctC% of all customers</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card stat-card stat-disconnected text-dark">
+            <div class="card-body">
+                <div class="stat-label text-warning">Disconnected</div>
+                <div class="stat-value text-dark">@disconnected.ToString("N0")</div>
+                <div class="stat-meta">@pctD% of all customers</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card stat-card stat-closed text-dark">
+            <div class="card-body">
+                <div class="stat-label text-danger">Closed</div>
+                <div class="stat-value text-dark">@closed.ToString("N0")</div>
+                <div class="stat-meta">@pctX% of all customers</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (other > 0)
+{
+    <div class="row mb-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="card stat-card stat-other text-dark">
+                <div class="card-body">
+                    <div class="stat-label text-secondary">Other / not set</div>
+                    <div class="stat-value text-dark">@other.ToString("N0")</div>
+                    <div class="stat-meta">@pctO% — blank or non-standard status values</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card chart-card h-100">
+            <div class="card-header">Comparison (bars)</div>
+            <div class="card-body">
+                <canvas id="connBar" height="95"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function () {
+        var labels = @Html.Raw(chartLabelsJson);
+        var values = @Html.Raw(chartValuesJson);
+        var barEl = document.getElementById('connBar');
+        if (barEl) {
+            new Chart(barEl.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Customers',
+                        data: values,
+                        backgroundColor: '#36b9cc',
+                        borderColor: '#2c9faf',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+    })();
+</script>

@@ -78,11 +78,29 @@ namespace BMSBT.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UploadExcel(IFormFile excelFile)
+        public async Task<IActionResult> UploadExcel(IFormFile excelFile, int? startRow, int? endRow)
         {
             if (excelFile == null || excelFile.Length == 0)
             {
                 TempData["ErrorMessage"] = "Please select an Excel file to upload.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (startRow.HasValue && startRow.Value < 1)
+            {
+                TempData["ErrorMessage"] = "Start Row must be greater than or equal to 1.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (endRow.HasValue && endRow.Value < 1)
+            {
+                TempData["ErrorMessage"] = "End Row must be greater than or equal to 1.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (startRow.HasValue && endRow.HasValue && endRow.Value < startRow.Value)
+            {
+                TempData["ErrorMessage"] = "End Row must be greater than or equal to Start Row.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -150,9 +168,23 @@ namespace BMSBT.Controllers
 
             var inserts = new List<AdditionalCharge>();
             int skipped = 0;
-            int startRow = usingHeaderMapping ? headerRow + 1 : 1;
+            int autoStartRow = usingHeaderMapping ? headerRow + 1 : 1;
+            int dataStartRow = startRow.HasValue ? Math.Max(autoStartRow, startRow.Value) : autoStartRow;
+            int dataEndRow = endRow.HasValue ? Math.Min(rows, endRow.Value) : rows;
 
-            for (int row = startRow; row <= rows; row++)
+            if (dataStartRow > rows)
+            {
+                TempData["ErrorMessage"] = $"Start Row ({dataStartRow}) is beyond available rows ({rows}).";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (dataEndRow < dataStartRow)
+            {
+                TempData["ErrorMessage"] = "No rows available in the selected row range.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            for (int row = dataStartRow; row <= dataEndRow; row++)
             {
                 string btNo = worksheet.Cells[row, headerMap["btno"]].Text?.Trim() ?? string.Empty;
                 string department = worksheet.Cells[row, headerMap["department"]].Text?.Trim() ?? string.Empty;
@@ -213,7 +245,7 @@ namespace BMSBT.Controllers
             await _dbContext.AdditionalCharges.AddRangeAsync(inserts);
             await _dbContext.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Upload complete. Inserted {inserts.Count} record(s)." +
+            TempData["SuccessMessage"] = $"Upload complete. Inserted {inserts.Count} record(s) from rows {dataStartRow} to {dataEndRow}." +
                                          (skipped > 0 ? $" Skipped {skipped} row(s)." : string.Empty);
 
             return RedirectToAction(nameof(Index));

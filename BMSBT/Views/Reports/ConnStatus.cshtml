@@ -1,0 +1,133 @@
+@model List<BMSBT.ViewModels.ConnStatusSummaryRowViewModel>
+@{
+    ViewData["Title"] = "Connection Status Summary";
+    Layout = "~/Views/Shared/_LayoutReports.cshtml";
+    var projects = ViewBag.Projects as List<string> ?? new List<string>();
+    var phases = ViewBag.Phases as List<string> ?? new List<string>();
+    var selectedProject = ViewBag.SelectedProject as string ?? "";
+    var selectedPhase = ViewBag.SelectedPhase as string ?? "";
+    var totalConnected = (int?)ViewBag.TotalConnected ?? 0;
+    var totalDisconnected = (int?)ViewBag.TotalDisconnected ?? 0;
+    var totalClosed = (int?)ViewBag.TotalClosed ?? 0;
+    var totalCustomers = (int?)ViewBag.TotalCustomers ?? 0;
+}
+
+<div class="card mb-3">
+    <div class="card-header"><strong>Conn Status Filters</strong></div>
+    <div class="card-body">
+        <form id="connStatusFiltersForm" method="get" asp-controller="Reports" asp-action="ConnStatus">
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>Project</label>
+                    <select id="projectFilter" name="project" class="form-control">
+                        <option value="">-- All Projects --</option>
+                        @foreach (var p in projects)
+                        {
+                            if (p == selectedProject)
+                            {
+                                <option value="@p" selected>@p</option>
+                            }
+                            else
+                            {
+                                <option value="@p">@p</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Phase</label>
+                    <select id="phaseFilter" name="phase" class="form-control">
+                        <option value="">-- All Phases --</option>
+                        @foreach (var ph in phases)
+                        {
+                            if (ph == selectedPhase)
+                            {
+                                <option value="@ph" selected>@ph</option>
+                            }
+                            else
+                            {
+                                <option value="@ph">@ph</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Show</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var form = document.getElementById('connStatusFiltersForm');
+        var project = document.getElementById('projectFilter');
+        var phase = document.getElementById('phaseFilter');
+        if (!form || !project || !phase) return;
+
+        project.addEventListener('change', function () {
+            phase.value = '';
+            form.submit();
+        });
+    })();
+</script>
+
+<div class="card mb-3">
+    <div class="card-header"><strong>Summary By Filter</strong></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3"><strong>Connected (Active):</strong> @totalConnected</div>
+            <div class="col-md-3"><strong>Disconnected:</strong> @totalDisconnected</div>
+            <div class="col-md-3"><strong>Closed:</strong> @totalClosed</div>
+            <div class="col-md-3"><strong>Total Customers:</strong> @totalCustomers</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><strong>Conn Status By Project</strong></div>
+    <div class="card-body table-responsive">
+        <table class="table table-bordered table-sm">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Project</th>
+                    <th class="text-right">Connected (Active)</th>
+                    <th class="text-right">Disconnected</th>
+                    <th class="text-right">Closed</th>
+                    <th class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var row in Model)
+                    {
+                        <tr>
+                            <td>@row.Project</td>
+                            <td class="text-right">@row.Connected</td>
+                            <td class="text-right">@row.Disconnected</td>
+                            <td class="text-right">@row.Closed</td>
+                            <td class="text-right">@row.Total</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No data found.</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr class="font-weight-bold">
+                    <td>Total</td>
+                    <td class="text-right">@totalConnected</td>
+                    <td class="text-right">@totalDisconnected</td>
+                    <td class="text-right">@totalClosed</td>
+                    <td class="text-right">@totalCustomers</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

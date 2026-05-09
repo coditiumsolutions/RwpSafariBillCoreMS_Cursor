@@ -13,4 +13,7 @@ public class OperationsUnpaidRowViewModel
     public decimal BillAmount { get; set; }
     public decimal AmountPaid { get; set; }
     public decimal OutstandingAmount { get; set; }
+
+    /// <summary>Older month, then newer month (calendar consecutive), both fully unpaid vs latest bill.</summary>
+    public string ConsecutiveUnpaidMonths { get; set; } = "";
 }

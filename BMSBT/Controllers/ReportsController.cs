@@ -166,6 +166,58 @@ namespace BMSBT.Controllers
         }
 
         [HttpGet]
+        public IActionResult ConnStatus(string? project, string? phase)
+        {
+            var selectedProject = string.IsNullOrWhiteSpace(project) ? string.Empty : project.Trim();
+            var selectedPhase = string.IsNullOrWhiteSpace(phase) ? string.Empty : phase.Trim();
+
+            var projects = GetProjectList();
+            var phases = string.IsNullOrWhiteSpace(selectedProject)
+                ? new List<string>()
+                : GetConfigurationCsvValuesByKey(selectedProject);
+
+            ViewBag.Projects = projects;
+            ViewBag.Phases = phases;
+            ViewBag.SelectedProject = selectedProject;
+            ViewBag.SelectedPhase = selectedPhase;
+
+            var customerQuery = _dbContext.CustomersMaintenance.AsNoTracking().AsQueryable();
+            if (!string.IsNullOrWhiteSpace(selectedProject))
+            {
+                customerQuery = customerQuery.Where(c => c.Project != null && c.Project.Trim() == selectedProject);
+            }
+            if (!string.IsNullOrWhiteSpace(selectedPhase))
+            {
+                customerQuery = customerQuery.Where(c => c.SubProject != null && c.SubProject.Trim() == selectedPhase);
+            }
+
+            var model = customerQuery
+                .Select(c => new
+                {
+                    Project = c.Project != null && c.Project.Trim() != "" ? c.Project.Trim() : "N/A",
+                    Status = c.ConnectionStatus != null ? c.ConnectionStatus.Trim().ToLower() : ""
+                })
+                .GroupBy(x => x.Project)
+                .Select(g => new ConnStatusSummaryRowViewModel
+                {
+                    Project = g.Key,
+                    Connected = g.Count(x => x.Status == "connected"),
+                    Disconnected = g.Count(x => x.Status == "disconnected"),
+                    Closed = g.Count(x => x.Status == "closed"),
+                    Total = g.Count()
+                })
+                .OrderBy(x => x.Project)
+                .ToList();
+
+            ViewBag.TotalConnected = model.Sum(x => x.Connected);
+            ViewBag.TotalDisconnected = model.Sum(x => x.Disconnected);
+            ViewBag.TotalClosed = model.Sum(x => x.Closed);
+            ViewBag.TotalCustomers = model.Sum(x => x.Total);
+
+            return View(model);
+        }
+
+        [HttpGet]
         public IActionResult CustomersSummary(string? month, string? year, string? project, string? phase)
         {
             var selectedMonth = string.IsNullOrWhiteSpace(month) ? DateTime.Now.ToString("MMMM") : month.Trim();

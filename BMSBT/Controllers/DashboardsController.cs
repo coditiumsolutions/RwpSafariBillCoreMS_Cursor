@@ -58,6 +58,20 @@ namespace BMSBT.Controllers
                 .ToList();
         }
 
+        /// <summary>Maintenance bills whose linked customer row has ConnectionStatus &quot;Closed&quot; are excluded from dashboard totals.</summary>
+        private static IQueryable<MaintenanceBill> ExcludeBillsWithClosedCustomer(
+            IQueryable<MaintenanceBill> bills,
+            IQueryable<CustomersMaintenance> customers)
+        {
+            return bills.Where(b =>
+                !customers.Any(c =>
+                    c.BTNo != null
+                    && b.Btno != null
+                    && c.BTNo.Trim() == b.Btno.Trim()
+                    && c.ConnectionStatus != null
+                    && c.ConnectionStatus.Trim().ToLower() == "closed"));
+        }
+
         [HttpGet]
         public IActionResult Index(string? selectedYear, string? selectedMonth, string? apiProject, string? phaseNumber)
         {
@@ -131,6 +145,59 @@ namespace BMSBT.Controllers
         }
 
         [HttpGet]
+        public IActionResult ConnStatus()
+        {
+            var q = _dbContext.CustomersMaintenance.AsNoTracking();
+            var total = q.Count();
+
+            var connectedCount = q.Count(c =>
+                c.ConnectionStatus != null
+                && c.ConnectionStatus.Trim().ToLower() == "connected");
+
+            var disconnectedCount = q.Count(c =>
+                c.ConnectionStatus != null
+                && c.ConnectionStatus.Trim().ToLower() == "disconnected");
+
+            var closedCount = q.Count(c =>
+                c.ConnectionStatus != null
+                && c.ConnectionStatus.Trim().ToLower() == "closed");
+
+            var summed = connectedCount + disconnectedCount + closedCount;
+            var otherCount = summed > total ? 0 : total - summed;
+
+            ViewBag.TotalCustomers = total;
+            ViewBag.ConnectedCount = connectedCount;
+            ViewBag.DisconnectedCount = disconnectedCount;
+            ViewBag.ClosedCount = closedCount;
+            ViewBag.OtherCount = otherCount;
+
+            static double Pct(int part, int whole) =>
+                whole <= 0 ? 0 : Math.Round(100.0 * part / whole, 1);
+
+            ViewBag.PctConnected = Pct(connectedCount, total);
+            ViewBag.PctDisconnected = Pct(disconnectedCount, total);
+            ViewBag.PctClosed = Pct(closedCount, total);
+            ViewBag.PctOther = Pct(otherCount, total);
+
+            var labels = new List<string> { "Connected (Active)", "Disconnected", "Closed" };
+            var values = new List<int> { connectedCount, disconnectedCount, closedCount };
+            var colors = new List<string> { "#1cc88a", "#f6c23e", "#e74a3b" };
+
+            if (otherCount > 0)
+            {
+                labels.Add("Other / not set");
+                values.Add(otherCount);
+                colors.Add("#858796");
+            }
+
+            ViewBag.ChartLabelsJson = JsonSerializer.Serialize(labels);
+            ViewBag.ChartValuesJson = JsonSerializer.Serialize(values);
+            ViewBag.ChartColorsJson = JsonSerializer.Serialize(colors);
+
+            return View();
+        }
+
+        [HttpGet]
         public IActionResult Bills(string? billingMonth, string? billingYear, string? project)
         {
             var selectedMonth = string.IsNullOrWhiteSpace(billingMonth) ? DateTime.Now.ToString("MMMM") : billingMonth.Trim();
@@ -145,6 +212,8 @@ namespace BMSBT.Controllers
             {
                 billsQuery = billsQuery.Where(b => b.Project != null && b.Project.Trim() == selectedProject);
             }
+
+            billsQuery = ExcludeBillsWithClosedCustomer(billsQuery, _dbContext.CustomersMaintenance.AsNoTracking());
 
             var totalBills = billsQuery.Count();
             var generatedAmount = billsQuery.Sum(b => (decimal?)b.BillAmountInDueDate) ?? 0m;
@@ -174,10 +243,16 @@ namespace BMSBT.Controllers
             var selectedMonth = string.IsNullOrWhiteSpace(billingMonth) ? DateTime.Now.ToString("MMMM") : billingMonth.Trim();
             var selectedYear = string.IsNullOrWhiteSpace(billingYear) ? DateTime.Now.Year.ToString() : billingYear.Trim();
 
-            var projectSummaries = _dbContext.MaintenanceBills
+            var collectionsBillsQuery = _dbContext.MaintenanceBills
                 .AsNoTracking()
                 .Where(b => b.BillingMonth == selectedMonth && b.BillingYear == selectedYear)
-                .Where(b => b.Project != null && b.Project.Trim() != "")
+                .Where(b => b.Project != null && b.Project.Trim() != "");
+
+            collectionsBillsQuery = ExcludeBillsWithClosedCustomer(
+                collectionsBillsQuery,
+                _dbContext.CustomersMaintenance.AsNoTracking());
+
+            var projectSummaries = collectionsBillsQuery
                 .GroupBy(b => b.Project!.Trim())
                 .Select(g => new
                 {

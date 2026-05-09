@@ -1,50 +1,64 @@
-@model List<BMSBT.ViewModels.OperationsUnpaidRowViewModel>
+@using X.PagedList
+@using X.PagedList.Mvc.Core
+@model IPagedList<BMSBT.ViewModels.OperationsUnpaidRowViewModel>
 @{
     ViewData["Title"] = "Disconnections";
     Layout = "~/Views/Shared/_LayoutOperations.cshtml";
-    var months = ViewBag.Months as List<string> ?? new List<string>();
-    var years = ViewBag.Years as List<string> ?? new List<string>();
-    var selectedBillingMonth = ViewBag.SelectedBillingMonth as string ?? "";
-    var selectedBillingYear = ViewBag.SelectedBillingYear as string ?? "";
-    var currentMonth = ViewBag.CurrentMonth as string ?? "";
-    var currentYear = ViewBag.CurrentYear as string ?? "";
+    var projects = ViewBag.Projects as List<string> ?? new List<string>();
+    var selectedProject = ViewBag.SelectedProject as string ?? "";
+    var selectedPhase = ViewBag.SelectedPhase as string ?? "";
+    var dataLoaded = ViewBag.DataLoaded as bool? ?? false;
+    var filterMsg = ViewBag.FilterMessage as string;
 }
 
 <div class="card mb-3">
     <div class="card-header"><strong>Disconnections Filters</strong></div>
     <div class="card-body">
-        <form method="get" asp-controller="Operations" asp-action="Disconnections">
-            <div class="form-row">
-                <div class="form-group col-md-3">
-                    <label>Billing Month</label>
-                    <select name="billingMonth" class="form-control">
-                        @foreach (var m in months)
+        @if (!string.IsNullOrEmpty(filterMsg))
+        {
+            <div class="alert alert-warning py-2">@filterMsg</div>
+        }
+        <form id="disconnectionsFiltersForm" method="get" asp-controller="Operations" asp-action="Disconnections">
+            <div class="form-row align-items-end">
+                <div class="form-group col-md-4 col-lg-3">
+                    <label>Project</label>
+                    <select id="filterProject" name="project" class="form-control">
+                        <option value="">-- Select Project --</option>
+                        @foreach (var p in projects)
                         {
-                            <option value="@m" selected="@(m == selectedBillingMonth)">@m</option>
+                            if (p == selectedProject)
+                            {
+                                <option value="@p" selected>@p</option>
+                            }
+                            else
+                            {
+                                <option value="@p">@p</option>
+                            }
                         }
                     </select>
                 </div>
-                <div class="form-group col-md-3">
-                    <label>Billing Year</label>
-                    <select name="billingYear" class="form-control">
-                        @foreach (var y in years)
-                        {
-                            <option value="@y" selected="@(y == selectedBillingYear)">@y</option>
-                        }
+                <div class="form-group col-md-4 col-lg-3">
+                    <label>Phase</label>
+                    <select id="filterPhase" name="phase" class="form-control">
+                        <option value="">-- All Phases --</option>
                     </select>
                 </div>
-                <div class="form-group col-md-2 d-flex align-items-end">
+                <div class="form-group col-md-4 col-lg-2">
                     <button type="submit" class="btn btn-primary w-100">Show</button>
                 </div>
             </div>
+            <input type="hidden" name="show" value="1" />
+            <input type="hidden" name="page" value="1" />
         </form>
     </div>
 </div>
 
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <strong>Disconnections (Unpaid after due date) - @currentMonth @currentYear</strong>
-        <span class="text-muted">Total: @(Model?.Count ?? 0)</span>
+        <strong>Disconnections — Last 2 months bill unpaid</strong>
+        <span class="text-muted">
+            @(dataLoaded ? ("Total: " + (Model?.TotalItemCount ?? 0)) : "Select filters and Show to load.")
+        </span>
     </div>
     <div class="card-body table-responsive">
         <table class="table table-bordered table-sm">
@@ -54,7 +68,8 @@
                     <th>Customer Name</th>
                     <th>Project</th>
                     <th>Phase</th>
-                    <th>Due Date</th>
+                    <th>2 unpaid months</th>
+                    <th>Due Date (latest)</th>
                     <th>Payment Status</th>
                     <th class="text-right">Bill Amount</th>
                     <th class="text-right">Amount Paid</th>
@@ -62,7 +77,7 @@
                 </tr>
             </thead>
             <tbody>
-                @if (Model != null && Model.Any())
+                @if (dataLoaded && Model != null && Model.Any())
                 {
                     foreach (var row in Model)
                     {
@@ -71,6 +86,7 @@
                             <td>@row.CustomerName</td>
                             <td>@row.Project</td>
                             <td>@row.Phase</td>
+                            <td>@row.ConsecutiveUnpaidMonths</td>
                             <td>@(row.DueDate?.ToString("dd-MMM-yyyy") ?? "-")</td>
                             <td>@row.PaymentStatus</td>
                             <td class="text-right">@row.BillAmount.ToString("N0")</td>
@@ -82,10 +98,66 @@
                 else
                 {
                     <tr>
-                        <td colspan="9" class="text-center text-muted">No disconnection candidates found.</td>
+                        <td colspan="10" class="text-center text-muted">
+                            @(dataLoaded ? "No disconnection candidates found." : "Select a project, optionally a phase, then click Show. No data loads until Show.")
+                        </td>
                     </tr>
                 }
             </tbody>
         </table>
+
+        @if (dataLoaded && Model != null && Model.PageCount > 1)
+        {
+            <div class="d-flex justify-content-center mt-3">
+                @Html.PagedListPager(Model, p => Url.Action("Disconnections", new { page = p, project = selectedProject, phase = selectedPhase, show = "1" }),
+                    new PagedListRenderOptions
+                    {
+                        LiElementClasses = new[] { "page-item" },
+                        PageClasses = new[] { "page-link" },
+                        DisplayLinkToFirstPage = PagedListDisplayMode.Always,
+                        DisplayLinkToLastPage = PagedListDisplayMode.Always,
+                        DisplayLinkToPreviousPage = PagedListDisplayMode.Always,
+                        DisplayLinkToNextPage = PagedListDisplayMode.Always,
+                        DisplayEllipsesWhenNotShowingAllPageNumbers = true
+                    })
+            </div>
+        }
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var phaseUrl = '@Url.Action("GetPhasesByProject", "MaintenanceNew")';
+            var selectedPhase = @Html.Raw(Json.Serialize(selectedPhase));
+
+            function loadPhases(project, preselect) {
+                var ddl = document.getElementById('filterPhase');
+                if (!ddl) return;
+                ddl.innerHTML = '';
+                ddl.appendChild(new Option('-- All Phases --', ''));
+                if (!project) return;
+
+                $.getJSON(phaseUrl, { project: project }, function (items) {
+                    if (Array.isArray(items)) {
+                        items.forEach(function (v) {
+                            ddl.appendChild(new Option(v, v));
+                        });
+                    }
+                    if (preselect) {
+                        ddl.value = preselect;
+                    }
+                });
+            }
+
+            var projectDdl = document.getElementById('filterProject');
+            if (projectDdl) {
+                projectDdl.addEventListener('change', function () {
+                    loadPhases(this.value || '', '');
+                });
+            }
+
+            loadPhases((projectDdl || {}).value || '', selectedPhase || '');
+        })();
+    </script>
+}

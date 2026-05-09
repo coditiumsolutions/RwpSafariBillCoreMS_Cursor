@@ -13,6 +13,8 @@
             <form asp-action="UploadExcel" method="post" enctype="multipart/form-data" class="d-flex align-items-center" style="gap:8px;">
                 @Html.AntiForgeryToken()
                 <input type="file" name="excelFile" accept=".xlsx" class="form-control form-control-sm" style="max-width:220px;" />
+                <input type="number" name="startRow" min="1" class="form-control form-control-sm" placeholder="Start Row" style="max-width:110px;" />
+                <input type="number" name="endRow" min="1" class="form-control form-control-sm" placeholder="End Row" style="max-width:110px;" />
                 <button type="submit" class="btn btn-sm btn-primary">Upload Excel</button>
             </form>
             <a asp-action="Create" class="btn btn-sm btn-success">Create New</a>
